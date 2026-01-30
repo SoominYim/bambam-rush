@@ -6,6 +6,7 @@ import {
   getPlayer,
   getEnemies,
   getCollectibles,
+  addScore,
 } from "../game/gameState";
 import { updateInput, getIsPaused } from "./input";
 import { spawnRandomCollectible } from "../game/entities/collectible";
@@ -72,9 +73,9 @@ const loop = (timestamp: number) => {
     }
 
     // 3. Update Game Logic
-    updateGameState(deltaTime);
+    updateGameState(deltaTime); // This was previously "3. Update Game Logic"
     checkTailMerges();
-    updateCombat(deltaTime);
+    updateCombat(deltaTime); // This was previously "updateCombat(deltaTime)"
     updateCamera();
 
     updateInput();

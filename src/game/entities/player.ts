@@ -1,6 +1,6 @@
 import { GameObject, Vector2D, Scalar } from "../types";
-import { isKeyDown } from "../../engine/input";
-import { getTail, addTailSegment, getCollectibles, addScore } from "../gameState";
+import { getMovementDirection } from "../../engine/input";
+import { getTail, addTailSegment, getCollectibles, addScore, getPlayer } from "../gameState";
 import { TailSegment, ElementType } from "../types";
 import {
   PLAYER_SPEED,
@@ -12,30 +12,27 @@ import {
   COLLECTION_RADIUS,
   COLLECTION_SCORE,
 } from "../constants";
+import * as CONFIG from "../constants";
 
-// Position history for snake-like trailing
-const positionHistory: Vector2D[] = [];
+// Position history for snake-like trailing (MUST be outside createPlayer!)
+let positionHistory: Vector2D[] = [];
 const HISTORY_SPACING = 5; // 히스토리 기록 간격
 const MAX_HISTORY = 1000; // 최대 히스토리 길이
 
+export const getPositionHistory = () => positionHistory;
+export const resetPositionHistory = () => {
+  positionHistory = [];
+};
+
 export const createPlayer = (startX: Scalar, startY: Scalar): GameObject => {
+  // DON'T reset history - we need it for tail segments!
   const player: GameObject = {
     id: "snake_head",
     position: { x: startX, y: startY },
 
     update: function (deltaTime: Scalar) {
-      // 1. WASD Movement
-      const moveDir = { x: 0, y: 0 };
-      if (isKeyDown("KeyW") || isKeyDown("ArrowUp")) moveDir.y -= 1;
-      if (isKeyDown("KeyS") || isKeyDown("ArrowDown")) moveDir.y += 1;
-      if (isKeyDown("KeyA") || isKeyDown("ArrowLeft")) moveDir.x -= 1;
-      if (isKeyDown("KeyD") || isKeyDown("ArrowRight")) moveDir.x += 1;
-
-      if (moveDir.x !== 0 || moveDir.y !== 0) {
-        const length = Math.sqrt(moveDir.x * moveDir.x + moveDir.y * moveDir.y);
-        moveDir.x /= length;
-        moveDir.y /= length;
-      }
+      // 1. Get movement from input system (supports keyboard + joystick)
+      const moveDir = getMovementDirection();
 
       const prevX = this.position.x;
       const prevY = this.position.y;
@@ -54,6 +51,11 @@ export const createPlayer = (startX: Scalar, startY: Scalar): GameObject => {
 
       if (moved > HISTORY_SPACING) {
         positionHistory.unshift({ x: this.position.x, y: this.position.y });
+
+        // Temporary debug - remove after confirming it works
+        if (positionHistory.length % 50 === 0) {
+          console.log(`✅ 히스토리 기록 중: ${positionHistory.length}개 포인트`);
+        }
 
         // Keep history length reasonable (cap at 1000 points)
         if (positionHistory.length > MAX_HISTORY) {
@@ -89,8 +91,6 @@ export const createPlayer = (startX: Scalar, startY: Scalar): GameObject => {
   return player;
 };
 
-export const getPositionHistory = () => positionHistory;
-
 const checkCollection = (head: GameObject) => {
   const collectibles = getCollectibles();
   const tail = getTail();
@@ -104,7 +104,7 @@ const checkCollection = (head: GameObject) => {
 
     if (dist < 40) {
       c.isExpired = true;
-      addScore(10); // 이제 정상적으로 import된 함수 사용
+      addScore(10);
 
       const newSegment = createTailSegment(tail.length, c.type);
       addTailSegment(newSegment);
@@ -117,7 +117,23 @@ const createTailSegment = (index: number, elementType: ElementType): TailSegment
   const historyIndex = (index + 1) * pointsPerSegment;
 
   const history = getPositionHistory();
-  const startPos = history[Math.min(historyIndex, history.length - 1)] || { x: 0, y: 0 };
+  const player = getPlayer();
+
+  // Use history if available, otherwise use player's current position
+  let startPos: Vector2D;
+  if (historyIndex < history.length && history[historyIndex]) {
+    startPos = history[historyIndex];
+  } else if (player) {
+    // If no history, start at player's current position
+    startPos = { x: player.position.x, y: player.position.y };
+  } else {
+    // Last resort fallback
+    startPos = { x: 500, y: 500 };
+  }
+
+  console.log(
+    `🔸 꼬리 세그먼트 생성 - 인덱스: ${index}, 위치: (${startPos.x.toFixed(1)}, ${startPos.y.toFixed(1)}), 히스토리 길이: ${history.length}`,
+  );
 
   return {
     id: `tail_${Date.now()}_${Math.random()}`,
@@ -127,19 +143,36 @@ const createTailSegment = (index: number, elementType: ElementType): TailSegment
     followTarget: null,
 
     update: function (deltaTime: Scalar) {
-      // Follow the position history
-      const history = getPositionHistory();
+      // Follow the segment in front (or the player if first segment)
       const tail = getTail();
       const myIndex = tail.indexOf(this);
 
       if (myIndex === -1) return;
 
-      const pointsPerSegment = Math.floor(CONFIG.SNAKE_SEGMENT_SPACING / HISTORY_SPACING);
-      const targetHistoryIndex = (myIndex + 1) * pointsPerSegment;
+      let targetPos: Vector2D;
 
-      if (targetHistoryIndex < history.length) {
-        this.position.x = history[targetHistoryIndex].x;
-        this.position.y = history[targetHistoryIndex].y;
+      if (myIndex === 0) {
+        // First segment follows the player
+        const player = getPlayer();
+        if (!player) return;
+        targetPos = player.position;
+      } else {
+        // Other segments follow the previous segment
+        targetPos = tail[myIndex - 1].position;
+      }
+
+      // Move towards target position
+      const dx = targetPos.x - this.position.x;
+      const dy = targetPos.y - this.position.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Only move if far enough away (maintain spacing)
+      const desiredDistance = SNAKE_SEGMENT_SPACING;
+      if (distance > desiredDistance) {
+        const moveDistance = Math.min(distance - desiredDistance, PLAYER_SPEED * deltaTime);
+        const ratio = moveDistance / distance;
+        this.position.x += dx * ratio;
+        this.position.y += dy * ratio;
       }
     },
 

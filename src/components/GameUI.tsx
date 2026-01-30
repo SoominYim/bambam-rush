@@ -1,3 +1,4 @@
+import { memo } from "react";
 import "./GameUI.css";
 
 interface GameUIProps {
@@ -7,7 +8,7 @@ interface GameUIProps {
   onResume: () => void;
 }
 
-export const GameUI: React.FC<GameUIProps> = ({ score, isPaused, onPause, onResume }) => {
+export const GameUI = memo(({ score, isPaused, onPause, onResume }: GameUIProps) => {
   const handlePauseClick = () => {
     if (isPaused) {
       onResume();
@@ -80,7 +81,7 @@ export const GameUI: React.FC<GameUIProps> = ({ score, isPaused, onPause, onResu
       )}
     </>
   );
-};
+});
 
 interface RecipeSectionProps {
   title: string;

@@ -20,7 +20,9 @@ export const initGameState = (p: GameObject) => {
 
 export const addEntity = (entity: GameObject) => entities.push(entity);
 export const addCollectible = (c: Collectible) => collectibles.push(c);
-export const addTailSegment = (segment: TailSegment) => tail.push(segment);
+export const addTailSegment = (segment: TailSegment): void => {
+  tail.push(segment);
+};
 export const addEnemy = (e: Enemy) => enemies.push(e);
 export const addProjectile = (p: Projectile) => projectiles.push(p);
 
@@ -33,13 +35,14 @@ export const getPlayer = () => player;
 
 // Score management
 export const getScore = () => score;
-export const addScore = (points: number) => {
+export const addScore = (points: number): void => {
   score += points;
+  // console.log removed for performance
 };
 
 export const updateGameState = (deltaTime: number) => {
   if (player) player.update(deltaTime);
-  tail.forEach(t => t.update(deltaTime));
+  tail.forEach(t => t.update(deltaTime)); // 꼬리도 업데이트해야 플레이어를 따라다님!
   collectibles.forEach(c => c.update(deltaTime));
   enemies.forEach(e => e.update(deltaTime));
   projectiles.forEach(p => p.update(deltaTime));
@@ -54,7 +57,13 @@ export const updateGameState = (deltaTime: number) => {
 export const drawGameState = (ctx: CanvasRenderingContext2D) => {
   collectibles.forEach(c => c.draw(ctx));
   enemies.forEach(e => e.draw(ctx));
+
+  // Draw tail segments
+  if (tail.length > 0) {
+    console.log(`🎨 꼬리 그리기: ${tail.length}개 세그먼트`);
+  }
   tail.forEach(t => t.draw(ctx));
+
   if (player) player.draw(ctx);
   projectiles.forEach(p => p.draw(ctx));
 };

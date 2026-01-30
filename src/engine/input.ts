@@ -8,6 +8,9 @@ let mouseButtons: Set<number> = new Set();
 let mouseButtonsPressedThisFrame: Set<number> = new Set();
 let isPaused = false;
 
+// 가상 조이스틱 지원
+let joystickDirection = { x: 0, y: 0 };
+
 export const initInput = () => {
   window.addEventListener("contextmenu", e => e.preventDefault());
 
@@ -47,6 +50,31 @@ export const isKeyPressed = (code: string): boolean => {
   return keysPressedThisFrame.has(code);
 };
 
+export const getMovementDirection = (): { x: number; y: number } => {
+  let x = 0;
+  let y = 0;
+
+  // 조이스틱 입력이 있으면 조이스틱만 사용 (우선순위)
+  if (Math.abs(joystickDirection.x) > 0.1 || Math.abs(joystickDirection.y) > 0.1) {
+    return joystickDirection; // 조이스틱 값은 이미 정규화됨
+  }
+
+  // 키보드 입력
+  if (keyState.has("KeyW") || keyState.has("ArrowUp")) y -= 1;
+  if (keyState.has("KeyS") || keyState.has("ArrowDown")) y += 1;
+  if (keyState.has("KeyA") || keyState.has("ArrowLeft")) x -= 1;
+  if (keyState.has("KeyD") || keyState.has("ArrowRight")) x += 1;
+
+  // 정규화
+  const length = Math.sqrt(x * x + y * y);
+  if (length > 0) {
+    x /= length;
+    y /= length;
+  }
+
+  return { x, y };
+};
+
 export const getMousePosition = (): Vector2D => {
   return mousePosition;
 };
@@ -61,4 +89,9 @@ export const getIsPaused = (): boolean => {
 
 export const setPaused = (paused: boolean): void => {
   isPaused = paused;
+};
+
+// 가상 조이스틱 방향 설정 (React 컴포넌트에서 호출)
+export const setJoystickDirection = (x: number, y: number): void => {
+  joystickDirection = { x, y };
 };

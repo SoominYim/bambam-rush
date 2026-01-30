@@ -1,5 +1,6 @@
-import { Collectible, Vector2D, ElementType, Scalar } from "../types";
-import { addCollectible } from "../gameState";
+import { Collectible, ElementType, Scalar } from "../types";
+import { COLLECTION_RADIUS, COLLECTION_SCORE } from "../constants";
+import { addCollectible, getPlayer, addScore } from "../gameState";
 
 export const createCollectible = (x: Scalar, y: Scalar, type: ElementType): Collectible => {
   return {
@@ -11,6 +12,20 @@ export const createCollectible = (x: Scalar, y: Scalar, type: ElementType): Coll
     isExpired: false,
 
     update: function (deltaTime: Scalar) {
+      // Check distance to player for collection
+      const player = getPlayer();
+      if (player && !this.isExpired) {
+        const dx = this.position.x - player.position.x;
+        const dy = this.position.y - player.position.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < COLLECTION_RADIUS) {
+          // Mark for collection
+          this.isExpired = true;
+          addScore(COLLECTION_SCORE);
+        }
+      }
+
       // Floating animation
       this.position.y += Math.sin(Date.now() / 200) * 0.5;
     },
