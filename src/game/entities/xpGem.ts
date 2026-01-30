@@ -7,7 +7,7 @@ export const createXPGem = (x: number, y: number, amount: number): XPGem => {
     amount,
     radius: 3 + Math.min(amount / 5, 5), // Size scales slightly with amount
     isMagnetized: false,
-    update: (deltaTime: number) => {
+    update: (_deltaTime: number) => {
       // Logic handled in state.ts or here if we pass player
     },
     draw: (ctx: CanvasRenderingContext2D) => {

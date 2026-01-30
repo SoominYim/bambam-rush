@@ -1,4 +1,4 @@
-import { Enemy, Scalar } from "@/game/types";
+import { Enemy, Scalar, EnemyType } from "@/game/types";
 import { getPlayer, addScore, addXPGem } from "@/game/managers/state";
 import * as CONFIG from "@/game/config/constants";
 
@@ -13,6 +13,7 @@ export const createBoss = (x: Scalar, y: Scalar): Enemy => {
     speed,
     damage: CONFIG.ENEMY_DAMAGE * 3, // 3x Damage
     isExpired: false,
+    type: EnemyType.BOSS,
 
     update: function (deltaTime: Scalar) {
       const player = getPlayer();

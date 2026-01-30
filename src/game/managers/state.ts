@@ -1,4 +1,4 @@
-import { GameObject, Enemy, Projectile, Collectible, TailSegment, Player, XPGem } from "@/game/types";
+import { GameObject, Enemy, Projectile, Collectible, TailSegment, Player } from "@/game/types";
 import { vfx } from "@/engine/vfx/ParticleSystem";
 import { spatialGrid } from "@/game/managers/grid";
 import { XPGemInstance } from "@/game/entities/xpGem";
