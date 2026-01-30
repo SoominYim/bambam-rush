@@ -96,6 +96,31 @@ export const createPlayer = (startX: Scalar, startY: Scalar): Player => {
       ctx.shadowBlur = 0;
       ctx.shadowColor = "transparent";
 
+      // Magnet Visual Effect
+      if (this.magnetTimer && this.magnetTimer > 0) {
+        const isFading = this.magnetTimer <= 3.0;
+        const blink = isFading ? Math.floor(Date.now() / 100) % 2 === 0 : true;
+
+        if (blink) {
+          const pulse = (Math.sin(Date.now() / 200) + 1) * 5;
+
+          // Outer Ring
+          ctx.beginPath();
+          ctx.arc(this.position.x, this.position.y, CONFIG.PLAYER_RADIUS + 20 + pulse, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(0, 200, 255, 0.6)";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 5]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Inner Glow
+          ctx.beginPath();
+          ctx.arc(this.position.x, this.position.y, CONFIG.PLAYER_RADIUS + 10 + pulse, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(0, 200, 255, 0.15)";
+          ctx.fill();
+        }
+      }
+
       ctx.beginPath();
       ctx.arc(this.position.x, this.position.y, CONFIG.PLAYER_RADIUS, 0, Math.PI * 2);
       ctx.fillStyle = "#ffffff";
