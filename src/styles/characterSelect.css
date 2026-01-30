@@ -1,0 +1,177 @@
+/* characterSelect.css */
+
+.char-select-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000;
+}
+
+.char-select-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.game-title {
+  font-family: "Outfit", sans-serif;
+  font-size: 64px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 4px;
+  margin: 0;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+}
+
+.game-subtitle {
+  font-family: "Inter", sans-serif;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: -10px;
+}
+
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.char-card {
+  width: 160px;
+  height: 220px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.char-card:hover {
+  transform: translateY(-8px);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.char-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+.char-name {
+  font-family: "Outfit", sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px 0;
+}
+
+.char-desc {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Specific Element Styles (Hover Glow) */
+.char-card.fire:hover {
+  box-shadow: 0 0 20px rgba(255, 68, 0, 0.4);
+  border-color: #ff4400;
+}
+.char-card.water:hover {
+  box-shadow: 0 0 20px rgba(0, 136, 255, 0.4);
+  border-color: #0088ff;
+}
+.char-card.ice:hover {
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+  border-color: #00ffff;
+}
+.char-card.wind:hover {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+  border-color: #00ff88;
+}
+.char-card.poison:hover {
+  box-shadow: 0 0 20px rgba(170, 0, 255, 0.4);
+  border-color: #aa00ff;
+}
+.char-card.electric:hover {
+  box-shadow: 0 0 20px rgba(255, 255, 0, 0.4);
+  border-color: #ffff00;
+}
+.char-card.sword:hover {
+  box-shadow: 0 0 20px rgba(200, 200, 200, 0.4);
+  border-color: #cccccc;
+}
+.char-card.book:hover {
+  box-shadow: 0 0 20px rgba(136, 85, 34, 0.4);
+  border-color: #885522;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .game-title {
+    font-size: 48px;
+  }
+
+  .game-subtitle {
+    font-size: 16px;
+  }
+
+  .char-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on tablet/small laptop */
+    gap: 16px;
+    margin-top: 30px;
+    padding: 0 20px; /* Add side padding */
+  }
+
+  .char-card {
+    width: 140px;
+    height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-title {
+    font-size: 36px;
+    letter-spacing: 2px;
+  }
+
+  .char-grid {
+    grid-template-columns: repeat(2, 1fr); /* Keep 2 columns but smaller */
+    gap: 12px;
+  }
+
+  .char-card {
+    width: 100%; /* Stretch to fill grid cell */
+    height: 160px;
+    padding: 12px;
+  }
+
+  .char-icon {
+    font-size: 36px;
+    margin-bottom: 8px;
+  }
+
+  .char-name {
+    font-size: 16px;
+  }
+
+  .char-desc {
+    font-size: 10px;
+  }
+}

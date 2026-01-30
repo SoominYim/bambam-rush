@@ -13,26 +13,26 @@ export const PauseMenu = memo(({ stats, onRecipes, onSettings, onResume }: Pause
   return (
     <div className="pause-menu-overlay">
       <div className="pause-menu-content">
-        <h1 className="pause-title">PAUSED</h1>
+        <h1 className="pause-title">일시정지</h1>
 
         <div className="pause-stats-section">
           <div className="stats-grid">
             <div className="stat-card">
-              <span className="sc-label">HEALTH</span>
+              <span className="sc-label">체력</span>
               <span className="sc-value">
                 {Math.ceil(stats?.hp || 0)} / {stats?.maxHp}
               </span>
             </div>
             <div className="stat-card">
-              <span className="sc-label">ATTACK</span>
+              <span className="sc-label">공격력</span>
               <span className="sc-value">{(stats?.atk || 1).toFixed(1)}x</span>
             </div>
             <div className="stat-card">
-              <span className="sc-label">DEFENSE</span>
+              <span className="sc-label">방어력</span>
               <span className="sc-value">{stats?.def}</span>
             </div>
             <div className="stat-card">
-              <span className="sc-label">FIRE RATE</span>
+              <span className="sc-label">공격 속도</span>
               <span className="sc-value">{(stats?.fireRate || 1).toFixed(1)}x</span>
             </div>
           </div>
@@ -40,13 +40,13 @@ export const PauseMenu = memo(({ stats, onRecipes, onSettings, onResume }: Pause
 
         <div className="pause-button-list">
           <button className="menu-btn primary" onClick={onResume}>
-            <span className="btn-icon">▶</span> CONTINUE
+            <span className="btn-icon">▶</span> 계속하기
           </button>
           <button className="menu-btn" onClick={onRecipes}>
-            <span className="btn-icon">📜</span> RECIPES
+            <span className="btn-icon">📜</span> 도감
           </button>
           <button className="menu-btn" onClick={onSettings}>
-            <span className="btn-icon">⚙️</span> SETTINGS
+            <span className="btn-icon">⚙️</span> 설정
           </button>
         </div>
       </div>

@@ -16,7 +16,7 @@ export const SNAKE_SEGMENT_RADIUS = 15;
 export const SNAKE_SEGMENT_DISTANCE = 35;
 
 // ===== SPAWN RATES =====
-export const COLLECTIBLE_SPAWN_CHANCE = 0.015;
+export const COLLECTIBLE_SPAWN_CHANCE = 0.002;
 export const ENEMY_SPAWN_CHANCE = 0.01;
 
 // ===== SPAWN RANGE =====

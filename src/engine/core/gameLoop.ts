@@ -1,17 +1,10 @@
-import {
-  updateGameState,
-  drawGameState,
-  addEnemy,
-  getPlayer,
-  getEnemies,
-  getCollectibles,
-} from "@/game/managers/state";
+import { updateGameState, drawGameState, getPlayer, getEnemies, getCollectibles } from "@/game/managers/state";
 import { updateInput, getIsPaused } from "@/engine/systems/input";
 import { spawnRandomCollectible } from "@/game/entities/collectible";
+import { updateCamera, applyCamera, resetCamera, getCameraPosition } from "@/engine/systems/camera";
+import { waveManager } from "@/game/managers/waveManager";
 import { checkTailMerges } from "@/game/systems/merge";
 import { updateCombat } from "@/game/systems/combat";
-import { createEnemy } from "@/game/entities/enemy";
-import { updateCamera, applyCamera, resetCamera, getCameraPosition } from "@/engine/systems/camera";
 import * as CONFIG from "@/game/config/constants";
 
 let isRunning = false;
@@ -54,21 +47,8 @@ const loop = (timestamp: number) => {
       }
     }
 
-    // 2. Spawn Enemies (from screen edges with more randomness)
-    if (Math.random() < CONFIG.ENEMY_SPAWN_CHANCE) {
-      const player = getPlayer();
-      if (player) {
-        // 플레이어 주변 일정 거리에서 스폰
-        const angle = Math.random() * Math.PI * 2;
-        const x = player.position.x + Math.cos(angle) * CONFIG.ENEMY_SPAWN_DISTANCE;
-        const y = player.position.y + Math.sin(angle) * CONFIG.ENEMY_SPAWN_DISTANCE;
-
-        // 맵 경계 체크
-        if (x >= 0 && x <= CONFIG.WORLD_WIDTH && y >= 0 && y <= CONFIG.WORLD_HEIGHT) {
-          addEnemy(createEnemy(x, y));
-        }
-      }
-    }
+    // 2. Spawn Enemies (Managed by WaveManager)
+    waveManager.update(deltaTime);
 
     // 3. Update Game Logic
     updateGameState(deltaTime); // This was previously "3. Update Game Logic"

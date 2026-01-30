@@ -5,6 +5,7 @@ import { SPELL_STATS } from "@/game/config/spellStats";
 import { SkillBehavior, ElementType } from "@/game/types";
 import * as CONFIG from "@/game/config/constants";
 import { spatialGrid } from "@/game/managers/grid";
+import { damageTextManager } from "@/game/managers/damageTextManager";
 
 // Cooldown tracker
 const fireTimers: Record<string, number> = {};
@@ -77,6 +78,8 @@ export const updateCombat = (_deltaTime: number) => {
         // Hit! Applying player ATK multiplier
         const finalDamage = p.damage * player.stats.atk * (stats.behavior === SkillBehavior.AREA ? 0.1 : 1.0);
         e.hp -= finalDamage;
+
+        damageTextManager.show(e.position.x, e.position.y, finalDamage, finalDamage > p.damage * 1.5);
 
         VFXFactory.createImpact(p.position.x, p.position.y, p.type);
 
@@ -210,6 +213,7 @@ const handleMeleeAttack = (segment: any, _enemies: any[], now: number, playerAtk
     if (distSq < rangeSq) {
       const damage = stats.damage * segment.tier * playerAtk;
       e.hp -= damage;
+      damageTextManager.show(e.position.x, e.position.y, damage, false);
       VFXFactory.createImpact(e.position.x, e.position.y, segment.type);
 
       if (e.hp <= 0) {

@@ -1,6 +1,15 @@
-import { Vector2D, TailSegment, Scalar, ElementType, GameObject, Player, PlayerStats } from "@/game/types";
+import {
+  Vector2D,
+  TailSegment,
+  Scalar,
+  ElementType,
+  GameObject,
+  Player,
+  PlayerStats,
+  CollectibleType,
+} from "@/game/types";
 import { getMovementDirection } from "@/engine/systems/input";
-import { getTail, addTailSegment, getCollectibles, addScore, getPlayer } from "@/game/managers/state";
+import { getTail, getCollectibles, addScore, getPlayer, getEnemies } from "@/game/managers/state";
 import { VFXFactory } from "@/engine/vfx/VFXFactory";
 import * as CONFIG from "../config/constants";
 
@@ -23,12 +32,19 @@ export const createPlayer = (startX: Scalar, startY: Scalar): Player => {
     atk: CONFIG.PLAYER_BASE_ATK,
     def: CONFIG.PLAYER_BASE_DEF,
     fireRate: CONFIG.PLAYER_BASE_FIRE_RATE,
+    // Roguelike Stats
+    xp: 0,
+    maxXp: 100, // Initial XP required for level 2
+    level: 1,
+    pickupRange: 150, // Magnet range
+    hpRegen: 0.5, // 0.5 HP per second base
   };
 
   const player: Player = {
     id: "snake_head",
     position: { x: startX, y: startY },
     stats: stats,
+    magnetTimer: 0,
 
     update: function (deltaTime: Scalar) {
       const moveDir = getMovementDirection();
@@ -61,6 +77,17 @@ export const createPlayer = (startX: Scalar, startY: Scalar): Player => {
       }
 
       checkCollection(this);
+
+      // HP Regen
+      if (this.stats.hp < this.stats.maxHp) {
+        this.stats.hp += this.stats.hpRegen * deltaTime;
+        if (this.stats.hp > this.stats.maxHp) this.stats.hp = this.stats.maxHp;
+      }
+
+      // Magnet Timer
+      if (this.magnetTimer && this.magnetTimer > 0) {
+        this.magnetTimer -= deltaTime;
+      }
     },
 
     draw: function (ctx: CanvasRenderingContext2D) {
@@ -94,7 +121,6 @@ export const createPlayer = (startX: Scalar, startY: Scalar): Player => {
 
 const checkCollection = (head: GameObject) => {
   const collectibles = getCollectibles();
-  const tail = getTail();
 
   collectibles.forEach(c => {
     if (c.isExpired) return;
@@ -106,13 +132,34 @@ const checkCollection = (head: GameObject) => {
     if (dist < CONFIG.COLLECTION_RADIUS) {
       c.isExpired = true;
       addScore(CONFIG.COLLECTION_SCORE);
-      const newSegment = createTailSegment(tail.length, c.type);
-      addTailSegment(newSegment);
+
+      const player = getPlayer();
+      if (!player) return;
+
+      switch (c.type) {
+        case CollectibleType.MAGNET:
+          player.magnetTimer = 10; // 10 seconds magnet
+          console.log("Magnet Activated!");
+          break;
+        case CollectibleType.POTION:
+          player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + 50);
+          console.log("Healed 50 HP!");
+          break;
+        case CollectibleType.BOOM:
+          // Kill all enemies on screen (or large radius)
+          const enemies = getEnemies();
+          enemies.forEach(e => {
+            e.hp = 0; // Instant kill
+            // Add score/xp handled in enemy update
+          });
+          console.log("BOOM! Screen Cleared!");
+          break;
+      }
     }
   });
 };
 
-const createTailSegment = (index: number, elementType: ElementType): TailSegment => {
+export const createTailSegment = (index: number, elementType: ElementType): TailSegment => {
   const pointsPerSegment = Math.floor(CONFIG.SNAKE_SEGMENT_SPACING / HISTORY_SPACING);
   const historyIndex = (index + 1) * pointsPerSegment;
 
@@ -281,7 +328,27 @@ const createTailSegment = (index: number, elementType: ElementType): TailSegment
       ctx.beginPath();
       ctx.arc(x, y, size + 4, 0, Math.PI * 2);
       ctx.lineWidth = 2;
-      ctx.strokeStyle = "#ffffff";
+
+      // Tier Visuals
+      if (this.tier >= 3) {
+        // Unique (Gold/Purple)
+        ctx.strokeStyle = "#ffd700";
+        ctx.lineWidth = 4;
+        ctx.shadowColor = "#ffd700";
+        ctx.shadowBlur = 15;
+      } else if (this.tier === 2) {
+        // Rare (Cyan/Silver)
+        ctx.strokeStyle = "#00ffff";
+        ctx.lineWidth = 3;
+        ctx.shadowColor = "#00ffff";
+        ctx.shadowBlur = 10;
+      } else {
+        // Normal (White)
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 0;
+      }
+
       ctx.stroke();
 
       ctx.font = `${size * 1.8}px "Segoe UI Emoji", Arial`;

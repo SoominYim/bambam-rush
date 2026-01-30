@@ -48,10 +48,17 @@ export interface PlayerStats {
   atk: number;
   def: number;
   fireRate: number;
+  // Roguelike Stats
+  xp: number;
+  maxXp: number;
+  level: number;
+  pickupRange: number;
+  hpRegen: number; // HP per second
 }
 
 export interface Player extends GameObject {
   stats: PlayerStats;
+  magnetTimer?: number;
 }
 
 export interface TailSegment extends GameObject {
@@ -67,13 +74,32 @@ export enum SkillBehavior {
   MELEE = "MELEE",
 }
 
+export enum CollectibleType {
+  MAGNET = "MAGNET",
+  POTION = "POTION",
+  BOOM = "BOOM", // Bomb? Clears screen?
+}
+
 export interface Collectible extends GameObject {
-  type: ElementType;
-  tier: number;
+  type: CollectibleType;
   radius: number;
 }
 
+export interface XPGem extends GameObject {
+  amount: number;
+  radius: number;
+  isMagnetized?: boolean; // 자력에 끌려오는 중인지
+}
+
+export enum EnemyType {
+  BASIC = "BASIC",
+  FAST = "FAST",
+  TANK = "TANK",
+  BOSS = "BOSS",
+}
+
 export interface Enemy extends GameObject {
+  type: EnemyType;
   hp: number;
   maxHp: number;
   speed: number;

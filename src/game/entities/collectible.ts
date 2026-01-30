@@ -1,14 +1,13 @@
-import { Collectible, ElementType, Scalar } from "@/game/types";
+import { Collectible, CollectibleType, Scalar } from "@/game/types";
 import { COLLECTION_RADIUS, COLLECTION_SCORE } from "@/game/config/constants";
 import { addCollectible, getPlayer, addScore } from "@/game/managers/state";
 
-export const createCollectible = (x: Scalar, y: Scalar, type: ElementType): Collectible => {
+export const createCollectible = (x: Scalar, y: Scalar, type: CollectibleType): Collectible => {
   return {
     id: `collectible_${Date.now()}_${Math.random()}`,
     position: { x, y },
     type,
-    tier: 1,
-    radius: 10,
+    radius: 12,
     isExpired: false,
 
     update: function (_deltaTime: Scalar) {
@@ -19,19 +18,22 @@ export const createCollectible = (x: Scalar, y: Scalar, type: ElementType): Coll
         const dy = this.position.y - player.position.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
+        // Pickup range applies for collectibles too? Usually collectibles are fixed range,
+        // but maybe Magnet affects them? Standard games: yes.
+        // For now, let's stick to standard COLLECTION_RADIUS unless we want Magnet to pull them too.
+        // Let's make them attractable later if needed. For now, walk over them.
+
         if (distance < COLLECTION_RADIUS) {
           // Mark for collection
           this.isExpired = true;
+          // Score is added, effect is applied in player.ts checkCollection
           addScore(COLLECTION_SCORE);
         }
       }
-
-      // Floating animation
-      // No more float/jitter animation to prevent flickering
     },
 
     draw: function (ctx: CanvasRenderingContext2D) {
-      ctx.save(); // Isolate rendering state
+      ctx.save();
 
       // Reset canvas states
       ctx.globalAlpha = 1.0;
@@ -40,92 +42,64 @@ export const createCollectible = (x: Scalar, y: Scalar, type: ElementType): Coll
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
 
-      // 1. Get Emoji from Recipe Data
       let icon = "❓";
       let color = "#fff";
 
       switch (this.type) {
-        case ElementType.FIRE:
-          icon = "🔥";
-          color = "#ff4400";
+        case CollectibleType.MAGNET:
+          icon = "🧲";
+          color = "#ff4444";
           break;
-        case ElementType.WATER:
-          icon = "💧";
-          color = "#0088ff";
+        case CollectibleType.POTION:
+          icon = "🧪";
+          color = "#44ff44";
           break;
-        case ElementType.ICE:
-          icon = "❄️";
-          color = "#00ffff";
-          break;
-        case ElementType.WIND:
-          icon = "💨";
-          color = "#00ff88";
-          break;
-        case ElementType.POISON:
-          icon = "☠️";
-          color = "#aa00ff";
-          break;
-        case ElementType.ELECTRIC:
-          icon = "⚡";
-          color = "#ffdd00";
-          break;
-        case ElementType.SWORD:
-          icon = "🗡️";
-          color = "#cccccc";
-          break;
-        case ElementType.BOOK:
-          icon = "📖";
-          color = "#885522";
+        case CollectibleType.BOOM:
+          icon = "💣";
+          color = "#444444";
           break;
       }
 
-      // 1. Draw Background Circle (Solid & Visible)
+      // 1. Draw Background Circle
       ctx.beginPath();
-      // Make radius slightly larger
       ctx.arc(this.position.x, this.position.y, this.radius + 4, 0, Math.PI * 2);
       ctx.fillStyle = color;
-      ctx.globalAlpha = 1.0;
       ctx.fill();
 
       // Border
-      ctx.beginPath(); // CRITICAL: Reset path to prevent redrawing background
+      ctx.beginPath();
       ctx.arc(this.position.x, this.position.y, this.radius + 4, 0, Math.PI * 2);
       ctx.lineWidth = 2;
       ctx.strokeStyle = "#ffffff";
-      ctx.globalAlpha = 1.0;
       ctx.stroke();
 
       // 2. Draw Emoji
-      ctx.font = `${this.radius * 2.0}px "Segoe UI Emoji", Arial`;
+      ctx.font = `${this.radius * 1.8}px "Segoe UI Emoji", Arial`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-
-      ctx.shadowBlur = 0;
-      ctx.shadowColor = "transparent";
       ctx.fillStyle = "#fff";
+      ctx.fillText(icon, this.position.x, this.position.y);
 
-      ctx.fillText(icon, this.position.x, this.position.y + 1);
-
-      ctx.restore(); // Restore canvas state
+      ctx.restore();
     },
   };
 };
 
 export const spawnRandomCollectible = (x?: number, y?: number) => {
-  const posX = x ?? Math.random() * 3800 + 100; // Default to world bounds
+  const posX = x ?? Math.random() * 3800 + 100;
   const posY = y ?? Math.random() * 3800 + 100;
 
-  const types = [
-    ElementType.FIRE,
-    ElementType.WATER,
-    ElementType.ICE,
-    ElementType.WIND,
-    ElementType.POISON,
-    ElementType.ELECTRIC,
-    ElementType.SWORD,
-    ElementType.BOOK,
-  ];
-  const type = types[Math.floor(Math.random() * types.length)];
+  // Weighted Random?
+  const rand = Math.random();
+  let type = CollectibleType.POTION;
+
+  if (rand < 0.4) {
+    type = CollectibleType.POTION; // 40%
+  } else if (rand < 0.7) {
+    type = CollectibleType.MAGNET; // 30%
+  } else {
+    type = CollectibleType.BOOM; // 30%
+  }
 
   const collectible = createCollectible(posX, posY, type);
   addCollectible(collectible);

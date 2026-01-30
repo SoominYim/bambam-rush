@@ -3,7 +3,9 @@ import { HUD } from "@/components/hud/HUD";
 import { RecipeModal } from "@/components/menu/RecipeModal";
 import { PauseMenu } from "@/components/menu/PauseMenu";
 import { SettingsModal } from "@/components/menu/SettingsModal";
+import { LevelUpModal } from "@/components/menu/LevelUpModal";
 import { PlayerStats } from "@/game/types";
+import { Card } from "@/game/systems/cardSystem";
 
 interface GameUIProps {
   score: number;
@@ -11,11 +13,12 @@ interface GameUIProps {
   playerStats: PlayerStats | null;
   onPause: () => void;
   onResume: () => void;
+  levelUpState?: { isLevelUpPending: boolean; levelUpChoices: Card[] };
 }
 
 type MenuState = "main" | "recipes" | "settings";
 
-export const GameUI = memo(({ score, isPaused, playerStats, onPause, onResume }: GameUIProps) => {
+export const GameUI = memo(({ score, isPaused, playerStats, onPause, onResume, levelUpState }: GameUIProps) => {
   const [activeMenu, setActiveMenu] = useState<MenuState>("main");
 
   // 일시정지 해제될 때 메뉴 상태를 메인으로 초기화
@@ -41,7 +44,9 @@ export const GameUI = memo(({ score, isPaused, playerStats, onPause, onResume }:
     <>
       <HUD score={score} isPaused={isPaused} playerStats={playerStats} onPauseToggle={handlePauseToggle} />
 
-      {isPaused && (
+      {levelUpState?.isLevelUpPending && <LevelUpModal choices={levelUpState.levelUpChoices} />}
+
+      {isPaused && !levelUpState?.isLevelUpPending && (
         <>
           {activeMenu === "main" && (
             <PauseMenu stats={playerStats} onRecipes={showRecipes} onSettings={showSettings} onResume={onResume} />

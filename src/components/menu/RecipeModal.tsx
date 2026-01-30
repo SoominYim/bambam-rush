@@ -13,7 +13,7 @@ export const RecipeModal = memo(({ onClose }: RecipeModalProps) => {
     <div className="recipe-modal">
       <div className="modal-content">
         <div className="modal-header">
-          <h2>🎮 조합법 (Recipe)</h2>
+          <h2>🎮 조합법</h2>
           <button className="close-btn" onClick={onClose}>
             ✕
           </button>
@@ -21,7 +21,7 @@ export const RecipeModal = memo(({ onClose }: RecipeModalProps) => {
 
         <div className="recipe-grid">
           <RecipeSection
-            title="📚 기본 원소 (Basic Elements)"
+            title="📚 기본 원소"
             items={[
               ElementType.FIRE,
               ElementType.WATER,
@@ -42,7 +42,7 @@ export const RecipeModal = memo(({ onClose }: RecipeModalProps) => {
           />
 
           <RecipeSection
-            title="⭐ 진화 (Evolutions)"
+            title="⭐ 진화"
             items={RECIPE_LIST.filter(r => r.type === "evolution").map(recipe => {
               const inputIcon = ELEMENT_DETAILS[recipe.inputs[0]].icon;
               return {
@@ -54,7 +54,7 @@ export const RecipeModal = memo(({ onClose }: RecipeModalProps) => {
           />
 
           <RecipeSection
-            title="✨ 시너지 (Synergies)"
+            title="✨ 시너지"
             items={RECIPE_LIST.filter(r => r.type === "synergy").map(recipe => {
               const icon1 = ELEMENT_DETAILS[recipe.inputs[0]].icon;
               const icon2 = ELEMENT_DETAILS[recipe.inputs[1]].icon;

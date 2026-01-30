@@ -16,7 +16,7 @@ export const SettingsModal = memo(({ onBack }: SettingsModalProps) => {
       {/* 공통 모달 스타일 재사용 */}
       <div className="modal-content settings-content">
         <div className="modal-header">
-          <h2>⚙️ SETTINGS</h2>
+          <h2>⚙️ 설정</h2>
           <button className="close-btn" onClick={onBack}>
             ✕
           </button>
@@ -24,9 +24,9 @@ export const SettingsModal = memo(({ onBack }: SettingsModalProps) => {
 
         <div className="settings-body">
           <div className="setting-group">
-            <h3>SOUND</h3>
+            <h3>사운드</h3>
             <div className="setting-item">
-              <span className="label">Sound Effects</span>
+              <span className="label">효과음 (SFX)</span>
               <input
                 type="range"
                 min="0"
@@ -38,7 +38,7 @@ export const SettingsModal = memo(({ onBack }: SettingsModalProps) => {
               <span className="value">{sfxVolume}%</span>
             </div>
             <div className="setting-item">
-              <span className="label">Background Music</span>
+              <span className="label">배경음 (BGM)</span>
               <input
                 type="range"
                 min="0"
@@ -52,9 +52,9 @@ export const SettingsModal = memo(({ onBack }: SettingsModalProps) => {
           </div>
 
           <div className="setting-group">
-            <h3>INTERFACE</h3>
+            <h3>인터페이스</h3>
             <div className="setting-item">
-              <span className="label">Show Joystick</span>
+              <span className="label">조이스틱 표시</span>
               <button
                 className={`toggle-btn ${showJoystick ? "active" : ""}`}
                 onClick={() => setShowJoystick(!showJoystick)}

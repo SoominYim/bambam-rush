@@ -24,25 +24,24 @@ export const checkTailMerges = () => {
           merge3Segments(s1, s2, s3, result3, 1); // 진화 시 1티어로 초기화
           return;
         }
+
+        // 2. 3-Match 기본 강화 (같은 타입 3개 -> 티어 상승)
+        if (s1.type === s2.type && s2.type === s3.type && s1.tier === s2.tier && s2.tier === s3.tier) {
+          // Max Tier 3 (Unique)
+          if (s1.tier < 3) {
+            merge3Segments(s1, s2, s3, s1.type, s1.tier + 1);
+            return;
+          }
+        }
       }
     }
 
-    // 2. 2-Match 시너지 확인
+    // 3. 2-Match 시너지 확인
     // 2개 아이템에 대한 조합법 검색
     const result2 = findRecipeResult([s1.type, s2.type]);
     if (result2) {
       mergeSegments(s1, s2, result2, 1);
       return;
-    }
-
-    // 3. 기본 강화 (같은 타입 2개 -> 티어 상승)
-    // 특수 조합법이 없을 경우에만 실행
-    if (s1.type === s2.type && s1.tier === s2.tier) {
-      // Limit max tier to avoid infinite growth if needed, or allow it.
-      if (s1.tier < 5) {
-        mergeSegments(s1, s2, s1.type, s1.tier + 1);
-        return;
-      }
     }
   }
 };
