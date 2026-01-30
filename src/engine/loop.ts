@@ -1,0 +1,278 @@
+import {
+  updateGameState,
+  drawGameState,
+  addEnemy,
+  getScore,
+  getPlayer,
+  getEnemies,
+  getCollectibles,
+} from "../game/gameState";
+import { updateInput, getIsPaused } from "./input";
+import { spawnRandomCollectible } from "../game/entities/collectible";
+import { checkTailMerges } from "../game/mergeLogic";
+import { updateCombat } from "../game/combatLogic";
+import { createEnemy } from "../game/entities/enemy";
+import { updateCamera, applyCamera, resetCamera, getCameraPosition } from "./camera";
+import * as CONFIG from "../game/constants";
+import { RECIPES } from "../game/recipeData";
+
+let isRunning = false;
+let lastTime = 0;
+let canvasContext: CanvasRenderingContext2D | null = null;
+let animationFrameId: number | null = null;
+
+// Game Loop Function
+const loop = (timestamp: number) => {
+  if (!isRunning || !canvasContext) return;
+
+  let deltaTime = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+
+  // Cap deltaTime to prevent huge jumps
+  if (deltaTime > CONFIG.MAX_DELTA_TIME) deltaTime = CONFIG.MAX_DELTA_TIME;
+  if (deltaTime < CONFIG.MIN_DELTA_TIME) deltaTime = CONFIG.DEFAULT_DELTA_TIME;
+
+  // Check pause state
+  const paused = getIsPaused();
+
+  // Always render, but only update game logic if not paused
+  if (!paused) {
+    // 1. Spawn Collectibles (플레이어 주변에만 스폰)
+    if (Math.random() < CONFIG.COLLECTIBLE_SPAWN_CHANCE) {
+      const player = getPlayer();
+      if (player) {
+        // 플레이어 주변 일정 범위 내에서 랜덤 스폰 (미니맵에 보이는 범위)
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * CONFIG.COLLECTIBLE_SPAWN_RANGE;
+
+        const x = player.position.x + Math.cos(angle) * distance;
+        const y = player.position.y + Math.sin(angle) * distance;
+
+        // 맵 경계 체크 (무한 맵이지만 최대 크기는 있음)
+        if (x >= 0 && x <= CONFIG.WORLD_WIDTH && y >= 0 && y <= CONFIG.WORLD_HEIGHT) {
+          spawnRandomCollectible(x, y);
+        }
+      }
+    }
+
+    // 2. Spawn Enemies (from screen edges with more randomness)
+    if (Math.random() < CONFIG.ENEMY_SPAWN_CHANCE) {
+      const player = getPlayer();
+      if (player) {
+        // 플레이어 주변 일정 거리에서 스폰
+        const angle = Math.random() * Math.PI * 2;
+        const x = player.position.x + Math.cos(angle) * CONFIG.ENEMY_SPAWN_DISTANCE;
+        const y = player.position.y + Math.sin(angle) * CONFIG.ENEMY_SPAWN_DISTANCE;
+
+        // 맵 경계 체크
+        if (x >= 0 && x <= CONFIG.WORLD_WIDTH && y >= 0 && y <= CONFIG.WORLD_HEIGHT) {
+          addEnemy(createEnemy(x, y));
+        }
+      }
+    }
+
+    // 3. Update Game Logic
+    updateGameState(deltaTime);
+    checkTailMerges();
+    updateCombat(deltaTime);
+    updateCamera();
+
+    updateInput();
+  }
+
+  render(canvasContext, paused);
+
+  animationFrameId = requestAnimationFrame(loop);
+};
+
+const render = (ctx: CanvasRenderingContext2D, isPaused: boolean) => {
+  // Clear Screen
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  // Draw Background
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  // === WORLD SPACE (with camera) ===
+  applyCamera(ctx, ctx.canvas.width, ctx.canvas.height);
+
+  // Draw Grid
+  drawGrid(ctx);
+
+  // Draw World Bounds
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 5;
+  ctx.strokeRect(0, 0, CONFIG.WORLD_WIDTH, CONFIG.WORLD_HEIGHT);
+
+  // Draw Game Entities
+  drawGameState(ctx);
+
+  resetCamera(ctx);
+
+  // === SCREEN SPACE (UI) ===
+  drawUI(ctx);
+
+  // Draw Pause Overlay if paused
+  if (isPaused) {
+    drawPauseMenu(ctx);
+  }
+};
+
+const drawGrid = (ctx: CanvasRenderingContext2D) => {
+  const cam = getCameraPosition();
+
+  const startX = Math.floor((cam.x - ctx.canvas.width / 2) / CONFIG.GRID_SIZE) * CONFIG.GRID_SIZE;
+  const endX = Math.ceil((cam.x + ctx.canvas.width / 2) / CONFIG.GRID_SIZE) * CONFIG.GRID_SIZE;
+  const startY = Math.floor((cam.y - ctx.canvas.height / 2) / CONFIG.GRID_SIZE) * CONFIG.GRID_SIZE;
+  const endY = Math.ceil((cam.y + ctx.canvas.height / 2) / CONFIG.GRID_SIZE) * CONFIG.GRID_SIZE;
+
+  ctx.strokeStyle = CONFIG.GRID_COLOR;
+  ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
+
+  // 무한 맵 느낌을 위해 경계 체크 제거
+  for (let x = startX; x <= endX; x += CONFIG.GRID_SIZE) {
+    ctx.beginPath();
+    ctx.moveTo(x, startY);
+    ctx.lineTo(x, endY);
+    ctx.stroke();
+  }
+
+  for (let y = startY; y <= endY; y += CONFIG.GRID_SIZE) {
+    ctx.beginPath();
+    ctx.moveTo(startX, y);
+    ctx.lineTo(endX, y);
+    ctx.stroke();
+  }
+};
+
+const drawUI = (ctx: CanvasRenderingContext2D) => {
+  // Only draw minimap (score and pause button are now React components)
+  drawMinimap(ctx);
+};
+
+const drawPauseMenu = (ctx: CanvasRenderingContext2D) => {
+  // Semi-transparent overlay
+  ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  // Title
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 36px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("일시 정지", ctx.canvas.width / 2, 60);
+
+  // Recipe sections
+  let startY = 120;
+  const columnWidth = ctx.canvas.width / 2;
+
+  RECIPES.forEach((section, idx) => {
+    const x = (idx % 2) * columnWidth + 40;
+    const y = startY + Math.floor(idx / 2) * 250;
+
+    // Section title
+    ctx.fillStyle = "#ffd700";
+    ctx.font = "bold 20px Arial";
+    ctx.textAlign = "left";
+    ctx.fillText(section.title, x, y);
+
+    // Items
+    ctx.font = "14px Arial";
+    ctx.fillStyle = "#fff";
+    section.items.forEach((item: any, i: number) => {
+      const itemY = y + 30 + i * 25;
+      if ("combo" in item) {
+        ctx.fillText(`${item.combo} → ${item.result}`, x, itemY);
+        ctx.fillStyle = "#aaa";
+        ctx.fillText(item.desc, x + 160, itemY);
+        ctx.fillStyle = "#fff";
+      } else {
+        ctx.fillText(`${item.icon} ${item.name}`, x, itemY);
+        ctx.fillStyle = "#aaa";
+        ctx.fillText(item.desc, x + 120, itemY);
+        ctx.fillStyle = "#fff";
+      }
+    });
+  });
+
+  // Resume hint
+  ctx.fillStyle = "#888";
+  ctx.font = "18px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("ESC 다시 눌러서 계속하기", ctx.canvas.width / 2, ctx.canvas.height - 40);
+};
+
+const drawMinimap = (ctx: CanvasRenderingContext2D) => {
+  const player = getPlayer();
+  if (!player) return;
+
+  const { x: px, y: py } = player.position;
+  const size = CONFIG.MINIMAP_SIZE;
+  const margin = CONFIG.MINIMAP_MARGIN;
+  const x = ctx.canvas.width - size - margin;
+  const y = margin;
+
+  // 미니맵 배경
+  ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+  ctx.fillRect(x, y, size, size);
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, size, size);
+
+  // 로컬 범위 (플레이어 주변 영역만 표시)
+  const localRange = CONFIG.MINIMAP_VISIBLE_RANGE;
+  const scale = size / localRange;
+
+  // 플레이어 (중앙)
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.arc(x + size / 2, y + size / 2, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 적들 (플레이어 기준 상대 위치)
+  ctx.fillStyle = "#f00";
+  getEnemies().forEach(enemy => {
+    const relX = enemy.position.x - px;
+    const relY = enemy.position.y - py;
+
+    // 로컬 범위 내에 있는 것만 표시
+    if (Math.abs(relX) < localRange / 2 && Math.abs(relY) < localRange / 2) {
+      const mx = x + size / 2 + relX * scale;
+      const my = y + size / 2 + relY * scale;
+      ctx.beginPath();
+      ctx.arc(mx, my, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  // 아이템들 (플레이어 기준 상대 위치)
+  ctx.fillStyle = "#0f0";
+  getCollectibles().forEach(collectible => {
+    const relX = collectible.position.x - px;
+    const relY = collectible.position.y - py;
+
+    // 로컬 범위 내에 있는 것만 표시
+    if (Math.abs(relX) < localRange / 2 && Math.abs(relY) < localRange / 2) {
+      const mx = x + size / 2 + relX * scale;
+      const my = y + size / 2 + relY * scale;
+      ctx.beginPath();
+      ctx.arc(mx, my, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+};
+
+export const startGame = (ctx: CanvasRenderingContext2D) => {
+  if (isRunning) return;
+
+  canvasContext = ctx;
+  isRunning = true;
+  lastTime = performance.now();
+  loop(lastTime);
+};
+
+export const stopGame = () => {
+  isRunning = false;
+  if (animationFrameId !== null) {
+    cancelAnimationFrame(animationFrameId);
+  }
+};
