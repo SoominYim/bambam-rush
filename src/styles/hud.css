@@ -1,0 +1,130 @@
+/* hud.css */
+.game-hud {
+  position: fixed;
+  top: 20px; /* HUD_MARGIN */
+  left: 20px; /* HUD_MARGIN */
+  z-index: 100;
+  pointer-events: none;
+}
+
+.hud-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  pointer-events: auto;
+}
+
+.player-stats-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hp-bar-container {
+  position: relative;
+  width: 200px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.hp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4b2b, #ff416c);
+  transition: width 0.3s ease-out;
+  box-shadow: 0 0 15px rgba(255, 65, 108, 0.5);
+}
+
+.hp-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+.stats-mini {
+  display: flex;
+  gap: 10px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-icon {
+  font-size: 12px;
+}
+
+.stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  font-family: "Inter", sans-serif;
+}
+
+.score-container {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  padding: 8px 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  min-width: 140px; /* SCORE_CONTAINER_MIN_WIDTH */
+}
+
+.score-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 2px;
+  margin-bottom: -2px;
+}
+
+.score-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  font-family: "Outfit", sans-serif;
+}
+
+.pause-btn {
+  width: 56px; /* PAUSE_BTN_SIZE */
+  height: 56px; /* PAUSE_BTN_SIZE */
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.pause-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.pause-btn:active {
+  transform: scale(0.9) translateY(0);
+}

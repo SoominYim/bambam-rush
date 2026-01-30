@@ -1,12 +1,18 @@
-import { updateGameState, drawGameState, addEnemy, getPlayer, getEnemies, getCollectibles } from "../game/gameState";
-import { updateInput, getIsPaused } from "./input";
-import { spawnRandomCollectible } from "../game/entities/collectible";
-import { checkTailMerges } from "../game/mergeLogic";
-import { updateCombat } from "../game/combatLogic";
-import { createEnemy } from "../game/entities/enemy";
-import { updateCamera, applyCamera, resetCamera, getCameraPosition } from "./camera";
-import * as CONFIG from "../game/constants";
-import { RECIPES } from "../game/recipeData";
+import {
+  updateGameState,
+  drawGameState,
+  addEnemy,
+  getPlayer,
+  getEnemies,
+  getCollectibles,
+} from "@/game/managers/state";
+import { updateInput, getIsPaused } from "@/engine/systems/input";
+import { spawnRandomCollectible } from "@/game/entities/collectible";
+import { checkTailMerges } from "@/game/systems/merge";
+import { updateCombat } from "@/game/systems/combat";
+import { createEnemy } from "@/game/entities/enemy";
+import { updateCamera, applyCamera, resetCamera, getCameraPosition } from "@/engine/systems/camera";
+import * as CONFIG from "@/game/config/constants";
 
 let isRunning = false;
 let lastTime = 0;
@@ -20,9 +26,10 @@ const loop = (timestamp: number) => {
   let deltaTime = (timestamp - lastTime) / 1000;
   lastTime = timestamp;
 
-  // Cap deltaTime to prevent huge jumps
+  // Cap deltaTime to prevent huge jumps (lag)
   if (deltaTime > CONFIG.MAX_DELTA_TIME) deltaTime = CONFIG.MAX_DELTA_TIME;
-  if (deltaTime < CONFIG.MIN_DELTA_TIME) deltaTime = CONFIG.DEFAULT_DELTA_TIME;
+  // Ensure deltaTime is never 0 or negative
+  if (deltaTime <= 0) deltaTime = CONFIG.MIN_DELTA_TIME;
 
   // Check pause state
   const paused = getIsPaused();
@@ -72,14 +79,22 @@ const loop = (timestamp: number) => {
     updateInput();
   }
 
-  render(canvasContext, paused);
+  render(canvasContext);
 
   animationFrameId = requestAnimationFrame(loop);
 };
 
-const render = (ctx: CanvasRenderingContext2D, isPaused: boolean) => {
+const render = (ctx: CanvasRenderingContext2D) => {
   // Clear Screen
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  // Reset ALL canvas states before starting
+  ctx.globalAlpha = 1.0;
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = "transparent";
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
 
   // Draw Background
   ctx.fillStyle = "#0a0a0a";
@@ -91,26 +106,43 @@ const render = (ctx: CanvasRenderingContext2D, isPaused: boolean) => {
   // Draw Grid
   drawGrid(ctx);
 
+  // Reset states after grid
+  ctx.globalAlpha = 1.0;
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = "transparent";
+
   // Draw World Bounds
   ctx.strokeStyle = "#333";
   ctx.lineWidth = 5;
   ctx.strokeRect(0, 0, CONFIG.WORLD_WIDTH, CONFIG.WORLD_HEIGHT);
+
+  // Reset states before drawing entities
+  ctx.globalAlpha = 1.0;
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = "transparent";
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
 
   // Draw Game Entities
   drawGameState(ctx);
 
   resetCamera(ctx);
 
+  // Reset states after camera reset
+  ctx.globalAlpha = 1.0;
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = "transparent";
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+
   // === SCREEN SPACE (UI) ===
   drawUI(ctx);
 
-  // Draw Pause Overlay if paused
-  if (isPaused) {
-    drawPauseMenu(ctx);
-  }
+  // Pause Menu is now handled by React Overlay (GameUI) so we don't draw it on canvas anymore
 };
 
 const drawGrid = (ctx: CanvasRenderingContext2D) => {
+  ctx.save();
   const cam = getCameraPosition();
 
   const startX = Math.floor((cam.x - ctx.canvas.width / 2) / CONFIG.GRID_SIZE) * CONFIG.GRID_SIZE;
@@ -135,6 +167,7 @@ const drawGrid = (ctx: CanvasRenderingContext2D) => {
     ctx.lineTo(endX, y);
     ctx.stroke();
   }
+  ctx.restore();
 };
 
 const drawUI = (ctx: CanvasRenderingContext2D) => {
@@ -142,60 +175,13 @@ const drawUI = (ctx: CanvasRenderingContext2D) => {
   drawMinimap(ctx);
 };
 
-const drawPauseMenu = (ctx: CanvasRenderingContext2D) => {
-  // Semi-transparent overlay
-  ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-  // Title
-  ctx.fillStyle = "#fff";
-  ctx.font = "bold 36px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("일시 정지", ctx.canvas.width / 2, 60);
-
-  // Recipe sections
-  let startY = 120;
-  const columnWidth = ctx.canvas.width / 2;
-
-  RECIPES.forEach((section, idx) => {
-    const x = (idx % 2) * columnWidth + 40;
-    const y = startY + Math.floor(idx / 2) * 250;
-
-    // Section title
-    ctx.fillStyle = "#ffd700";
-    ctx.font = "bold 20px Arial";
-    ctx.textAlign = "left";
-    ctx.fillText(section.title, x, y);
-
-    // Items
-    ctx.font = "14px Arial";
-    ctx.fillStyle = "#fff";
-    section.items.forEach((item: any, i: number) => {
-      const itemY = y + 30 + i * 25;
-      if ("combo" in item) {
-        ctx.fillText(`${item.combo} → ${item.result}`, x, itemY);
-        ctx.fillStyle = "#aaa";
-        ctx.fillText(item.desc, x + 160, itemY);
-        ctx.fillStyle = "#fff";
-      } else {
-        ctx.fillText(`${item.icon} ${item.name}`, x, itemY);
-        ctx.fillStyle = "#aaa";
-        ctx.fillText(item.desc, x + 120, itemY);
-        ctx.fillStyle = "#fff";
-      }
-    });
-  });
-
-  // Resume hint
-  ctx.fillStyle = "#888";
-  ctx.font = "18px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("ESC 다시 눌러서 계속하기", ctx.canvas.width / 2, ctx.canvas.height - 40);
-};
-
 const drawMinimap = (ctx: CanvasRenderingContext2D) => {
+  ctx.save();
   const player = getPlayer();
-  if (!player) return;
+  if (!player) {
+    ctx.restore();
+    return;
+  }
 
   const { x: px, y: py } = player.position;
   const size = CONFIG.MINIMAP_SIZE;
@@ -203,12 +189,29 @@ const drawMinimap = (ctx: CanvasRenderingContext2D) => {
   const x = ctx.canvas.width - size - margin;
   const y = margin;
 
-  // 미니맵 배경
-  ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+  // 미니맵 배경 (Glassmorphism effect)
+  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
   ctx.fillRect(x, y, size, size);
-  ctx.strokeStyle = "#fff";
-  ctx.lineWidth = 2;
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+  ctx.lineWidth = 1;
   ctx.strokeRect(x, y, size, size);
+
+  // Decorative border corners or glow could be added here
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+  ctx.lineWidth = 2;
+  // Top left corner
+  ctx.beginPath();
+  ctx.moveTo(x, y + 15);
+  ctx.lineTo(x, y);
+  ctx.lineTo(x + 15, y);
+  ctx.stroke();
+  // Bottom right corner
+  ctx.beginPath();
+  ctx.moveTo(x + size - 15, y + size);
+  ctx.lineTo(x + size, y + size);
+  ctx.lineTo(x + size, y + size - 15);
+  ctx.stroke();
 
   // 로컬 범위 (플레이어 주변 영역만 표시)
   const localRange = CONFIG.MINIMAP_VISIBLE_RANGE;
@@ -251,6 +254,7 @@ const drawMinimap = (ctx: CanvasRenderingContext2D) => {
       ctx.fill();
     }
   });
+  ctx.restore();
 };
 
 export const startGame = (ctx: CanvasRenderingContext2D) => {

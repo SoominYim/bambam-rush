@@ -1,6 +1,6 @@
-import { Enemy, Scalar } from "../types";
-import { getPlayer, addScore } from "../gameState";
-import * as CONFIG from "../constants";
+import { Enemy, Scalar } from "@/game/types";
+import { getPlayer, addScore } from "@/game/managers/state";
+import * as CONFIG from "@/game/config/constants";
 
 export const createEnemy = (x: Scalar, y: Scalar): Enemy => {
   const speed = CONFIG.ENEMY_BASE_SPEED + Math.random() * CONFIG.ENEMY_SPEED_VARIANCE;
@@ -39,17 +39,29 @@ export const createEnemy = (x: Scalar, y: Scalar): Enemy => {
     },
 
     draw: function (ctx: CanvasRenderingContext2D) {
+      ctx.save();
+
+      // Reset all canvas states
+      ctx.globalAlpha = 1.0;
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
       ctx.beginPath();
       ctx.arc(this.position.x, this.position.y, CONFIG.ENEMY_RADIUS, 0, Math.PI * 2);
       ctx.fillStyle = "#880000";
       ctx.fill();
       ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
       ctx.stroke();
 
       // HP Bar
       const hpPct = this.hp / this.maxHp;
       ctx.fillStyle = "#f00";
       ctx.fillRect(this.position.x - 10, this.position.y - 25, 20 * hpPct, 4);
+
+      ctx.restore();
     },
   };
 };

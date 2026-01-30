@@ -1,4 +1,4 @@
-import { Vector2D } from "../game/types";
+import { Vector2D } from "@/game/types";
 
 // Input State
 let keyState: Set<string> = new Set();
@@ -55,7 +55,8 @@ export const getMovementDirection = (): { x: number; y: number } => {
   let y = 0;
 
   // 조이스틱 입력이 있으면 조이스틱만 사용 (우선순위)
-  if (Math.abs(joystickDirection.x) > 0.1 || Math.abs(joystickDirection.y) > 0.1) {
+  // 데드존을 줄여서 더 민감하게 반응
+  if (Math.abs(joystickDirection.x) > 0.05 || Math.abs(joystickDirection.y) > 0.05) {
     return joystickDirection; // 조이스틱 값은 이미 정규화됨
   }
 

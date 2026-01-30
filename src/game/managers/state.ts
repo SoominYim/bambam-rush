@@ -1,14 +1,16 @@
-import { GameObject, Enemy, Projectile, Collectible, TailSegment } from "./types";
+import { GameObject, Enemy, Projectile, Collectible, TailSegment, Player } from "@/game/types";
+import { vfx } from "@/engine/vfx/ParticleSystem";
+import { spatialGrid } from "@/game/managers/grid";
 
 let entities: GameObject[] = [];
 let collectibles: Collectible[] = [];
 let tail: TailSegment[] = [];
 let enemies: Enemy[] = [];
 let projectiles: Projectile[] = [];
-let player: GameObject | null = null;
+let player: Player | null = null;
 let score: number = 0;
 
-export const initGameState = (p: GameObject) => {
+export const initGameState = (p: Player) => {
   player = p;
   entities = [p];
   collectibles = [];
@@ -40,6 +42,8 @@ export const addScore = (points: number): void => {
   // console.log removed for performance
 };
 
+export const getPlayerStats = () => player?.stats || null;
+
 export const updateGameState = (deltaTime: number) => {
   if (player) player.update(deltaTime);
   tail.forEach(t => t.update(deltaTime)); // 꼬리도 업데이트해야 플레이어를 따라다님!
@@ -52,18 +56,24 @@ export const updateGameState = (deltaTime: number) => {
   enemies = enemies.filter(e => !e.isExpired);
   projectiles = projectiles.filter(p => !p.isExpired);
   tail = tail.filter(t => !t.isExpired);
+
+  // Update particles
+  vfx.update(deltaTime);
+
+  // Update Spatial Grid for efficient combat lookups
+  spatialGrid.clear();
+  enemies.forEach(e => spatialGrid.insert(e));
 };
 
 export const drawGameState = (ctx: CanvasRenderingContext2D) => {
   collectibles.forEach(c => c.draw(ctx));
   enemies.forEach(e => e.draw(ctx));
 
-  // Draw tail segments
-  if (tail.length > 0) {
-    console.log(`🎨 꼬리 그리기: ${tail.length}개 세그먼트`);
-  }
   tail.forEach(t => t.draw(ctx));
 
   if (player) player.draw(ctx);
   projectiles.forEach(p => p.draw(ctx));
+
+  // Draw particles
+  vfx.draw(ctx);
 };

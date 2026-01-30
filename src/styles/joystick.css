@@ -1,0 +1,84 @@
+/* joystick.css */
+:root {
+  --joystick-size: 90px;
+  --joystick-handle-size: 36px;
+}
+
+.joystick-container {
+  position: fixed;
+  bottom: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--joystick-size);
+  height: var(--joystick-size);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    inset 0 0 20px rgba(255, 255, 255, 0.05);
+  touch-action: none;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.joystick-container:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Ring pulse effect */
+.joystick-container:active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(79, 172, 254, 0.3);
+  animation: ripple 1.5s infinite;
+  pointer-events: none;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+.joystick-handle {
+  position: absolute;
+  width: var(--joystick-handle-size);
+  height: var(--joystick-handle-size);
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow:
+    0 4px 15px rgba(79, 172, 254, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.5);
+  z-index: 1001;
+}
+
+.joystick-handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+}

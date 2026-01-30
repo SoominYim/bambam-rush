@@ -1,4 +1,4 @@
-import { GameObject } from "../types";
+import { GameObject } from "@/game/types";
 
 export class EntityManager {
   private static instance: EntityManager;

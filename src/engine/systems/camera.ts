@@ -1,6 +1,6 @@
-import { Vector2D } from "../game/types";
-import { getPlayer } from "../game/gameState";
-import * as CONFIG from "../game/constants";
+import { Vector2D } from "@/game/types";
+import { getPlayer } from "@/game/managers/state";
+import * as CONFIG from "@/game/config/constants";
 
 let cameraX = 0;
 let cameraY = 0;

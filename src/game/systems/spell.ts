@@ -1,6 +1,6 @@
-import { Vector2D, ElementType } from "./types";
-import { createProjectile } from "./entities/projectile";
-import { addEntity } from "./gameState";
+import { Vector2D, ElementType } from "@/game/types";
+import { createProjectile } from "@/game/entities/projectile";
+import { addEntity } from "@/game/managers/state";
 
 interface SpellInput {
   type: ElementType;
