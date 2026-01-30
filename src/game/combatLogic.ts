@@ -5,7 +5,7 @@ import * as CONFIG from "./constants";
 // Cooldown tracker
 const fireTimers: Record<string, number> = {};
 
-export const updateCombat = (deltaTime: number) => {
+export const updateCombat = (_deltaTime: number) => {
   const enemies = getEnemies();
   const tail = getTail();
   const projectiles = getProjectiles();

@@ -1,16 +1,16 @@
-import { GameObject, Vector2D, SpellType } from "./types";
+import { Vector2D, ElementType } from "./types";
 import { createProjectile } from "./entities/projectile";
 import { addEntity } from "./gameState";
 
 interface SpellInput {
-  type: SpellType;
+  type: ElementType;
   timestamp: number;
 }
 
 // Queue for stored ammo
 let spellQueue: SpellInput[] = [];
 
-export const loadSpell = (type: SpellType) => {
+export const loadSpell = (type: ElementType) => {
   // Max queue size to prevent infinite stacking
   if (spellQueue.length >= 5) return;
 
@@ -22,13 +22,13 @@ export const getSpellQueue = () => spellQueue;
 export const spellQueueToString = (): string[] => {
   return spellQueue.map(s => {
     switch (s.type) {
-      case SpellType.FIRE:
+      case ElementType.FIRE:
         return "🔥";
-      case SpellType.WATER:
+      case ElementType.WATER:
         return "💧";
-      case SpellType.ICE:
+      case ElementType.ICE:
         return "❄️";
-      case SpellType.WIND:
+      case ElementType.WIND:
         return "💨";
       default:
         return "❓";
@@ -48,7 +48,7 @@ export const fireNextSpell = (origin: Vector2D, target: Vector2D) => {
     if (spell) castBasicSpell(origin, target, spell.type);
   } else {
     // Queue empty - Fire basic magic missile
-    castBasicSpell(origin, target, SpellType.NONE);
+    castBasicSpell(origin, target, ElementType.FIRE);
   }
 };
 
@@ -64,27 +64,27 @@ const checkAndConsumeCombo = (): string | null => {
     spellQueue.splice(0, count);
   };
 
-  if (types2.has(SpellType.FIRE) && types2.has(SpellType.WATER)) {
+  if (types2.has(ElementType.FIRE) && types2.has(ElementType.WATER)) {
     consume(2);
     return "STEAM_BLAST";
   }
-  if (types2.has(SpellType.FIRE) && types2.has(SpellType.ICE)) {
+  if (types2.has(ElementType.FIRE) && types2.has(ElementType.ICE)) {
     consume(2);
     return "MELT";
   }
-  if (types2.has(SpellType.FIRE) && types2.has(SpellType.WIND)) {
+  if (types2.has(ElementType.FIRE) && types2.has(ElementType.WIND)) {
     consume(2);
     return "FLAME_TORNADO";
   }
-  if (types2.has(SpellType.WATER) && types2.has(SpellType.ICE)) {
+  if (types2.has(ElementType.WATER) && types2.has(ElementType.ICE)) {
     consume(2);
     return "FREEZE";
   }
-  if (types2.has(SpellType.WATER) && types2.has(SpellType.WIND)) {
+  if (types2.has(ElementType.WATER) && types2.has(ElementType.WIND)) {
     consume(2);
     return "STORM";
   }
-  if (types2.has(SpellType.ICE) && types2.has(SpellType.WIND)) {
+  if (types2.has(ElementType.ICE) && types2.has(ElementType.WIND)) {
     consume(2);
     return "BLIZZARD";
   }
@@ -92,9 +92,8 @@ const checkAndConsumeCombo = (): string | null => {
   return null;
 };
 
-const castBasicSpell = (origin: Vector2D, target: Vector2D, type: SpellType) => {
+const castBasicSpell = (origin: Vector2D, target: Vector2D, type: ElementType) => {
   const angle = Math.atan2(target.y - origin.y, target.x - origin.x);
-  // If type is NONE, projectile implementation usually defaults to white, which is fine for basic attack
   const projectile = createProjectile(origin.x, origin.y, angle, type);
   addEntity(projectile);
 };
@@ -103,43 +102,43 @@ const castCombo = (origin: Vector2D, target: Vector2D, comboName: string) => {
   console.log(`Combo Activated: ${comboName}`);
   const angle = Math.atan2(target.y - origin.y, target.x - origin.x);
 
-  let projType = SpellType.NONE;
+  let projType = ElementType.FIRE;
   let size = 20;
   let color = "purple";
 
   switch (comboName) {
     case "STEAM_BLAST":
-      projType = SpellType.WATER;
+      projType = ElementType.WATER;
       color = "#ddd";
       size = 25;
       break;
     case "FLAME_TORNADO":
-      projType = SpellType.FIRE;
+      projType = ElementType.FIRE;
       color = "#f00";
       size = 30;
       break;
     case "STORM":
-      projType = SpellType.WIND;
+      projType = ElementType.WIND;
       color = "#ff0";
       size = 25;
       break;
     case "BLIZZARD":
-      projType = SpellType.ICE;
+      projType = ElementType.ICE;
       color = "#fff";
       size = 25;
       break;
     case "MELT":
-      projType = SpellType.WATER;
+      projType = ElementType.WATER;
       color = "#aaeeee";
       size = 25;
       break;
     case "FREEZE":
-      projType = SpellType.ICE;
+      projType = ElementType.ICE;
       color = "#0000ff";
       size = 25;
       break;
     default:
-      projType = SpellType.FIRE;
+      projType = ElementType.FIRE;
       break;
   }
 

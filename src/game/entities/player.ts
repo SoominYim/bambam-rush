@@ -2,16 +2,7 @@ import { GameObject, Vector2D, Scalar } from "../types";
 import { getMovementDirection } from "../../engine/input";
 import { getTail, addTailSegment, getCollectibles, addScore, getPlayer } from "../gameState";
 import { TailSegment, ElementType } from "../types";
-import {
-  PLAYER_SPEED,
-  PLAYER_RADIUS,
-  SNAKE_SEGMENT_SPACING,
-  SNAKE_SEGMENT_RADIUS,
-  WORLD_WIDTH,
-  WORLD_HEIGHT,
-  COLLECTION_RADIUS,
-  COLLECTION_SCORE,
-} from "../constants";
+import { PLAYER_SPEED, PLAYER_RADIUS, SNAKE_SEGMENT_SPACING, WORLD_WIDTH, WORLD_HEIGHT } from "../constants";
 import * as CONFIG from "../constants";
 
 // Position history for snake-like trailing (MUST be outside createPlayer!)

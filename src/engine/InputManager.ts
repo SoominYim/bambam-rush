@@ -6,9 +6,6 @@ export class InputManager {
   private mousePosition: Vector2D = { x: 0, y: 0 };
   private mouseButtons: Set<number> = new Set();
 
-  // Quick spell queue for combo detection
-  private spellInputs: { type: string; time: number }[] = [];
-
   private constructor() {
     this.init();
   }

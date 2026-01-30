@@ -1,13 +1,4 @@
-import {
-  updateGameState,
-  drawGameState,
-  addEnemy,
-  getScore,
-  getPlayer,
-  getEnemies,
-  getCollectibles,
-  addScore,
-} from "../game/gameState";
+import { updateGameState, drawGameState, addEnemy, getPlayer, getEnemies, getCollectibles } from "../game/gameState";
 import { updateInput, getIsPaused } from "./input";
 import { spawnRandomCollectible } from "../game/entities/collectible";
 import { checkTailMerges } from "../game/mergeLogic";

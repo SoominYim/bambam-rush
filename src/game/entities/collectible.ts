@@ -11,7 +11,7 @@ export const createCollectible = (x: Scalar, y: Scalar, type: ElementType): Coll
     radius: 10,
     isExpired: false,
 
-    update: function (deltaTime: Scalar) {
+    update: function (_deltaTime: Scalar) {
       // Check distance to player for collection
       const player = getPlayer();
       if (player && !this.isExpired) {

@@ -1,6 +1,12 @@
-import { Projectile, Scalar, Vector2D, ElementType } from "../types";
+import { Projectile, Scalar, ElementType } from "../types";
 
-export const createProjectile = (x: Scalar, y: Scalar, angle: number, type: ElementType, tier: number): Projectile => {
+export const createProjectile = (
+  x: Scalar,
+  y: Scalar,
+  angle: number,
+  type: ElementType,
+  tier: number = 1,
+): Projectile => {
   const speed = 400 + tier * 50;
   const radius = 5 + tier * 2;
   const damage = 30 * tier;

@@ -1,4 +1,4 @@
-import { InputManager } from "./InputManager";
+// GameLoop.ts - Main game loop using requestAnimationFrame
 import { EntityManager } from "../game/EntityManager";
 
 export class GameLoop {
