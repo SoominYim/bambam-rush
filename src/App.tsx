@@ -2,22 +2,25 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { GameUI } from "./components/GameUI";
 import { VirtualJoystick } from "@/components/controls/VirtualJoystick";
 import { startGame, stopGame } from "@/engine/core/gameLoop";
-import { getScore, getPlayerStats, getLevelUpState } from "@/game/managers/state";
+import { getScore, getPlayerStats, getLevelUpState, getGameTime } from "@/game/managers/state";
 import { initGameState } from "@/game/managers/state";
 import { createPlayer } from "@/game/entities/player";
 import { initInput, setPaused, setJoystickDirection } from "@/engine/systems/input";
 import { PlayerStats } from "@/game/types";
 import { Card } from "@/game/systems/cardSystem";
-import { CharacterSelection } from "@/components/menu/CharacterSelection";
+import { MainHub } from "./components/menu/MainHub";
 import { ElementType } from "@/game/types";
 import { createTailSegment } from "@/game/entities/player";
 import { addTailSegment } from "@/game/managers/state";
 import * as CONFIG from "@/game/config/constants";
+import { CHARACTER_REGISTRY } from "@/game/config/characterRegistry";
+import { WEAPON_REGISTRY } from "@/game/config/weaponRegistry";
 import "@/styles/app.css";
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState(0);
+  const [gameTime, setGameTime] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
@@ -43,6 +46,9 @@ function App() {
     const updateInterval = setInterval(() => {
       const currentScore = getScore();
       setScore(prev => (prev !== currentScore ? currentScore : prev));
+
+      const currentTime = getGameTime();
+      setGameTime(prev => (Math.floor(prev) !== Math.floor(currentTime) ? currentTime : prev));
 
       const stats = getPlayerStats();
       if (stats) setPlayerStats({ ...stats });
@@ -86,20 +92,35 @@ function App() {
     setJoystickDirection(x, y);
   }, []);
 
-  const handleCharacterSelect = useCallback((element: ElementType) => {
+  const handleCharacterSelect = useCallback((characterId: string) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Get character definition
+    const charDef = CHARACTER_REGISTRY[characterId];
+    if (!charDef) return;
+
     // Initialize Game with selected character
-    const player = createPlayer(CONFIG.WORLD_WIDTH / 2, CONFIG.WORLD_HEIGHT / 2);
+    const player = createPlayer(CONFIG.WORLD_WIDTH / 2, CONFIG.WORLD_HEIGHT / 2, characterId);
+
+    // Add starting weapon from character
+    player.activeWeapons = [{ id: charDef.startWeaponId, level: 1, timer: 0, lastFired: 0 }];
+
+    // Add starting passive from character
+    player.passives = [{ id: charDef.startPassiveId, level: 1 }];
+
     initGameState(player);
     setPlayerStats(player.stats);
     initInput();
 
     // Add initial tail segment (MUST be after initGameState which clears tail)
-    const firstSegment = createTailSegment(0, element);
+    // Get the weapon's first tag as the element type for visual
+    const weaponDef = WEAPON_REGISTRY[charDef.startWeaponId];
+    const visualElement = weaponDef?.tags[0] || ElementType.PHYSICAL;
+    const firstSegment = createTailSegment(0, visualElement);
+    firstSegment.weaponId = charDef.startWeaponId; // Link visual to weapon
     addTailSegment(firstSegment);
 
     startGame(ctx);
@@ -110,12 +131,13 @@ function App() {
     <div className="app">
       <canvas ref={canvasRef} id="game-canvas" />
 
-      {!isGameStarted && <CharacterSelection onSelect={handleCharacterSelect} />}
+      {!isGameStarted && <MainHub onStartGame={handleCharacterSelect} />}
 
       {isGameStarted && (
         <>
           <GameUI
             score={score}
+            gameTime={gameTime}
             isPaused={isPaused}
             playerStats={playerStats}
             onPause={handlePause}

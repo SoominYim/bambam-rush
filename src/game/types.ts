@@ -14,6 +14,12 @@ export enum ElementType {
   ELECTRIC = "ELECTRIC",
   SWORD = "SWORD",
   BOOK = "BOOK",
+  PHYSICAL = "PHYSICAL",
+  ARCANE = "ARCANE",
+  TECH = "TECH",
+  LIGHT = "LIGHT",
+  BLOOD = "BLOOD",
+  GRAVITY = "GRAVITY",
 
   // Combos
   STEAM = "STEAM",
@@ -57,14 +63,47 @@ export interface PlayerStats {
 }
 
 export interface Player extends GameObject {
+  characterId?: string;
   stats: PlayerStats;
   magnetTimer?: number;
+  activeWeapons: ActiveWeapon[];
+  passives: PassiveInstance[];
+}
+
+export type WeaponPattern =
+  | "orbit"
+  | "projectile"
+  | "line"
+  | "area"
+  | "trail"
+  | "nova"
+  | "drone"
+  | "formation"
+  | "chain"
+  | "return"
+  | "beam"
+  | "vortex"
+  | "trap"
+  | "aura"
+  | "sky";
+
+export interface ActiveWeapon {
+  id: string;
+  level: number;
+  timer: number;
+  lastFired: number;
+}
+
+export interface PassiveInstance {
+  id: string;
+  level: number;
 }
 
 export interface TailSegment extends GameObject {
   type: ElementType;
   tier: number;
   followTarget: GameObject | null;
+  weaponId: string;
 }
 
 export enum SkillBehavior {

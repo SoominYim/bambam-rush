@@ -69,12 +69,16 @@ export const selectLevelUpCard = (cardIndex: number) => {
   setPaused(false);
 };
 
+import { waveManager } from "@/game/managers/waveManager";
+
 // Score management
 export const getScore = () => score;
 export const addScore = (points: number): void => {
   score += points;
-  // console.log removed for performance
 };
+
+// Game Time (Wave)
+export const getGameTime = () => waveManager.getPlayTime();
 
 export const getPlayerStats = () => player?.stats || null;
 

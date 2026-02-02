@@ -4,14 +4,26 @@ import "@/styles/hud.css";
 
 interface HUDProps {
   score: number;
+  gameTime: number; // Seconds
   isPaused: boolean;
   playerStats: PlayerStats | null;
   onPauseToggle: () => void;
 }
 
-export const HUD = memo(({ score, isPaused, playerStats, onPauseToggle }: HUDProps) => {
+const formatTime = (seconds: number) => {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+};
+
+export const HUD = memo(({ score, gameTime, isPaused, playerStats, onPauseToggle }: HUDProps) => {
   return (
     <div className="game-hud">
+      {/* Timer Display (Top Center) */}
+      <div className="timer-container">
+        <span className="timer-value">{formatTime(gameTime)}</span>
+      </div>
+
       <div className="hud-left">
         <div className="player-stats-bar">
           <div className="hp-bar-container">

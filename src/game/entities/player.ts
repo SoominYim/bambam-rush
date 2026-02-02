@@ -12,6 +12,8 @@ import { getMovementDirection } from "@/engine/systems/input";
 import { getTail, getCollectibles, addScore, getPlayer, getEnemies } from "@/game/managers/state";
 import { VFXFactory } from "@/engine/vfx/VFXFactory";
 import * as CONFIG from "../config/constants";
+import { CHARACTER_REGISTRY } from "@/game/config/characterRegistry";
+import { drawCharacter } from "@/game/utils/characterRenderer";
 
 // Position history for snake-like trailing
 let positionHistory: Vector2D[] = [];
@@ -23,7 +25,7 @@ export const resetPositionHistory = () => {
   positionHistory = [];
 };
 
-export const createPlayer = (startX: Scalar, startY: Scalar): Player => {
+export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string = "BASIC"): Player => {
   positionHistory = [{ x: startX, y: startY }];
 
   const stats: PlayerStats = {
@@ -42,9 +44,12 @@ export const createPlayer = (startX: Scalar, startY: Scalar): Player => {
 
   const player: Player = {
     id: "snake_head",
+    characterId: characterId,
     position: { x: startX, y: startY },
     stats: stats,
     magnetTimer: 0,
+    activeWeapons: [],
+    passives: [],
 
     update: function (deltaTime: Scalar) {
       const moveDir = getMovementDirection();
@@ -92,50 +97,21 @@ export const createPlayer = (startX: Scalar, startY: Scalar): Player => {
 
     draw: function (ctx: CanvasRenderingContext2D) {
       ctx.save();
-      ctx.globalAlpha = 1.0;
-      ctx.shadowBlur = 0;
-      ctx.shadowColor = "transparent";
 
-      // Magnet Visual Effect
+      // Magnet Effect (Outer Ring only)
       if (this.magnetTimer && this.magnetTimer > 0) {
-        const isFading = this.magnetTimer <= 3.0;
-        const blink = isFading ? Math.floor(Date.now() / 100) % 2 === 0 : true;
-
-        if (blink) {
-          const pulse = (Math.sin(Date.now() / 200) + 1) * 5;
-
-          // Outer Ring
-          ctx.beginPath();
-          ctx.arc(this.position.x, this.position.y, CONFIG.PLAYER_RADIUS + 20 + pulse, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(0, 200, 255, 0.6)";
-          ctx.lineWidth = 2;
-          ctx.setLineDash([5, 5]);
-          ctx.stroke();
-          ctx.setLineDash([]);
-
-          // Inner Glow
-          ctx.beginPath();
-          ctx.arc(this.position.x, this.position.y, CONFIG.PLAYER_RADIUS + 10 + pulse, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(0, 200, 255, 0.15)";
-          ctx.fill();
-        }
+        const pulse = (Math.sin(Date.now() / 200) + 1) * 3;
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, CONFIG.PLAYER_RADIUS + 15 + pulse, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(100, 255, 218, 0.5)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
 
-      ctx.beginPath();
-      ctx.arc(this.position.x, this.position.y, CONFIG.PLAYER_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
-      ctx.strokeStyle = "#333";
-      ctx.lineWidth = 3;
-      ctx.stroke();
-
-      ctx.fillStyle = "#000";
-      ctx.beginPath();
-      ctx.arc(this.position.x - 7, this.position.y - 5, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(this.position.x + 7, this.position.y - 5, 3, 0, Math.PI * 2);
-      ctx.fill();
+      // 중앙 집중화된 캐릭터 렌더링 (메인 메뉴와 100% 동일)
+      drawCharacter(ctx, this.position.x, this.position.y, this.characterId || "BASIC", CONFIG.PLAYER_RADIUS);
 
       ctx.restore();
     },
@@ -206,6 +182,7 @@ export const createTailSegment = (index: number, elementType: ElementType): Tail
     type: elementType,
     tier: 1,
     followTarget: null,
+    weaponId: "", // To be assigned
 
     update: function (deltaTime: Scalar) {
       const tail = getTail();

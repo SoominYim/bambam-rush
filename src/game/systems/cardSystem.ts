@@ -1,10 +1,13 @@
-import { ElementType, PlayerStats } from "@/game/types";
-import { getPlayer, addTailSegment } from "@/game/managers/state";
+import { ElementType, ActiveWeapon, PassiveInstance } from "@/game/types";
+import { getPlayer, addTailSegment, getTail } from "@/game/managers/state";
 import { createTailSegment } from "@/game/entities/player";
-// import { SPELL_STATS } from "@/game/config/spellStats";
+import { WEAPON_REGISTRY } from "@/game/config/weaponRegistry";
+import { PASSIVE_REGISTRY } from "@/game/config/passiveRegistry";
+import { isWeaponUnlocked } from "@/game/managers/unlockManager";
 
 export enum CardType {
-  SKILL = "SKILL",
+  WEAPON = "WEAPON",
+  PASSIVE = "PASSIVE",
   STAT = "STAT",
 }
 
@@ -15,170 +18,181 @@ export interface Card {
   description: string;
   icon: string;
   rarity: "COMMON" | "RARE" | "LEGENDARY";
-  // For Skill Cards
-  elementType?: ElementType;
-  // For Stat Cards
-  statType?: keyof PlayerStats | "heal";
+
+  // payload
+  targetId?: string; // weaponId or passiveId
+  statType?: string;
   statValue?: number;
 }
 
-// Pool of Stat Upgrades
-const STAT_CARDS: Omit<Card, "id">[] = [
-  {
-    type: CardType.STAT,
-    title: "공격력 증가",
-    description: "공격력이 10% 증가합니다",
-    icon: "⚔️",
-    rarity: "COMMON",
-    statType: "atk",
-    statValue: 0.1, // +10% base
-  },
-  {
-    type: CardType.STAT,
-    title: "방어력 증가",
-    description: "방어력이 2 증가합니다",
-    icon: "🛡️",
-    rarity: "COMMON",
-    statType: "def",
-    statValue: 2,
-  },
-  {
-    type: CardType.STAT,
-    title: "최대 체력 증가",
-    description: "최대 체력이 20 증가합니다",
-    icon: "❤️",
-    rarity: "COMMON",
-    statType: "maxHp",
-    statValue: 20,
-  },
-  {
-    type: CardType.STAT,
-    title: "회복 물약",
-    description: "최대 체력의 30%를 회복합니다",
-    icon: "🧪",
-    rarity: "COMMON",
-    statType: "heal",
-    statValue: 0.3,
-  },
-  {
-    type: CardType.STAT,
-    title: "자석 강화",
-    description: "아이템 획득 범위가 20% 증가합니다",
-    icon: "🧲",
-    rarity: "RARE",
-    statType: "pickupRange",
-    statValue: 0.2, // +20%
-  },
-  {
-    type: CardType.STAT,
-    title: "공격 속도 증가",
-    description: "공격 속도가 10% 빨라집니다",
-    icon: "⚡",
-    rarity: "RARE",
-    statType: "fireRate",
-    statValue: 0.1,
-  },
-  {
-    type: CardType.STAT,
-    title: "체력 재생",
-    description: "초당 체력을 0.5 회복합니다",
-    icon: "💖",
-    rarity: "RARE",
-    statType: "hpRegen",
-    statValue: 0.5,
-  },
-];
-
-// Available Skills (All basic elements)
-const ELEMENT_CARDS: ElementType[] = [
-  ElementType.FIRE,
-  ElementType.WATER,
-  ElementType.ICE,
-  ElementType.WIND,
-  ElementType.POISON,
-  ElementType.ELECTRIC,
-  ElementType.SWORD,
-  ElementType.BOOK,
-];
-
 export const draftCards = (count: number = 3): Card[] => {
+  const player = getPlayer();
+  if (!player) return [];
+
   const result: Card[] = [];
+  const draftedIds = new Set<string>();
 
   for (let i = 0; i < count; i++) {
-    const isSkill = Math.random() < 0.6; // 60% chance for Skill
+    // 50% Weapon, 30% Passive, 20% Stat
+    const roll = Math.random();
+    let card: Card | null = null;
 
-    if (isSkill) {
-      const type = ELEMENT_CARDS[Math.floor(Math.random() * ELEMENT_CARDS.length)];
-      // const stats = SPELL_STATS[type]; // Unused
-      result.push({
-        id: crypto.randomUUID(),
-        type: CardType.SKILL,
-        title: `${type} 마스터리`,
-        description: `[${type}] 꼬리를 추가합니다.`,
-        icon: getElementIcon(type),
-        rarity: "COMMON",
-        elementType: type,
-      });
+    if (roll < 0.5) {
+      card = draftWeaponCard(player, draftedIds);
+    } else if (roll < 0.8) {
+      card = draftPassiveCard(player, draftedIds);
     } else {
-      const template = STAT_CARDS[Math.floor(Math.random() * STAT_CARDS.length)];
-      result.push({
-        ...template,
-        id: crypto.randomUUID(),
-      });
+      card = draftStatCard(draftedIds);
+    }
+
+    if (card) {
+      result.push(card);
+      draftedIds.add(card.targetId || card.statType || "");
+    } else {
+      // Fallback to stat if others fail
+      const stat = draftStatCard(draftedIds);
+      if (stat) result.push(stat);
     }
   }
 
   return result;
 };
 
+const draftWeaponCard = (player: any, seenIds: Set<string>): Card | null => {
+  const weaponIds = Object.keys(WEAPON_REGISTRY).filter(id => isWeaponUnlocked(id));
+  if (weaponIds.length === 0) return null;
+  const randomId = weaponIds[Math.floor(Math.random() * weaponIds.length)];
+  if (seenIds.has(randomId)) return null;
+
+  const def = WEAPON_REGISTRY[randomId];
+  const active = player.activeWeapons.find((w: ActiveWeapon) => w.id === randomId);
+
+  if (active && active.level >= 8) return null; // Max level
+
+  const nextLevel = active ? active.level + 1 : 1;
+  const levelDesc = def.levels[nextLevel]?.description || "강화";
+
+  return {
+    id: crypto.randomUUID(),
+    type: CardType.WEAPON,
+    title: active ? `${def.name} (Lv.${nextLevel})` : `${def.name} 획득`,
+    description: active ? levelDesc : def.description,
+    icon: getIconForTags(def.tags),
+    rarity: "COMMON",
+    targetId: randomId,
+  };
+};
+
+const draftPassiveCard = (player: any, seenIds: Set<string>): Card | null => {
+  const passiveIds = Object.keys(PASSIVE_REGISTRY);
+  const randomId = passiveIds[Math.floor(Math.random() * passiveIds.length)];
+  if (seenIds.has(randomId)) return null;
+
+  const def = PASSIVE_REGISTRY[randomId];
+  const active = player.passives.find((p: PassiveInstance) => p.id === randomId);
+
+  if (active && active.level >= 5) return null; // Max level
+
+  const nextLevel = active ? active.level + 1 : 1;
+  const levelDesc = def.levels[nextLevel]?.description || "강화";
+
+  return {
+    id: crypto.randomUUID(),
+    type: CardType.PASSIVE,
+    title: active ? `${def.name} (Lv.${nextLevel})` : `${def.name} 습득`,
+    description: levelDesc,
+    icon: getPassiveIcon(randomId),
+    rarity: "RARE",
+    targetId: randomId,
+  };
+};
+
+const draftStatCard = (_draftedIds: Set<string>): Card => {
+  const stats = [
+    { type: "atk", title: "공격력 증가", icon: "⚔️", val: 0.1 },
+    { type: "def", title: "방어력 증가", icon: "🛡️", val: 2 },
+    { type: "maxHp", title: "최대 체력 증가", icon: "❤️", val: 20 },
+    { type: "heal", title: "회복 물약", icon: "🧪", val: 0.3 },
+  ];
+  const s = stats[Math.floor(Math.random() * stats.length)];
+
+  return {
+    id: crypto.randomUUID(),
+    type: CardType.STAT,
+    title: s.title,
+    description: s.type === "heal" ? "체력 30% 회복" : "기본 능력치 강화",
+    icon: s.icon,
+    rarity: "COMMON",
+    statType: s.type,
+    statValue: s.val,
+  };
+};
+
 export const applyCardEffect = (card: Card) => {
   const player = getPlayer();
   if (!player) return;
 
-  if (card.type === CardType.SKILL && card.elementType) {
-    // Add new segment
-    const tailLength = player.stats.level || 0; // Or standard tail length logic
-    const newSegment = createTailSegment(tailLength + 999, card.elementType);
-    // Just append to end, exact index doesn't matter much for creation logic as it uses history
-    addTailSegment(newSegment);
-    console.log(`Applied Skill Card: ${card.title}`);
-  } else if (card.type === CardType.STAT && card.statType) {
-    applyStatEffect(player, card);
+  switch (card.type) {
+    case CardType.WEAPON:
+      if (card.targetId) {
+        const active = player.activeWeapons.find(w => w.id === card.targetId);
+        if (active) {
+          active.level++;
+        } else {
+          player.activeWeapons.push({
+            id: card.targetId,
+            level: 1,
+            timer: 0,
+            lastFired: 0,
+          });
+          // Add tail visual
+          const def = WEAPON_REGISTRY[card.targetId];
+          const newSegment = createTailSegment(getTail().length, def.tags[0]);
+          newSegment.weaponId = card.targetId;
+          addTailSegment(newSegment);
+        }
+      }
+      break;
+
+    case CardType.PASSIVE:
+      if (card.targetId) {
+        const active = player.passives.find(p => p.id === card.targetId);
+        if (active) {
+          active.level++;
+        } else {
+          player.passives.push({
+            id: card.targetId,
+            level: 1,
+          });
+        }
+      }
+      break;
+
+    case CardType.STAT:
+      if (card.statType && card.statValue) {
+        switch (card.statType) {
+          case "atk":
+            player.stats.atk += card.statValue;
+            break;
+          case "def":
+            player.stats.def += card.statValue;
+            break;
+          case "maxHp":
+            player.stats.maxHp += card.statValue;
+            player.stats.hp += card.statValue;
+            break;
+          case "heal":
+            player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + player.stats.maxHp * card.statValue);
+            break;
+        }
+      }
+      break;
   }
 };
 
-const applyStatEffect = (player: any, card: Card) => {
-  if (!card.statValue) return;
-
-  switch (card.statType) {
-    case "atk":
-      player.stats.atk += card.statValue;
-      break;
-    case "def":
-      player.stats.def += card.statValue;
-      break;
-    case "maxHp":
-      player.stats.maxHp += card.statValue;
-      player.stats.hp += card.statValue; // Heal the added amount
-      break;
-    case "heal":
-      player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + player.stats.maxHp * card.statValue);
-      break;
-    case "pickupRange":
-      player.stats.pickupRange = (player.stats.pickupRange || 150) * (1 + card.statValue);
-      break;
-    case "fireRate":
-      player.stats.fireRate += card.statValue;
-      break;
-    case "hpRegen":
-      player.stats.hpRegen = (player.stats.hpRegen || 0) + card.statValue;
-      break;
-  }
-  console.log(`Applied Stat Card: ${card.title}`);
-};
-
-const getElementIcon = (type: ElementType): string => {
-  switch (type) {
+const getIconForTags = (tags: ElementType[]): string => {
+  const first = tags[0];
+  switch (first) {
     case ElementType.FIRE:
       return "🔥";
     case ElementType.WATER:
@@ -191,11 +205,28 @@ const getElementIcon = (type: ElementType): string => {
       return "☠️";
     case ElementType.ELECTRIC:
       return "⚡";
-    case ElementType.SWORD:
+    case ElementType.PHYSICAL:
       return "🗡️";
-    case ElementType.BOOK:
-      return "📖";
+    case ElementType.ARCANE:
+      return "✨";
     default:
-      return "❓";
+      return "⚔️";
+  }
+};
+
+const getPassiveIcon = (id: string): string => {
+  switch (id) {
+    case "P01":
+      return "💪";
+    case "P02":
+      return "⏳";
+    case "P05":
+      return "⚡";
+    case "P06":
+      return "📖";
+    case "P13":
+      return "👯";
+    default:
+      return "💎";
   }
 };

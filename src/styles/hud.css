@@ -1,10 +1,13 @@
 /* hud.css */
 .game-hud {
   position: fixed;
-  top: 20px; /* HUD_MARGIN */
-  left: 20px; /* HUD_MARGIN */
+  top: 20px;
+  left: 20px;
   z-index: 100;
   pointer-events: none;
+  width: calc(100% - 40px);
+  display: flex;
+  justify-content: space-between;
 }
 
 .hud-left {
@@ -17,25 +20,25 @@
 .player-stats-bar {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .hp-bar-container {
   position: relative;
-  width: 200px;
-  height: 24px;
-  background: rgba(0, 0, 0, 0.4);
+  width: 240px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.6);
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .hp-bar-fill {
   height: 100%;
   background: linear-gradient(90deg, #ff4b2b, #ff416c);
   transition: width 0.3s ease-out;
-  box-shadow: 0 0 15px rgba(255, 65, 108, 0.5);
+  box-shadow: 0 0 20px rgba(255, 65, 108, 0.4);
 }
 
 .hp-text {
@@ -43,96 +46,17 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
   white-space: nowrap;
 }
 
-.stats-mini {
-  display: flex;
-  gap: 10px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.stat-icon {
-  font-size: 12px;
-}
-
-.stat-value {
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  font-family: "Inter", sans-serif;
-}
-
-.score-container {
-  display: flex;
-  flex-direction: column;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  padding: 8px 24px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  min-width: 140px; /* SCORE_CONTAINER_MIN_WIDTH */
-}
-
-.score-label {
-  font-size: 10px;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.5);
-  letter-spacing: 2px;
-  margin-bottom: -2px;
-}
-
-.score-value {
-  font-size: 24px;
-  font-weight: 800;
-  color: #fff;
-  font-family: "Outfit", sans-serif;
-}
-
-.pause-btn {
-  width: 56px; /* PAUSE_BTN_SIZE */
-  height: 56px; /* PAUSE_BTN_SIZE */
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-.pause-btn:hover {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.pause-btn:active {
-  transform: scale(0.9) translateY(0);
-}
-
-/* XP Bar Styles */
+/* XP Bar */
 .xp-bar-container {
-  width: 200px;
-  height: 6px; /* Slightly thinner than HP */
+  width: 240px;
+  height: 8px;
   background: rgba(0, 0, 0, 0.6);
   border-radius: 4px;
   overflow: hidden;
@@ -161,4 +85,228 @@
   border-radius: 4px;
   text-shadow: 0 0 5px rgba(255, 215, 0, 0.6);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Timer Styles */
+.timer-container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 20, 30, 0.8);
+  padding: 6px 20px;
+  border-radius: 0 0 12px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: none;
+  backdrop-filter: blur(8px);
+  z-index: 101;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.timer-value {
+  font-family: "Outfit", monospace;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.stats-mini {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(4px);
+}
+
+.stat-icon {
+  font-size: 14px;
+}
+
+.stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #eee;
+  font-family: "Outfit", sans-serif;
+}
+
+.score-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  padding: 10px 30px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  height: fit-content;
+}
+
+.score-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.score-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  font-family: "Outfit", sans-serif;
+  line-height: 1;
+}
+
+.pause-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.pause-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.pause-btn:active {
+  transform: scale(0.95);
+}
+
+/* =========================================
+   Mobile & Tablet Responsiveness
+   ========================================= */
+@media (max-width: 1024px) {
+  /* Tablet adjustments if needed */
+  .game-hud {
+    top: 15px;
+    left: 15px;
+    width: calc(100% - 30px);
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile Layout */
+  .game-hud {
+    top: 10px;
+    left: 10px;
+    width: calc(100% - 20px);
+    flex-direction: column; /* Allow absolute positioning within context if needed */
+  }
+
+  .hud-left {
+    flex-direction: row; /* wrap을 위해 row로 변경 */
+    flex-wrap: wrap; /* 줄바꿈 허용 */
+    align-items: center; /* 세로 중앙 정렬 */
+    gap: 8px;
+    position: relative;
+  }
+
+  /* 스탯바는 한 줄 차지 */
+  .player-stats-bar {
+    width: 100%;
+  }
+
+  /* Compact Bars */
+  .hp-bar-container,
+  .xp-bar-container {
+    width: 180px;
+  }
+
+  .hp-bar-container {
+    height: 22px;
+  }
+  .xp-bar-container {
+    height: 6px;
+  }
+
+  .hp-text {
+    font-size: 11px;
+  }
+  .level-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    top: -24px;
+    right: 0;
+  }
+
+  /* Compact Stats */
+  .stats-mini {
+    gap: 6px;
+    margin-top: 2px;
+    flex-wrap: wrap;
+    max-width: 250px;
+  }
+
+  .stat-item {
+    padding: 4px 8px;
+  }
+
+  .stat-icon {
+    font-size: 12px;
+  }
+  .stat-value {
+    font-size: 12px;
+  }
+
+  /* Pause Button: 점수 옆에 배치 */
+  .pause-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    margin-top: 0;
+    margin-left: 0;
+    background: rgba(0, 0, 0, 0.4);
+    align-self: auto;
+  }
+
+  .pause-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Score: 스탯바 아래, 버튼 왼쪽 */
+  .score-container {
+    position: static;
+    transform: none;
+    margin-top: 0;
+    padding: 4px 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    align-self: auto;
+    height: 40px; /* 버튼 높이에 맞춤 */
+    min-width: unset;
+    flex-direction: column; /* 내용물 세로 정렬 */
+    justify-content: center;
+  }
+
+  .score-label {
+    font-size: 8px;
+    margin-bottom: 0;
+  }
+
+  .score-value {
+    font-size: 16px;
+  }
 }

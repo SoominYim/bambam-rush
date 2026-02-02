@@ -53,6 +53,7 @@ export const CAMERA_SMOOTHING = 0.1;
 
 // ===== UI CONFIG =====
 export const MINIMAP_SIZE = 150;
+export const MOBILE_MINIMAP_SIZE = 100; // 모바일용 크기
 export const MINIMAP_MARGIN = 20;
 export const MINIMAP_VISIBLE_RANGE = 2000;
 

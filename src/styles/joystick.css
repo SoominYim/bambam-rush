@@ -82,3 +82,12 @@
   background: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .joystick-container {
+    bottom: 40px; /* Lift up slightly to avoid bottom bezel gestures */
+    --joystick-size: 120px; /* Make slightly larger for easier touch */
+    --joystick-handle-size: 40px;
+  }
+}

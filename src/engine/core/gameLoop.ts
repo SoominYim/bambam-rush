@@ -5,6 +5,7 @@ import { updateCamera, applyCamera, resetCamera, getCameraPosition } from "@/eng
 import { waveManager } from "@/game/managers/waveManager";
 import { checkTailMerges } from "@/game/systems/merge";
 import { updateCombat } from "@/game/systems/combat";
+import { updateWeapons } from "@/game/systems/weaponSystem";
 import * as CONFIG from "@/game/config/constants";
 
 let isRunning = false;
@@ -51,9 +52,11 @@ const loop = (timestamp: number) => {
     waveManager.update(deltaTime);
 
     // 3. Update Game Logic
-    updateGameState(deltaTime); // This was previously "3. Update Game Logic"
+    updateGameState(deltaTime);
     checkTailMerges();
-    updateCombat(deltaTime); // This was previously "updateCombat(deltaTime)"
+    const player = getPlayer();
+    if (player) updateWeapons(player, deltaTime);
+    updateCombat(deltaTime);
     updateCamera();
 
     updateInput();
@@ -164,8 +167,13 @@ const drawMinimap = (ctx: CanvasRenderingContext2D) => {
   }
 
   const { x: px, y: py } = player.position;
-  const size = CONFIG.MINIMAP_SIZE;
-  const margin = CONFIG.MINIMAP_MARGIN;
+
+  // 반응형 미니맵 크기 설정
+  // Tablet(iPad) 등은 PC와 같은 크기(150) 사용, 작은 모바일만 축소(100)
+  const isMobile = window.innerWidth <= 600;
+  const size = isMobile ? CONFIG.MOBILE_MINIMAP_SIZE : CONFIG.MINIMAP_SIZE;
+  const margin = isMobile ? 10 : CONFIG.MINIMAP_MARGIN;
+
   const x = ctx.canvas.width - size - margin;
   const y = margin;
 
