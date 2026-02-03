@@ -1,5 +1,5 @@
 import { Enemy, Scalar, EnemyType } from "@/game/types";
-import { getPlayer, addScore, addXPGem } from "@/game/managers/state";
+import { getPlayer, addScore, addXPGem, addGold } from "@/game/managers/state";
 import * as CONFIG from "@/game/config/constants";
 
 export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BASIC): Enemy => {
@@ -73,6 +73,13 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
       if (this.hp <= 0 && !this.isExpired) {
         this.isExpired = true;
         addScore(50); // Award score for kill
+
+        // Award Gold (Simplified)
+        let goldAmount = 1;
+        if (type === EnemyType.FAST) goldAmount = 2;
+        if (type === EnemyType.TANK) goldAmount = 10;
+        if (type === EnemyType.BOSS) goldAmount = 100;
+        addGold(goldAmount);
 
         // Drop XP Gem based on type
         const xpAmount = Math.floor(xpMin + Math.random() * (xpMax - xpMin + 1));

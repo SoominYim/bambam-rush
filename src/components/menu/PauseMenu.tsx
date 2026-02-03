@@ -1,15 +1,16 @@
 import { memo } from "react";
-import { PlayerStats } from "@/game/types";
+import { getPlayerStats } from "@/game/managers/state";
 import "@/styles/menu.css";
 
 interface PauseMenuProps {
-  stats: PlayerStats | null;
   onRecipes: () => void;
   onSettings: () => void;
   onResume: () => void;
+  onExit: () => void;
 }
 
-export const PauseMenu = memo(({ stats, onRecipes, onSettings, onResume }: PauseMenuProps) => {
+export const PauseMenu = memo(({ onRecipes, onSettings, onResume, onExit }: PauseMenuProps) => {
+  const stats = getPlayerStats();
   return (
     <div className="pause-menu-overlay">
       <div className="pause-menu-content">
@@ -47,6 +48,9 @@ export const PauseMenu = memo(({ stats, onRecipes, onSettings, onResume }: Pause
           </button>
           <button className="menu-btn" onClick={onSettings}>
             <span className="btn-icon">⚙️</span> 설정
+          </button>
+          <button className="menu-btn danger" onClick={onExit}>
+            <span className="btn-icon">🚪</span> 나가기
           </button>
         </div>
       </div>

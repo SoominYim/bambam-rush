@@ -1,6 +1,6 @@
 import { createEnemy } from "@/game/entities/enemy";
 import { createBoss } from "@/game/entities/boss";
-import { addEnemy, getPlayer } from "@/game/managers/state";
+import { addEnemy, getPlayer } from "@/game/managers/entityStore";
 import * as CONFIG from "@/game/config/constants";
 import { EnemyType } from "@/game/types";
 

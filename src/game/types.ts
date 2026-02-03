@@ -58,7 +58,9 @@ export interface PlayerStats {
   xp: number;
   maxXp: number;
   level: number;
+  gold: number; // Gold collected this run
   pickupRange: number; // Magnet Range
+  magnetPower: number; // Magnet Pull Speed Multiplier
   hpRegen: number; // HP per sec
   speed?: number; // Movement Speed Multiplier (added for Debug/Upgrades)
 }
@@ -66,6 +68,7 @@ export interface PlayerStats {
 export interface Player extends GameObject {
   characterId?: string;
   stats: PlayerStats;
+  direction: Vector2D; // Current facing/moving direction
   magnetTimer?: number;
   activeWeapons: ActiveWeapon[];
   passives: PassiveInstance[];

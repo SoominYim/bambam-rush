@@ -225,6 +225,40 @@ const characterDecorations: Record<string, CharacterDecorator> = {
       ctx.stroke();
     });
   },
+
+  // GOD (수빡이) - 메이플 운영자 모자 & 황금 아우라
+  GOD: (ctx, x, y, r) => {
+    // 1. 모자 (Maple GM Hat 스타일)
+    // 모자 챙
+    ctx.fillStyle = "#E74C3C"; // 빨간색
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 1.5;
+
+    ctx.beginPath();
+    ctx.ellipse(x, y - r * 0.9, r * 1.1, r * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // 모자 몸체
+    ctx.beginPath();
+    ctx.arc(x, y - r * 1.1, r * 0.7, Math.PI, 0);
+    ctx.lineTo(x + r * 0.7, y - r * 0.9);
+    ctx.lineTo(x - r * 0.7, y - r * 0.9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // GM 텍스트
+    ctx.fillStyle = "#F1C40F"; // 노란색
+    ctx.font = `bold ${r * 0.5}px Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("GM", x, y - r * 1.2);
+
+    // 2. 황금 아우라 (반짝임)
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = "#FFD700";
+  },
 };
 
 /**

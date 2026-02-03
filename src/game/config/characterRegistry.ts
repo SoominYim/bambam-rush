@@ -1,4 +1,5 @@
-// import { ElementType } from "@/game/types";
+import { WEAPON_REGISTRY } from "./weaponRegistry";
+import { PASSIVE_REGISTRY } from "./passiveRegistry";
 
 export interface CharacterVisuals {
   primary: string;
@@ -11,8 +12,9 @@ export interface CharacterDefinition {
   name: string;
   description: string;
   icon: string;
-  startWeaponId: string;
-  startPassiveId: string;
+  startWeaponIds: string[];
+  startPassiveIds: string[];
+  startLevel?: number; // Starting level for all equipment
   unlocked: boolean;
   unlockCondition?: string;
   visual: CharacterVisuals;
@@ -24,8 +26,8 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "전사",
     description: "균형잡힌 기본 캐릭터",
     icon: "⚔️",
-    startWeaponId: "W01", // 회전 꼬리
-    startPassiveId: "P01", // 힘 (Might)
+    startWeaponIds: ["W01"],
+    startPassiveIds: ["P01"],
     unlocked: true,
     visual: { primary: "#8B9DC3", secondary: "#5C6B8A", eye: "#FFFFFF" },
   },
@@ -35,8 +37,8 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "화염 술사",
     description: "강력한 파괴력을 지닌 화염 마법사",
     icon: "🔥",
-    startWeaponId: "W03", // 화염구
-    startPassiveId: "P01", // 힘
+    startWeaponIds: ["W03"],
+    startPassiveIds: ["P01"],
     unlocked: true,
     visual: { primary: "#FF6B4A", secondary: "#CC4422", eye: "#FFEE00" },
   },
@@ -46,8 +48,8 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "빙결 술사",
     description: "적을 얼리고 범위 공격에 특화",
     icon: "❄️",
-    startWeaponId: "W07", // 서리 폭발
-    startPassiveId: "P03", // 범위
+    startWeaponIds: ["W07"],
+    startPassiveIds: ["P03"],
     unlocked: true,
     visual: { primary: "#6EC6FF", secondary: "#3498DB", eye: "#FFFFFF" },
   },
@@ -57,8 +59,8 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "바람 사냥꾼",
     description: "빠른 투사체와 원거리 전투",
     icon: "💨",
-    startWeaponId: "W06", // 부메랑
-    startPassiveId: "P05", // 투사체 속도
+    startWeaponIds: ["W06"],
+    startPassiveIds: ["P05"],
     unlocked: true,
     visual: { primary: "#7ED321", secondary: "#4A9010", eye: "#FFFFFF" },
   },
@@ -68,8 +70,8 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "스피드스터",
     description: "이동 속도에 특화된 캐릭터",
     icon: "⚡",
-    startWeaponId: "W04", // 체인 라이트닝
-    startPassiveId: "P08", // 이동 속도
+    startWeaponIds: ["W04"],
+    startPassiveIds: ["P08"],
     unlocked: false,
     unlockCondition: "15분 생존 성공",
     visual: { primary: "#FFD93D", secondary: "#F39C12", eye: "#FFFFFF" },
@@ -80,8 +82,8 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "탱커",
     description: "높은 체력과 방어력을 가진 전사",
     icon: "🛡️",
-    startWeaponId: "W15", // 화염 오라
-    startPassiveId: "P04", // 최대 체력
+    startWeaponIds: ["W15"],
+    startPassiveIds: ["P04"],
     unlocked: false,
     unlockCondition: "한 게임에서 누적 1000 데미지 받기",
     visual: { primary: "#9B59B6", secondary: "#6C3483", eye: "#FFFFFF" },
@@ -92,8 +94,8 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "엘리멘탈리스트",
     description: "모든 원소를 다루는 마법의 달인",
     icon: "✨",
-    startWeaponId: "W02", // 매직 미사일
-    startPassiveId: "P13", // 복제
+    startWeaponIds: ["W02"],
+    startPassiveIds: ["P13"],
     unlocked: false,
     unlockCondition: "화염, 얼음, 전기 무기 모두 진화",
     visual: { primary: "#E056FD", secondary: "#9B2CF0", eye: "#00FFFF" },
@@ -104,11 +106,22 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "갬블러",
     description: "행운을 믿는 자",
     icon: "🍀",
-    startWeaponId: "W09", // 바늘 지뢰
-    startPassiveId: "P10", // 행운
+    startWeaponIds: ["W09"],
+    startPassiveIds: ["P10"],
     unlocked: false,
     unlockCondition: "누적 5000 골드 획득",
     visual: { primary: "#1ABC9C", secondary: "#16A085", eye: "#FFD700" },
+  },
+  GOD: {
+    id: "GOD",
+    name: "수빡이",
+    description: "모든 권능을 가진 전설의 개발자 (SECRET)",
+    icon: "♾️",
+    startWeaponIds: Object.keys(WEAPON_REGISTRY),
+    startPassiveIds: Object.keys(PASSIVE_REGISTRY),
+    startLevel: 8,
+    unlocked: false, // Hidden by default
+    visual: { primary: "#FFFFFF", secondary: "#000000", eye: "#64FFDA" },
   },
 };
 

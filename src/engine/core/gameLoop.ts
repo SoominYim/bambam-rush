@@ -172,8 +172,9 @@ const drawMinimap = (ctx: CanvasRenderingContext2D) => {
   // Tablet(iPad) 등은 PC와 같은 크기(150) 사용, 작은 모바일만 축소(100)
   const isMobile = window.innerWidth <= 600;
   const size = isMobile ? CONFIG.MOBILE_MINIMAP_SIZE : CONFIG.MINIMAP_SIZE;
-  const margin = isMobile ? 10 : CONFIG.MINIMAP_MARGIN;
+  const margin = isMobile ? 8 : CONFIG.MINIMAP_MARGIN;
 
+  // Top-right corner (score moved to left)
   const x = ctx.canvas.width - size - margin;
   const y = margin;
 

@@ -53,9 +53,17 @@
 
 /* Specific overrides */
 .pause-menu-content {
-  max-width: 400px; /* Pause menu is smaller */
-  padding: 40px;
-  max-height: auto; /* Pause menu usually fits w/o scroll */
+  max-width: 400px;
+  max-height: 90vh; /* Consistent with other modals */
+  overflow-y: auto; /* Enable scroll if content is too long */
+  padding: 30px; /* Reduced padding slightly to fit more content */
+}
+
+@media (max-width: 600px) {
+  .pause-menu-content {
+    padding: 20px;
+    max-height: 85vh;
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -224,12 +232,35 @@
   letter-spacing: 2px;
 }
 
+/* Custom scrollbar for pause menu */
+.pause-menu-content::-webkit-scrollbar {
+  width: 6px;
+}
+.pause-menu-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pause-menu-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
 .pause-stats-section {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 30px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 600px) {
+  .pause-title {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+  .pause-stats-section {
+    margin-bottom: 20px;
+    padding: 12px;
+  }
 }
 
 .stats-grid {
@@ -294,6 +325,20 @@
   color: #000;
   border: none;
   font-weight: 700;
+}
+
+.menu-btn.danger {
+  background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+}
+
+.menu-btn.danger:hover {
+  background: linear-gradient(135deg, #ff6b81 0%, #ff4757 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
 }
 
 /* -------------------------------------------------------------------------- */

@@ -1,82 +1,48 @@
 import { memo } from "react";
-import { PlayerStats } from "@/game/types";
+import { Timer } from "./Timer";
+import { ScoreDisplay } from "./ScoreDisplay";
+import { StatsBars } from "./StatsBars";
+import { GoldDisplay } from "./GoldDisplay";
+import { XPBarBottom } from "./XPBarBottom";
 import "@/styles/hud.css";
 
 interface HUDProps {
-  score: number;
-  gameTime: number; // Seconds
   isPaused: boolean;
-  playerStats: PlayerStats | null;
   onPauseToggle: () => void;
 }
 
-const formatTime = (seconds: number) => {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-};
-
-export const HUD = memo(({ score, gameTime, isPaused, playerStats, onPauseToggle }: HUDProps) => {
+export const HUD = memo(({ isPaused, onPauseToggle }: HUDProps) => {
   return (
-    <div className="game-hud">
-      {/* Timer Display (Top Center) */}
-      <div className="timer-container">
-        <span className="timer-value">{formatTime(gameTime)}</span>
-      </div>
-
-      <div className="hud-left">
-        <div className="player-stats-bar">
-          <div className="hp-bar-container">
-            <div
-              className="hp-bar-fill"
-              style={{ width: `${((playerStats?.hp || 0) / (playerStats?.maxHp || 100)) * 100}%` }}
-            />
-            <span className="hp-text">
-              {Math.ceil(playerStats?.hp || 0)} / {playerStats?.maxHp || 100}
-            </span>
-          </div>
-
-          <div className="xp-bar-container">
-            <div
-              className="xp-bar-fill"
-              style={{ width: `${((playerStats?.xp || 0) / (playerStats?.maxXp || 100)) * 100}%` }}
-            />
-            <span className="level-badge">Lv.{playerStats?.level || 1}</span>
-          </div>
-
-          <div className="stats-mini">
-            <div className="stat-item" title="공격력">
-              <span className="stat-icon">⚔️</span>
-              <span className="stat-value">{playerStats?.atk.toFixed(1)}</span>
-            </div>
-            <div className="stat-item" title="방어력">
-              <span className="stat-icon">🛡️</span>
-              <span className="stat-value">{playerStats?.def}</span>
-            </div>
-            <div className="stat-item" title="공격 속도">
-              <span className="stat-icon">⚡</span>
-              <span className="stat-value">{playerStats?.fireRate.toFixed(1)}x</span>
-            </div>
+    <>
+      <div className="game-hud">
+        {/* 1. Left Group: Stats & Score */}
+        <div className="hud-left">
+          <StatsBars />
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <ScoreDisplay />
+            <GoldDisplay />
           </div>
         </div>
 
-        <div className="score-container">
-          <span className="score-label">점수</span>
-          <span className="score-value">{score.toLocaleString()}</span>
+        {/* 2. Center: Timer & Pause Button below */}
+        <div className="hud-center-top">
+          <Timer />
+          <button className="pause-btn" onClick={onPauseToggle} title={isPaused ? "Resume" : "Pause"}>
+            {isPaused ? (
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+              </svg>
+            )}
+          </button>
         </div>
-
-        <button className="pause-btn" onClick={onPauseToggle} title={isPaused ? "재개" : "일시정지"}>
-          {isPaused ? (
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-            </svg>
-          )}
-        </button>
       </div>
-    </div>
+
+      {/* 3. Bottom: Global XP Bar */}
+      <XPBarBottom />
+    </>
   );
 });

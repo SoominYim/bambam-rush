@@ -1,44 +1,47 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Inter:wght@400;700;800&display=swap");
+
 /* hud.css */
 .game-hud {
   position: fixed;
-  top: 20px;
-  left: 20px;
+  top: 8px;
+  left: 8px;
   z-index: 100;
   pointer-events: none;
-  width: calc(100% - 40px);
+  width: calc(100% - 16px);
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
 }
 
+/* Left side: Stats & Score Group */
 .hud-left {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  flex-direction: column;
+  gap: 8px;
   pointer-events: auto;
 }
 
 .player-stats-bar {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .hp-bar-container {
   position: relative;
-  width: 240px;
-  height: 28px;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 6px;
+  width: 200px;
+  height: 18px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 4px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
 .hp-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ff4b2b, #ff416c);
-  transition: width 0.3s ease-out;
-  box-shadow: 0 0 20px rgba(255, 65, 108, 0.4);
+  background: linear-gradient(90deg, #ff416c, #ff4b2b);
+  box-shadow: 0 0 10px rgba(255, 75, 43, 0.3);
 }
 
 .hp-text {
@@ -46,267 +49,223 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
   color: #fff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  font-family: "Inter", sans-serif;
 }
 
-/* XP Bar */
-.xp-bar-container {
-  width: 240px;
-  height: 8px;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  margin-top: -2px; /* Pull closer to stats */
-  position: relative;
-}
-
-.xp-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #4facfe, #00f2fe);
-  box-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
-  transition: width 0.2s ease-out;
-}
-
-.level-badge {
-  position: absolute;
-  top: -26px; /* Above XP bar */
-  right: 0;
-  background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  color: #ffd700;
-  font-size: 10px;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 4px;
-  text-shadow: 0 0 5px rgba(255, 215, 0, 0.6);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-}
-
-/* Timer Styles */
-.timer-container {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(20, 20, 30, 0.8);
-  padding: 6px 20px;
-  border-radius: 0 0 12px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-top: none;
-  backdrop-filter: blur(8px);
-  z-index: 101;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-}
-
-.timer-value {
-  font-family: "Outfit", monospace;
-  font-size: 22px;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: 1px;
-  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-}
-
-.stats-mini {
-  display: flex;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(0, 0, 0, 0.4);
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(4px);
-}
-
-.stat-icon {
-  font-size: 14px;
-}
-
-.stat-value {
-  font-size: 14px;
-  font-weight: 700;
-  color: #eee;
-  font-family: "Outfit", sans-serif;
-}
-
+/* Gold & Score */
+.gold-container,
 .score-container {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(12px);
-  padding: 10px 30px;
-  border-radius: 12px;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  padding: 4px 10px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  height: fit-content;
+}
+
+.gold-icon {
+  font-size: 14px;
+}
+.gold-value {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffd700;
+  font-family: "Outfit", sans-serif;
 }
 
 .score-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
-  letter-spacing: 1px;
+  font-size: 8px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.4);
   text-transform: uppercase;
-  margin-bottom: 2px;
 }
 
 .score-value {
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 900;
   color: #fff;
   font-family: "Outfit", sans-serif;
-  line-height: 1;
+}
+
+/* Center Top: Timer + Pause Button */
+.hud-center-top {
+  position: fixed;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.timer-container {
+  padding: 2px 10px;
+  z-index: 102;
+}
+
+.timer-value {
+  font-family: "Outfit", sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 .pause-btn {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(15, 15, 25, 0.4);
+  backdrop-filter: blur(2px);
   color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: auto;
   transition: all 0.2s;
 }
 
 .pause-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.05);
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
 }
 
-.pause-btn:active {
-  transform: scale(0.95);
+/* Bottom XP Bar (Vampire Survivors Style) */
+.xp-bar-bottom-fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.xp-bar-fill-bottom {
+  height: 100%;
+  background: linear-gradient(90deg, #1e90ff, #00ced1, #1e90ff);
+  box-shadow: 0 0 10px rgba(30, 144, 255, 0.6);
+  transition: width 0.3s cubic-bezier(0.1, 0.7, 1, 0.1);
+}
+
+.xp-bar-info-bottom {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 15px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #00f2fe;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  font-family: "Outfit", sans-serif;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 10px;
+  border-radius: 4px 4px 0 0;
+}
+
+/* Detail Stats Overlay (Player Stats) */
+.detail-stats-overlay {
+  position: fixed;
+  left: 8px;
+  top: 105px;
+  background: rgba(10, 10, 20, 0.9);
+  padding: 12px;
+  border-radius: 8px;
+  color: #fff;
+  pointer-events: none;
+  z-index: 100;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  width: 180px;
+  backdrop-filter: blur(10px);
+}
+
+.detail-stats-overlay h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-family: "Outfit", sans-serif;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 4px;
+  color: #4facfe;
+}
+
+.detail-stats-overlay span {
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+}
+
+.stats-mini {
+  display: flex;
+  gap: 4px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-icon {
+  font-size: 10px;
+}
+
+.stat-value {
+  font-size: 10px;
+  font-weight: 700;
+  color: #eee;
+  font-family: "Inter", sans-serif;
 }
 
 /* =========================================
-   Mobile & Tablet Responsiveness
+   Mobile Responsiveness
    ========================================= */
-@media (max-width: 1024px) {
-  /* Tablet adjustments if needed */
-  .game-hud {
-    top: 15px;
-    left: 15px;
-    width: calc(100% - 30px);
-  }
-}
-
 @media (max-width: 768px) {
-  /* Mobile Layout */
-  .game-hud {
-    top: 10px;
-    left: 10px;
-    width: calc(100% - 20px);
-    flex-direction: column; /* Allow absolute positioning within context if needed */
-  }
-
-  .hud-left {
-    flex-direction: row; /* wrap을 위해 row로 변경 */
-    flex-wrap: wrap; /* 줄바꿈 허용 */
-    align-items: center; /* 세로 중앙 정렬 */
-    gap: 8px;
-    position: relative;
-  }
-
-  /* 스탯바는 한 줄 차지 */
-  .player-stats-bar {
-    width: 100%;
-  }
-
-  /* Compact Bars */
-  .hp-bar-container,
-  .xp-bar-container {
-    width: 180px;
-  }
-
   .hp-bar-container {
+    width: 140px;
+    height: 14px;
+  }
+  .hp-text {
+    font-size: 9px;
+  }
+  .timer-value {
+    font-size: 16px;
+  }
+  .pause-btn {
+    width: 22px;
     height: 22px;
   }
-  .xp-bar-container {
-    height: 6px;
-  }
-
-  .hp-text {
-    font-size: 11px;
-  }
-  .level-badge {
-    font-size: 10px;
-    padding: 1px 6px;
-    top: -24px;
-    right: 0;
-  }
-
-  /* Compact Stats */
-  .stats-mini {
-    gap: 6px;
-    margin-top: 2px;
-    flex-wrap: wrap;
-    max-width: 250px;
-  }
-
-  .stat-item {
-    padding: 4px 8px;
-  }
-
-  .stat-icon {
-    font-size: 12px;
-  }
-  .stat-value {
-    font-size: 12px;
-  }
-
-  /* Pause Button: 점수 옆에 배치 */
-  .pause-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    margin-top: 0;
-    margin-left: 0;
-    background: rgba(0, 0, 0, 0.4);
-    align-self: auto;
-  }
-
-  .pause-btn svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  /* Score: 스탯바 아래, 버튼 왼쪽 */
-  .score-container {
-    position: static;
-    transform: none;
-    margin-top: 0;
-    padding: 4px 12px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    align-self: auto;
-    height: 40px; /* 버튼 높이에 맞춤 */
-    min-width: unset;
-    flex-direction: column; /* 내용물 세로 정렬 */
-    justify-content: center;
-  }
-
-  .score-label {
-    font-size: 8px;
-    margin-bottom: 0;
-  }
-
+  .gold-value,
   .score-value {
-    font-size: 16px;
+    font-size: 13px;
+  }
+  .detail-stats-overlay {
+    width: 140px;
+    top: 90px;
+  }
+  .xp-bar-bottom-fixed {
+    height: 8px;
+  }
+  .xp-bar-info-bottom {
+    top: -16px;
+    font-size: 9px;
   }
 }

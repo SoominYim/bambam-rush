@@ -1,36 +1,29 @@
-import React, { useEffect, useState } from "react";
+import React, { memo, useState, useEffect } from "react";
+import { PlayerStats } from "@/game/types";
 import { getPlayerStats } from "@/game/managers/state";
 
-export const StatsUI: React.FC = () => {
-  const [stats, setStats] = useState(getPlayerStats());
+interface StatsUIProps {
+  stats: PlayerStats | null;
+}
+
+export const StatsUI: React.FC<StatsUIProps> = memo(({ stats: initialStats }) => {
+  const [stats, setStats] = useState(initialStats || getPlayerStats());
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setStats({ ...getPlayerStats()! });
-    }, 500);
+      const current = getPlayerStats();
+      if (!current) return;
+      // Always clone to ensure we catch any internal property mutations
+      setStats({ ...current });
+    }, 100);
     return () => clearInterval(interval);
   }, []);
-
   if (!stats) return null;
 
-  const style: React.CSSProperties = {
-    position: "absolute",
-    left: "10px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    background: "rgba(0, 0, 0, 0.7)",
-    padding: "15px",
-    borderRadius: "8px",
-    color: "#fff",
-    fontSize: "14px",
-    pointerEvents: "none", // Click through
-    zIndex: 100,
-  };
-
   return (
-    <div style={style}>
-      <h3 style={{ margin: "0 0 10px 0", borderBottom: "1px solid #555", paddingBottom: "5px" }}>Player Stats</h3>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 20px" }}>
+    <div className="detail-stats-overlay">
+      <h3>Player Stats</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 10px" }}>
         <span>❤️ HP:</span>
         <span>
           {Math.floor(stats.hp)} / {stats.maxHp}
@@ -53,7 +46,10 @@ export const StatsUI: React.FC = () => {
 
         <span>🧲 Range:</span>
         <span>{stats.pickupRange.toFixed(0)}</span>
+
+        <span>🧲 Power:</span>
+        <span>{stats.magnetPower.toFixed(0)}</span>
       </div>
     </div>
   );
-};
+});

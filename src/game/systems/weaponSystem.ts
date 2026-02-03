@@ -85,7 +85,7 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
 
   switch (def.pattern) {
     case "projectile":
-      fireProjectile(origin, stats, def.tags[0]);
+      fireProjectile(origin, stats, def.tags[0], aw.id);
       break;
     case "line":
       fireLine(origin, stats, def.tags[0]);
@@ -200,7 +200,7 @@ const fireSwing = (origin: Vector2D, stats: any, type: any) => {
   }
 };
 
-const fireProjectile = (origin: Vector2D, stats: any, type: any) => {
+const fireProjectile = (origin: Vector2D, stats: any, type: any, weaponId?: string) => {
   const nearby = spatialGrid.getNearbyEnemies(origin.x, origin.y, 600) as Enemy[];
   if (!nearby || nearby.length === 0) return;
 
@@ -214,11 +214,19 @@ const fireProjectile = (origin: Vector2D, stats: any, type: any) => {
 
   if (targets.length === 0) return;
 
+  const isHoming = weaponId === "W02" || weaponId === "W02_EVO";
+
   for (let i = 0; i < stats.count; i++) {
     const target = targets[i % targets.length];
     const angle = Math.atan2(target.position.y - origin.y, target.position.x - origin.x);
 
     const proj = createProjectile(origin.x, origin.y, angle, type, 1, "PROJECTILE" as any);
+
+    if (isHoming) {
+      (proj as any).behavior = "HOMING";
+      (proj as any).turnSpeed = 6; // Radians per second
+    }
+
     proj.damage = stats.damage;
     (proj as any).speed = stats.speed || 300;
     (proj as any).radius = stats.size;

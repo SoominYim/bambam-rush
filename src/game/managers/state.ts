@@ -1,111 +1,109 @@
-import { GameObject, Enemy, Projectile, Collectible, TailSegment, Player } from "@/game/types";
+import { GameObject, Projectile, Collectible, TailSegment, Player } from "@/game/types";
 import { vfx } from "@/engine/vfx/ParticleSystem";
 import { spatialGrid } from "@/game/managers/grid";
 import { XPGemInstance } from "@/game/entities/xpGem";
 import { damageTextManager } from "@/game/managers/damageTextManager";
-import { Card, draftCards, applyCardEffect } from "@/game/systems/cardSystem";
+import { applyCardEffect, draftCards } from "@/game/systems/cardSystem";
 import { setPaused } from "@/engine/systems/input";
-
-let entities: GameObject[] = [];
-let collectibles: Collectible[] = [];
-let tail: TailSegment[] = [];
-let enemies: Enemy[] = [];
-let projectiles: Projectile[] = [];
-let xpGems: XPGemInstance[] = [];
-let player: Player | null = null;
-let score: number = 0;
-
-// Level Up State
-let isLevelUpPending = false;
-let levelUpChoices: Card[] = [];
+import { waveManager } from "@/game/managers/waveManager";
+import { state, resetEntityStore, getPlayer, addEnemy } from "./entityStore";
+import * as CONFIG from "../config/constants";
 
 export const initGameState = (p: Player) => {
-  player = p;
-  entities = [p];
-  collectibles = [];
-  tail = [];
-  enemies = [];
-  projectiles = [];
-  xpGems = [];
-  score = 0;
+  resetEntityStore(p);
+  // Reset Timer & Waves
+  waveManager.reset();
 };
 
-export const addEntity = (entity: GameObject) => entities.push(entity);
-export const addCollectible = (c: Collectible) => collectibles.push(c);
+export const addEntity = (entity: GameObject) => state.entities.push(entity);
+export const addCollectible = (c: Collectible) => state.collectibles.push(c);
 export const addTailSegment = (segment: TailSegment): void => {
-  tail.push(segment);
+  state.tail.push(segment);
 };
-export const addEnemy = (e: Enemy) => enemies.push(e);
-export const addProjectile = (p: Projectile) => projectiles.push(p);
-export const addXPGem = (x: number, y: number, amount: number) => xpGems.push(new XPGemInstance(x, y, amount));
+export { addEnemy };
+export const addProjectile = (p: Projectile) => state.projectiles.push(p);
+export const addXPGem = (x: number, y: number, amount: number) => {
+  state.xpGems.push(new XPGemInstance(x, y, amount));
+};
 
-export const getEntities = () => entities;
-export const getCollectibles = () => collectibles;
-export const getTail = () => tail;
-export const getEnemies = () => enemies;
-export const getProjectiles = () => projectiles;
-export const getXPGems = () => xpGems;
-export const getPlayer = () => player;
+export const getEntities = () => state.entities;
+export const getCollectibles = () => state.collectibles;
+export const getTail = () => state.tail;
+export const getEnemies = () => state.enemies;
+export const getProjectiles = () => state.projectiles;
+export const getXPGems = () => state.xpGems;
+export { getPlayer };
 
 // Level Up Interface
 export const getLevelUpState = () => ({
-  isLevelUpPending,
-  levelUpChoices,
+  isLevelUpPending: state.isLevelUpPending,
+  levelUpChoices: state.levelUpChoices,
 });
 
 export const selectLevelUpCard = (cardIndex: number) => {
-  if (!player || !isLevelUpPending) return;
+  if (!state.player || !state.isLevelUpPending) return;
 
-  const card = levelUpChoices[cardIndex];
+  const card = state.levelUpChoices[cardIndex];
   if (card) {
     applyCardEffect(card);
   }
 
   // Reset State
-  isLevelUpPending = false;
-  levelUpChoices = [];
+  state.isLevelUpPending = false;
+  state.levelUpChoices = [];
 
   // Resume Game
   setPaused(false);
 };
 
-import { waveManager } from "@/game/managers/waveManager";
-
 // Score management
-export const getScore = () => score;
+export const getScore = () => state.score;
 export const addScore = (points: number): void => {
-  score += points;
+  state.score += points;
 };
+
+// Gold management
+export const addGold = (amount: number): void => {
+  if (state.player) {
+    state.player.stats.gold += amount;
+  }
+};
+
+export const getGold = () => state.player?.stats.gold || 0;
 
 // Game Time (Wave)
 export const getGameTime = () => waveManager.getPlayTime();
 
-export const getPlayerStats = () => player?.stats || null;
+export const getPlayerStats = () => state.player?.stats || null;
 
 export const updateGameState = (deltaTime: number) => {
+  const { player } = state;
   if (player) player.update(deltaTime);
-  tail.forEach(t => t.update(deltaTime)); // 꼬리도 업데이트해야 플레이어를 따라다님!
-  collectibles.forEach(c => c.update(deltaTime));
-  enemies.forEach(e => e.update(deltaTime));
-  projectiles.forEach(p => p.update(deltaTime));
+  state.tail.forEach(t => t.update(deltaTime)); // 꼬리도 업데이트해야 플레이어를 따라다님!
+  state.collectibles.forEach(c => c.update(deltaTime));
+  state.enemies.forEach(e => e.update(deltaTime));
+  state.projectiles.forEach(p => p.update(deltaTime));
 
   if (player) {
     const pPos = player.position;
-    // Effective Pickup Range: If magnetTimer is active, global pickup.
-    const pickupRange = player.magnetTimer && player.magnetTimer > 0 ? 9999 : player.stats.pickupRange;
-    const magnetRangeSq = pickupRange * pickupRange;
-
-    xpGems.forEach(gem => {
-      // Check Magnet
+    state.xpGems.forEach(gem => {
+      // 1. Check if gem should become magnetized
       if (!gem.isMagnetized) {
         const dx = pPos.x - gem.position.x;
         const dy = pPos.y - gem.position.y;
-        if (dx * dx + dy * dy < magnetRangeSq) {
+        const distSq = dx * dx + dy * dy;
+
+        // Active Magnet (Global/Large) vs Passive Magnet (Stats)
+        const currentRange =
+          player.magnetTimer && player.magnetTimer > 0 ? CONFIG.MAGNET_ITEM_RANGE : player.stats.pickupRange;
+
+        if (distSq < currentRange * currentRange) {
           gem.isMagnetized = true;
         }
       }
 
-      gem.update(deltaTime, player!);
+      // 2. Update Gem (Attraction logic is inside)
+      gem.update(deltaTime, player);
 
       // Check Collection (Collision with Player)
       // Radius ~20 for collection
@@ -115,18 +113,18 @@ export const updateGameState = (deltaTime: number) => {
         // 20*20
         // Collect!
         gem.isExpired = true;
-        player!.stats.xp += gem.amount;
+        player.stats.xp += gem.amount;
         checkLevelUp();
       }
     });
   }
 
   // Cleanup
-  collectibles = collectibles.filter(c => !c.isExpired);
-  enemies = enemies.filter(e => !e.isExpired);
-  projectiles = projectiles.filter(p => !p.isExpired);
-  xpGems = xpGems.filter(g => !g.isExpired);
-  tail = tail.filter(t => !t.isExpired);
+  state.collectibles = state.collectibles.filter(c => !c.isExpired);
+  state.enemies = state.enemies.filter(e => !e.isExpired);
+  state.projectiles = state.projectiles.filter(p => !p.isExpired);
+  state.xpGems = state.xpGems.filter(g => !g.isExpired);
+  state.tail = state.tail.filter(t => !t.isExpired);
 
   // Update particles
   vfx.update(deltaTime);
@@ -136,18 +134,18 @@ export const updateGameState = (deltaTime: number) => {
 
   // Update Spatial Grid for efficient combat lookups
   spatialGrid.clear();
-  enemies.forEach(e => spatialGrid.insert(e));
+  state.enemies.forEach(e => spatialGrid.insert(e));
 };
 
 export const drawGameState = (ctx: CanvasRenderingContext2D) => {
-  collectibles.forEach(c => c.draw(ctx));
-  enemies.forEach(e => e.draw(ctx));
+  state.collectibles.forEach(c => c.draw(ctx));
+  state.enemies.forEach(e => e.draw(ctx));
 
-  tail.forEach(t => t.draw(ctx));
+  state.tail.forEach(t => t.draw(ctx));
 
-  if (player) player.draw(ctx);
-  projectiles.forEach(p => p.draw(ctx));
-  xpGems.forEach(g => g.draw(ctx));
+  if (state.player) state.player.draw(ctx);
+  state.projectiles.forEach(p => p.draw(ctx));
+  state.xpGems.forEach(g => g.draw(ctx));
 
   // Draw Damage Text
   damageTextManager.draw(ctx);
@@ -157,9 +155,9 @@ export const drawGameState = (ctx: CanvasRenderingContext2D) => {
 };
 
 const checkLevelUp = () => {
-  if (!player) return;
+  if (!state.player) return;
 
-  const stats = player.stats;
+  const stats = state.player.stats;
   if (stats.xp >= stats.maxXp) {
     // Level Up!
     stats.xp -= stats.maxXp;
@@ -167,8 +165,8 @@ const checkLevelUp = () => {
     stats.maxXp = Math.floor(stats.maxXp * 1.5); // Increase XP requirement
 
     // Trigger Level Up UI
-    isLevelUpPending = true;
-    levelUpChoices = draftCards(3);
+    state.isLevelUpPending = true;
+    state.levelUpChoices = draftCards(3);
     setPaused(true);
 
     // Heal slightly on level up?
@@ -177,7 +175,7 @@ const checkLevelUp = () => {
 };
 
 export const addPlayerXP = (amount: number) => {
-  if (!player) return;
-  player.stats.xp += amount;
+  if (!state.player) return;
+  state.player.stats.xp += amount;
   checkLevelUp();
 };

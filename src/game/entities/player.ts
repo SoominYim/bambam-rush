@@ -14,10 +14,10 @@ import { VFXFactory } from "@/engine/vfx/VFXFactory";
 import * as CONFIG from "../config/constants";
 import { drawCharacter } from "@/game/utils/characterRenderer";
 
-// Position history for snake-like trailing
+// Position history for snake-like trailing (Breadcrumb system)
 let positionHistory: Vector2D[] = [];
-const HISTORY_SPACING = 5;
-const MAX_HISTORY = 1000;
+const HISTORY_SPACING = 2; // Resolution of path tracking (Higher = smoother, more memory)
+const MAX_HISTORY = 5000; // Allow for very long snakes
 
 export const getPositionHistory = () => positionHistory;
 export const resetPositionHistory = () => {
@@ -37,7 +37,9 @@ export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string
     xp: 0,
     maxXp: 100, // Initial XP required for level 2
     level: 1,
-    pickupRange: 150, // Magnet range
+    gold: 0,
+    pickupRange: 60, // Magnet range (base)
+    magnetPower: CONFIG.MAGNET_BASE_POWER,
     hpRegen: 0.5, // 0.5 HP per second base
   };
 
@@ -45,21 +47,41 @@ export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string
     id: "snake_head",
     characterId: characterId,
     position: { x: startX, y: startY },
+    direction: { x: 0, y: -1 }, // Start moving UP
     stats: stats,
     magnetTimer: 0,
     activeWeapons: [],
     passives: [],
 
     update: function (deltaTime: Scalar) {
-      const moveDir = getMovementDirection();
+      const inputDir = getMovementDirection();
+      const speedMult = this.stats.speed || 1.0;
+
+      // 1. Direction Interpolation (Snake.io Core)
+      // If there's input, gradually turn towards it.
+      // If no input, keep moving in the last direction.
+      if (inputDir.x !== 0 || inputDir.y !== 0) {
+        // Interpolate current direction towards input direction
+        const turnSpeed = CONFIG.PLAYER_TURN_SPEED;
+        this.direction.x += (inputDir.x - this.direction.x) * turnSpeed * deltaTime;
+        this.direction.y += (inputDir.y - this.direction.y) * turnSpeed * deltaTime;
+
+        // Re-normalize to maintain unit length
+        const len = Math.sqrt(this.direction.x ** 2 + this.direction.y ** 2);
+        if (len > 0) {
+          this.direction.x /= len;
+          this.direction.y /= len;
+        }
+      }
+
+      // 2. Always Move Forward
       const prevX = this.position.x;
       const prevY = this.position.y;
 
-      const speedMult = this.stats.speed || 1.0;
-      this.position.x += moveDir.x * CONFIG.PLAYER_SPEED * speedMult * deltaTime;
-      this.position.y += moveDir.y * CONFIG.PLAYER_SPEED * speedMult * deltaTime;
+      this.position.x += this.direction.x * CONFIG.PLAYER_SPEED * speedMult * deltaTime;
+      this.position.y += this.direction.y * CONFIG.PLAYER_SPEED * speedMult * deltaTime;
 
-      // 1. Boundary Collision
+      // 3. Boundary Collision
       this.position.x = Math.max(
         CONFIG.PLAYER_RADIUS,
         Math.min(CONFIG.WORLD_WIDTH - CONFIG.PLAYER_RADIUS, this.position.x),
@@ -69,18 +91,26 @@ export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string
         Math.min(CONFIG.WORLD_HEIGHT - CONFIG.PLAYER_RADIUS, this.position.y),
       );
 
-      // 2. Record position history
+      // 4. Record position history for tail (Breadcrumb system)
       const dx = this.position.x - prevX;
       const dy = this.position.y - prevY;
       const moved = Math.sqrt(dx * dx + dy * dy);
 
-      if (moved > HISTORY_SPACING) {
-        positionHistory.unshift({ x: this.position.x, y: this.position.y });
-        if (positionHistory.length > MAX_HISTORY) {
-          positionHistory.pop();
+      if (moved > 0.1) {
+        const lastPoint = positionHistory[0];
+        const distFromLast = lastPoint
+          ? Math.sqrt((this.position.x - lastPoint.x) ** 2 + (this.position.y - lastPoint.y) ** 2)
+          : 999;
+
+        if (distFromLast >= HISTORY_SPACING) {
+          positionHistory.unshift({ x: this.position.x, y: this.position.y });
+          if (positionHistory.length > MAX_HISTORY) {
+            positionHistory.pop();
+          }
         }
       }
 
+      // Systems
       checkCollection(this);
 
       // HP Regen
@@ -98,19 +128,15 @@ export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string
     draw: function (ctx: CanvasRenderingContext2D) {
       ctx.save();
 
-      // Magnet Effect (Outer Ring only)
+      // Magnet Effect (Subtle Aura)
       if (this.magnetTimer && this.magnetTimer > 0) {
-        const pulse = (Math.sin(Date.now() / 200) + 1) * 3;
         ctx.beginPath();
-        ctx.arc(this.position.x, this.position.y, CONFIG.PLAYER_RADIUS + 15 + pulse, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(100, 255, 218, 0.5)";
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.arc(this.position.x, this.position.y, CONFIG.PLAYER_RADIUS + 10, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(100, 255, 218, 0.15)";
+        ctx.fill();
       }
 
-      // 중앙 집중화된 캐릭터 렌더링 (메인 메뉴와 100% 동일)
+      // Draw Head
       drawCharacter(ctx, this.position.x, this.position.y, this.characterId || "BASIC", CONFIG.PLAYER_RADIUS);
 
       ctx.restore();
@@ -160,63 +186,40 @@ const checkCollection = (head: GameObject) => {
   });
 };
 
-export const createTailSegment = (index: number, elementType: ElementType): TailSegment => {
-  const pointsPerSegment = Math.floor(CONFIG.SNAKE_SEGMENT_SPACING / HISTORY_SPACING);
-  const historyIndex = (index + 1) * pointsPerSegment;
-
-  const history = getPositionHistory();
-  const player = getPlayer();
-
-  let startPos: Vector2D;
-  if (historyIndex < history.length && history[historyIndex]) {
-    startPos = history[historyIndex];
-  } else if (player) {
-    startPos = { x: player.position.x, y: player.position.y };
-  } else {
-    startPos = { x: 500, y: 500 };
-  }
+export const createTailSegment = (_index: number, elementType: ElementType): TailSegment => {
+  const pointsPerSegment = Math.round(CONFIG.SNAKE_SEGMENT_SPACING / HISTORY_SPACING);
 
   return {
     id: `tail_${Date.now()}_${Math.random()}`,
-    position: { x: startPos.x, y: startPos.y },
+    position: { x: 0, y: 0 },
     type: elementType,
     tier: 1,
     followTarget: null,
     weaponId: "", // To be assigned
 
-    update: function (deltaTime: Scalar) {
+    update: function (_deltaTime: Scalar) {
+      const history = getPositionHistory();
       const tail = getTail();
-      const myIndex = tail.indexOf(this);
-      if (myIndex === -1) return;
+      const myIndexInTail = tail.indexOf(this);
 
-      let targetPos: Vector2D;
-      if (myIndex === 0) {
-        const player = getPlayer();
-        if (!player) return;
-        targetPos = player.position;
-      } else {
-        targetPos = tail[myIndex - 1].position;
+      if (myIndexInTail === -1) return;
+
+      // Calculate path following index
+      const historyIndex = (myIndexInTail + 1) * pointsPerSegment;
+
+      if (historyIndex < history.length) {
+        const targetPos = history[historyIndex];
+        this.position.x = targetPos.x;
+        this.position.y = targetPos.y;
+      } else if (history.length > 0) {
+        const fallbackPos = history[history.length - 1];
+        this.position.x = fallbackPos.x;
+        this.position.y = fallbackPos.y;
       }
 
-      const dx = targetPos.x - this.position.x;
-      const dy = targetPos.y - this.position.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      // Add aura particles
+      // Visual particles
       if (Math.random() < 0.05) {
         VFXFactory.createTrail(this.position.x, this.position.y, this.type);
-      }
-
-      const desiredDistance = CONFIG.SNAKE_SEGMENT_SPACING;
-      if (distance > desiredDistance) {
-        // Fetch player speed multiplier
-        const player = getPlayer();
-        const speedMult = player?.stats.speed || 1.0;
-
-        const moveDistance = Math.min(distance - desiredDistance, CONFIG.PLAYER_SPEED * speedMult * deltaTime);
-        const ratio = moveDistance / distance;
-        this.position.x += dx * ratio;
-        this.position.y += dy * ratio;
       }
     },
 

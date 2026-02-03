@@ -232,3 +232,26 @@ const getPassiveIcon = (id: string): string => {
       return "💎";
   }
 };
+export const addWeapon = (weaponId: string) => {
+  const player = getPlayer();
+  if (!player) return;
+
+  const active = player.activeWeapons.find(w => w.id === weaponId);
+  if (active) {
+    if (active.level < 8) active.level++;
+  } else {
+    player.activeWeapons.push({
+      id: weaponId,
+      level: 1,
+      timer: 0,
+      lastFired: 0,
+    });
+    // Add tail visual
+    const def = WEAPON_REGISTRY[weaponId];
+    if (def) {
+      const newSegment = createTailSegment(getTail().length, def.tags[0]);
+      newSegment.weaponId = weaponId;
+      addTailSegment(newSegment);
+    }
+  }
+};

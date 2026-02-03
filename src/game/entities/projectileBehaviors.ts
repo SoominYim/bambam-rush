@@ -13,7 +13,8 @@ export type ProjectileBehavior =
   | "LINEAR"
   | "SWING"
   | "STAB"
-  | "ORBIT_STAB";
+  | "ORBIT_STAB"
+  | "HOMING";
 
 /**
  * 행동 함수 타입
@@ -442,6 +443,61 @@ const updateOrbitStab: BehaviorFunction = (proj, dt) => {
 };
 
 /**
+ * HOMING - 가장 가까운 적을 추격
+ */
+const updateHoming: BehaviorFunction = (proj, dt) => {
+  const p = proj as any;
+  const speed = p.speed || 200;
+  const turnSpeed = (p.turnSpeed || 5) * dt; // turn speed in radians per sec
+
+  // 1. Target Resolution
+  if (!p.homingTarget || p.homingTarget.isExpired) {
+    const enemies = getEnemies();
+    let nearest = null;
+    let minDSq = 600 * 600; // Search range
+
+    for (const e of enemies) {
+      if (e.isExpired) continue;
+      const dx = e.position.x - proj.position.x;
+      const dy = e.position.y - proj.position.y;
+      const dSq = dx * dx + dy * dy;
+      if (dSq < minDSq) {
+        minDSq = dSq;
+        nearest = e;
+      }
+    }
+    p.homingTarget = nearest;
+  }
+
+  // 2. Adjust Angle
+  if (p.homingTarget) {
+    const targetAngle = Math.atan2(
+      p.homingTarget.position.y - proj.position.y,
+      p.homingTarget.position.x - proj.position.x,
+    );
+
+    // Smoothly rotate current angle towards target angle
+    let currentAngle = proj.angle || 0;
+    let angleDiff = targetAngle - currentAngle;
+
+    // Normalize angle difference to [-PI, PI]
+    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+    if (Math.abs(angleDiff) < turnSpeed) {
+      proj.angle = targetAngle;
+    } else {
+      proj.angle = currentAngle + Math.sign(angleDiff) * turnSpeed;
+    }
+  }
+
+  // 3. Move forward
+  const angle = proj.angle || 0;
+  proj.position.x += Math.cos(angle) * speed * dt;
+  proj.position.y += Math.sin(angle) * speed * dt;
+};
+
+/**
  * 행동 맵
  */
 const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
@@ -454,6 +510,7 @@ const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
   SWING: updateSwing,
   STAB: updateStab,
   ORBIT_STAB: updateOrbitStab,
+  HOMING: updateHoming,
 };
 
 /**

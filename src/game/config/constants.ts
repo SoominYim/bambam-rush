@@ -8,12 +8,13 @@ export const PLAYER_BASE_ATK = 1.0;
 export const PLAYER_BASE_DEF = 5;
 export const PLAYER_BASE_FIRE_RATE = 1.0;
 export const PLAYER_SPEED = 180;
+export const PLAYER_TURN_SPEED = 6; // Radians per second of rotation sensitivity
 export const PLAYER_RADIUS = 12;
 
 // ===== SNAKE CONFIG =====
-export const SNAKE_SEGMENT_SPACING = 35;
+export const SNAKE_SEGMENT_SPACING = 10; // High overlap for continuous look
 export const SNAKE_SEGMENT_RADIUS = 15;
-export const SNAKE_SEGMENT_DISTANCE = 35;
+export const SNAKE_SEGMENT_DISTANCE = 10;
 
 // ===== SPAWN RATES =====
 export const COLLECTIBLE_SPAWN_CHANCE = 0.002;
@@ -71,3 +72,5 @@ export const GRID_LINE_WIDTH = 1;
 // ===== COLLECTION CONFIG =====
 export const COLLECTION_RADIUS = 40;
 export const COLLECTION_SCORE = 10;
+export const MAGNET_BASE_POWER = 500;
+export const MAGNET_ITEM_RANGE = 2000;
