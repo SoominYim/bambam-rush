@@ -13,9 +13,27 @@ export const StatsUI: React.FC<StatsUIProps> = memo(({ stats: initialStats }) =>
     const interval = setInterval(() => {
       const current = getPlayerStats();
       if (!current) return;
-      // Always clone to ensure we catch any internal property mutations
-      setStats({ ...current });
-    }, 100);
+
+      setStats(prev => {
+        if (!prev) return { ...current };
+
+        // Only update if visible values changed significantly
+        // Using tolerance for float values or floor/ceil
+        const changed =
+          Math.floor(prev.hp) !== Math.floor(current.hp) ||
+          prev.maxHp !== current.maxHp ||
+          prev.atk !== current.atk ||
+          prev.def !== current.def ||
+          prev.fireRate !== current.fireRate ||
+          (prev.speed || 1) !== (current.speed || 1) ||
+          prev.hpRegen !== current.hpRegen ||
+          prev.pickupRange !== current.pickupRange ||
+          prev.magnetPower !== current.magnetPower;
+
+        if (!changed) return prev;
+        return { ...current };
+      });
+    }, 300); // UI Details don't need 10fps
     return () => clearInterval(interval);
   }, []);
   if (!stats) return null;

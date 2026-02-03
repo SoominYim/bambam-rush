@@ -16,11 +16,11 @@ export const MainHub: React.FC<MainHubProps> = ({ onStartGame }) => {
   const [selectedCharacter, setSelectedCharacter] = useState<string>("BASIC");
   const [isGodRevealed, setIsGodRevealed] = useState(false);
 
-  // States for Drag-to-Scroll
+  // States for Drag-to-Scroll (Unified Pointer Events)
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
   const [dragMoved, setDragMoved] = useState(false);
 
   // Easter Egg logic
@@ -39,37 +39,53 @@ export const MainHub: React.FC<MainHubProps> = ({ onStartGame }) => {
   }, []);
 
   const currentChar = CHARACTER_REGISTRY[selectedCharacter];
-
   const isDesktop = windowWidth >= 1024;
   const isTablet = windowWidth >= 768 && windowWidth < 1024;
-
   const showcaseSize = isDesktop ? 240 : isTablet ? 180 : 140;
   const gridCharSize = isDesktop ? 120 : isTablet ? 90 : 70;
 
-  // --- Drag Scroll Handlers ---
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // --- Unified Pointer Drag Handlers ---
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (!scrollRef.current) return;
-    setIsDragging(true);
+    isDragging.current = true;
     setDragMoved(false);
-    setStartX(e.pageX - scrollRef.current.offsetLeft);
-    setScrollLeft(scrollRef.current.scrollLeft);
+    startX.current = e.clientX;
+    scrollLeftStart.current = scrollRef.current.scrollLeft;
+
+    // UI feedback (will change cursor via CSS)
+    scrollRef.current.classList.add("dragging");
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !scrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 1.5;
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging.current || !scrollRef.current) return;
 
-    if (Math.abs(walk) > 5) {
+    const x = e.clientX;
+    const dist = x - startX.current;
+
+    if (Math.abs(dist) > 5 && !dragMoved) {
       setDragMoved(true);
+      // Capture pointer ONLY when we move enough to be a drag
+      scrollRef.current.setPointerCapture(e.pointerId);
     }
 
-    scrollRef.current.scrollLeft = scrollLeft - walk;
+    if (dragMoved) {
+      const walk = dist * 1.5;
+      scrollRef.current.scrollLeft = scrollLeftStart.current - walk;
+    }
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging.current || !scrollRef.current) return;
+    isDragging.current = false;
+
+    // Only release if we actually captured it
+    try {
+      scrollRef.current.releasePointerCapture(e.pointerId);
+    } catch (e) {
+      // Ignored if not captured
+    }
+
+    scrollRef.current.classList.remove("dragging");
   };
 
   // Prevent selection if we were dragging
@@ -82,7 +98,7 @@ export const MainHub: React.FC<MainHubProps> = ({ onStartGame }) => {
 
   const scrollAction = (direction: "left" | "right") => {
     if (scrollRef.current) {
-      const scrollAmount = 200;
+      const scrollAmount = 300;
       scrollRef.current.scrollBy({
         left: direction === "left" ? -scrollAmount : scrollAmount,
         behavior: "smooth",
@@ -132,12 +148,13 @@ export const MainHub: React.FC<MainHubProps> = ({ onStartGame }) => {
             </button>
 
             <div
-              className={`character-scroll-container ${isDragging ? "dragging" : ""}`}
+              className="character-scroll-container"
               ref={scrollRef}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              style={{ touchAction: "none" }} // Disable browser native pan to allow custom drag
             >
               {characters.map(char => {
                 const isLocked = !char.unlocked && char.id !== "GOD";
@@ -149,7 +166,6 @@ export const MainHub: React.FC<MainHubProps> = ({ onStartGame }) => {
                     onClick={() => handleCharClick(char.id, isLocked)}
                     disabled={isLocked && char.id !== "GOD"}
                     title={isLocked ? char.unlockCondition : char.name}
-                    style={{ pointerEvents: isDragging ? "none" : "auto" }}
                   >
                     <CharacterPreview characterId={char.id} size={gridCharSize} />
                     {isLocked && <div className="lock-overlay">🔒</div>}

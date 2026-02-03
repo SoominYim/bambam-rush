@@ -16,8 +16,8 @@ import { drawCharacter } from "@/game/utils/characterRenderer";
 
 // Position history for snake-like trailing (Breadcrumb system)
 let positionHistory: Vector2D[] = [];
-const HISTORY_SPACING = 2; // Resolution of path tracking (Higher = smoother, more memory)
-const MAX_HISTORY = 5000; // Allow for very long snakes
+const HISTORY_SPACING = 2; // Resolution of path tracking
+const MAX_HISTORY = 5000;
 
 export const getPositionHistory = () => positionHistory;
 export const resetPositionHistory = () => {
@@ -75,9 +75,6 @@ export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string
       }
 
       // 2. Always Move Forward
-      const prevX = this.position.x;
-      const prevY = this.position.y;
-
       this.position.x += this.direction.x * CONFIG.PLAYER_SPEED * speedMult * deltaTime;
       this.position.y += this.direction.y * CONFIG.PLAYER_SPEED * speedMult * deltaTime;
 
@@ -92,22 +89,29 @@ export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string
       );
 
       // 4. Record position history for tail (Breadcrumb system)
-      const dx = this.position.x - prevX;
-      const dy = this.position.y - prevY;
-      const moved = Math.sqrt(dx * dx + dy * dy);
+      if (positionHistory.length > 0) {
+        let lastPoint = positionHistory[0];
+        let dist = Math.sqrt((this.position.x - lastPoint.x) ** 2 + (this.position.y - lastPoint.y) ** 2);
 
-      if (moved > 0.1) {
-        const lastPoint = positionHistory[0];
-        const distFromLast = lastPoint
-          ? Math.sqrt((this.position.x - lastPoint.x) ** 2 + (this.position.y - lastPoint.y) ** 2)
-          : 999;
+        // If moved more than the spacing, fill the gap with breadcrumbs
+        // This prevents the tail from "stretching" or lagging at high speeds
+        while (dist >= HISTORY_SPACING) {
+          const angle = Math.atan2(this.position.y - lastPoint.y, this.position.x - lastPoint.x);
+          const nextPoint = {
+            x: lastPoint.x + Math.cos(angle) * HISTORY_SPACING,
+            y: lastPoint.y + Math.sin(angle) * HISTORY_SPACING,
+          };
 
-        if (distFromLast >= HISTORY_SPACING) {
-          positionHistory.unshift({ x: this.position.x, y: this.position.y });
+          positionHistory.unshift(nextPoint);
           if (positionHistory.length > MAX_HISTORY) {
             positionHistory.pop();
           }
+
+          lastPoint = nextPoint;
+          dist = Math.sqrt((this.position.x - lastPoint.x) ** 2 + (this.position.y - lastPoint.y) ** 2);
         }
+      } else {
+        positionHistory.unshift({ x: this.position.x, y: this.position.y });
       }
 
       // Systems
@@ -187,8 +191,6 @@ const checkCollection = (head: GameObject) => {
 };
 
 export const createTailSegment = (_index: number, elementType: ElementType): TailSegment => {
-  const pointsPerSegment = Math.round(CONFIG.SNAKE_SEGMENT_SPACING / HISTORY_SPACING);
-
   return {
     id: `tail_${Date.now()}_${Math.random()}`,
     position: { x: 0, y: 0 },
@@ -197,25 +199,36 @@ export const createTailSegment = (_index: number, elementType: ElementType): Tai
     followTarget: null,
     weaponId: "", // To be assigned
 
-    update: function (_deltaTime: Scalar) {
+    update: function (deltaTime: Scalar) {
       const history = getPositionHistory();
       const tail = getTail();
       const myIndexInTail = tail.indexOf(this);
 
       if (myIndexInTail === -1) return;
 
-      // Calculate path following index
-      const historyIndex = (myIndexInTail + 1) * pointsPerSegment;
+      // Calculate path following index (Dynamic & Variable spacing)
+      const pointsPerSegment = Math.round(CONFIG.SNAKE_SEGMENT_SPACING / HISTORY_SPACING);
+      const headGapPoints = Math.round(10 / HISTORY_SPACING); // 10px tighter gap for head-to-first tail
+
+      // Index 0 follows head at 10px, Index 1 follows at 10px + 25px, etc.
+      const historyIndex = headGapPoints + myIndexInTail * pointsPerSegment;
+      let targetX = this.position.x;
+      let targetY = this.position.y;
 
       if (historyIndex < history.length) {
         const targetPos = history[historyIndex];
-        this.position.x = targetPos.x;
-        this.position.y = targetPos.y;
+        targetX = targetPos.x;
+        targetY = targetPos.y;
       } else if (history.length > 0) {
         const fallbackPos = history[history.length - 1];
-        this.position.x = fallbackPos.x;
-        this.position.y = fallbackPos.y;
+        targetX = fallbackPos.x;
+        targetY = fallbackPos.y;
       }
+
+      // 🔹 Tighter Lerp for Better Response
+      const lerpFactor = 1.0 - Math.pow(0.0001, deltaTime); // Faster following
+      this.position.x += (targetX - this.position.x) * lerpFactor;
+      this.position.y += (targetY - this.position.y) * lerpFactor;
 
       // Visual particles
       if (Math.random() < 0.05) {
@@ -236,8 +249,8 @@ export const createTailSegment = (_index: number, elementType: ElementType): Tai
 
       // Scale tail segment to match Main Character Size but slightly smaller
       const size = CONFIG.PLAYER_RADIUS * 0.85; // 85% of player size
-      const x = Math.round(this.position.x);
-      const y = Math.round(this.position.y);
+      const x = this.position.x;
+      const y = this.position.y;
 
       switch (this.type) {
         case ElementType.FIRE:

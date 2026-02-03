@@ -167,6 +167,13 @@
   /* Scrollbar 제거 */
   scrollbar-width: none;
   -ms-overflow-style: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.character-scroll-container.dragging {
+  scroll-behavior: auto; /* 드래그시 부드러운 스크롤 비활성화 (필수) */
+  cursor: grabbing;
 }
 
 .character-scroll-container::-webkit-scrollbar {
@@ -176,11 +183,11 @@
 /* 개별 버튼 */
 .char-select-btn {
   position: relative;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.12); /* 더 밝게 변경 */
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   cursor: pointer;
-  width: 68px; /* 4개(8인)가 한 화면에 보이도록 조정 */
+  width: 68px;
   height: 68px;
   aspect-ratio: 1/1;
   display: flex;
@@ -194,45 +201,86 @@
 
 .char-select-btn:hover {
   transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .char-select-btn.active {
-  background: rgba(100, 255, 218, 0.15);
+  background: rgba(100, 255, 218, 0.2);
   border-color: #64ffda;
   box-shadow:
-    0 8px 25px rgba(100, 255, 218, 0.3),
+    0 10px 30px rgba(100, 255, 218, 0.4),
     inset 0 0 15px rgba(100, 255, 218, 0.2);
   transform: scale(1.1);
   z-index: 2;
 }
 
-/* 네비게이션 버튼 */
+/* 네비게이션 버튼 (개선) */
 .carousel-nav-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(60, 60, 80, 0.85); /* 약간 더 밝게 */
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: #fff;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: all 0.2s;
-  z-index: 10;
-  flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 20;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
-.carousel-nav-btn:hover {
-  background: #64ffda;
-  color: #1a1a2e;
-  transform: scale(1.1);
+.carousel-nav-btn.prev {
+  left: -10px;
+}
+
+.carousel-nav-btn.next {
+  right: -10px;
+}
+
+/* 터치 기기에서 색상이 남는 문제 해결을 위해 :hover 조절 */
+@media (hover: hover) {
+  .carousel-nav-btn:hover {
+    background: #64ffda;
+    color: #1a1a2e;
+    border-color: #64ffda;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 0 15px rgba(100, 255, 218, 0.5);
+  }
 }
 
 .carousel-nav-btn:active {
-  transform: scale(0.9);
+  transform: translateY(-50%) scale(0.9);
+  background: #64ffda;
+}
+
+/* 🔹 스크롤 페이드 효과 (밝기 개선 및 클릭 방해 방지) */
+.character-carousel-wrapper::before,
+.character-carousel-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  z-index: 5;
+  pointer-events: none; /* 드래그 방해 금지 (중요) */
+  transition: opacity 0.3;
+}
+
+.character-carousel-wrapper::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(26, 26, 46, 0.4), transparent); /* 더 밝게 */
+}
+
+.character-carousel-wrapper::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(26, 26, 46, 0.4), transparent); /* 더 밝게 */
 }
 
 .char-select-btn.locked {
@@ -355,7 +403,7 @@
   }
 
   .character-scroll-container {
-    grid-template-rows: repeat(2, 145px); /* 가로 2행, 크기 대폭 확대 */
+    grid-template-rows: repeat(2, 145px); /* 가로 2행 */
     gap: 20px;
     padding: 20px 10px;
   }
