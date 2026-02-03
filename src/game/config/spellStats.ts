@@ -13,7 +13,7 @@ export interface SpellStat {
 
 export const SPELL_STATS: Record<ElementType, SpellStat> = {
   // 1. 기본 원소
-  [ElementType.FIRE]: { behavior: SkillBehavior.PROJECTILE, damage: 10, speed: 600, size: 8, color: "#ff4400" },
+  [ElementType.FIRE]: { behavior: SkillBehavior.PROJECTILE, damage: 10, speed: 600, size: 10, color: "#ff4400" },
   [ElementType.WATER]: { behavior: SkillBehavior.PROJECTILE, damage: 8, speed: 500, size: 8, color: "#0088ff" },
   [ElementType.ICE]: { behavior: SkillBehavior.PROJECTILE, damage: 5, speed: 450, size: 8, color: "#00ffff" },
   [ElementType.WIND]: {
@@ -34,7 +34,15 @@ export const SPELL_STATS: Record<ElementType, SpellStat> = {
   },
   [ElementType.ELECTRIC]: { behavior: SkillBehavior.ORBITAL, damage: 6, speed: 400, size: 12, color: "#ffdd00" },
   [ElementType.SWORD]: { behavior: SkillBehavior.MELEE, damage: 15, speed: 0, size: 40, color: "#cccccc" },
-  [ElementType.BOOK]: { behavior: SkillBehavior.PROJECTILE, damage: 0, speed: 0, size: 0, color: "#885522" }, // 패시브
+  [ElementType.BOOK]: { behavior: SkillBehavior.PROJECTILE, damage: 0, speed: 0, size: 0, color: "#885522" },
+
+  // [NEW] 누락된 타입 추가
+  [ElementType.PHYSICAL]: { behavior: SkillBehavior.PROJECTILE, damage: 10, speed: 200, size: 10, color: "#ffffff" },
+  [ElementType.ARCANE]: { behavior: SkillBehavior.PROJECTILE, damage: 20, speed: 300, size: 12, color: "#aa00aa" },
+  [ElementType.TECH]: { behavior: SkillBehavior.PROJECTILE, damage: 12, speed: 400, size: 8, color: "#00ff00" },
+  [ElementType.LIGHT]: { behavior: SkillBehavior.ORBITAL, damage: 18, speed: 200, size: 15, color: "#ffffaa" },
+  [ElementType.BLOOD]: { behavior: SkillBehavior.PROJECTILE, damage: 15, speed: 250, size: 10, color: "#ff0000" },
+  [ElementType.GRAVITY]: { behavior: SkillBehavior.AREA, damage: 20, speed: 0, size: 50, color: "#220022" },
 
   // 2. 진화 (3-Match)
   [ElementType.INFERNO]: {

@@ -58,8 +58,9 @@ export interface PlayerStats {
   xp: number;
   maxXp: number;
   level: number;
-  pickupRange: number;
-  hpRegen: number; // HP per second
+  pickupRange: number; // Magnet Range
+  hpRegen: number; // HP per sec
+  speed?: number; // Movement Speed Multiplier (added for Debug/Upgrades)
 }
 
 export interface Player extends GameObject {
@@ -153,4 +154,10 @@ export interface Projectile extends GameObject {
   startTime?: number; // 장판형/지속형 시작 시간
   duration?: number; // 지속 시간
   angle?: number; // 오비탈 현재 각도
+  owner?: GameObject; // 소유자 (플레이어 또는 꼬리)
+  weaponId?: string; // 무기 ID
+
+  // Hit Logic (Default: 200ms)
+  hitTracker?: Record<string, number>;
+  hitInterval?: number;
 }

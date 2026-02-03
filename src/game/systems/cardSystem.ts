@@ -18,6 +18,7 @@ export interface Card {
   description: string;
   icon: string;
   rarity: "COMMON" | "RARE" | "LEGENDARY";
+  elementType?: string;
 
   // payload
   targetId?: string; // weaponId or passiveId
@@ -80,6 +81,7 @@ const draftWeaponCard = (player: any, seenIds: Set<string>): Card | null => {
     icon: getIconForTags(def.tags),
     rarity: "COMMON",
     targetId: randomId,
+    elementType: def.tags[0] || "무속성",
   };
 };
 

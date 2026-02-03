@@ -1,4 +1,5 @@
-import { CHARACTER_REGISTRY } from "@/game/config/characterRegistry";
+// import * as CONFIG from "@/game/config/constants";
+// import { ElementType } from "@/game/types";
 
 /**
  * 기본 얼굴 그리기 (모든 캐릭터 공통)
@@ -248,7 +249,6 @@ export function drawCharacter(
   ctx.shadowColor = "transparent";
 
   const r = headRadius;
-  const charDef = CHARACTER_REGISTRY[characterId] || CHARACTER_REGISTRY.BASIC;
 
   // 1. 캐릭터별 장식 (얼굴 뒤에 그려야 하는 것들 - 예: 날개)
   const decorator = characterDecorations[characterId];

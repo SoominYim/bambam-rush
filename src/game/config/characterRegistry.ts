@@ -1,4 +1,4 @@
-import { ElementType } from "@/game/types";
+// import { ElementType } from "@/game/types";
 
 export interface CharacterVisuals {
   primary: string;

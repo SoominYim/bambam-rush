@@ -58,6 +58,14 @@ export const ELEMENT_DETAILS: Record<ElementType, ElementInfo> = {
     icon: "🛡️",
     desc: "2겹의 보호막 생성",
   },
+
+  // Missing Elements Placeholder
+  [ElementType.PHYSICAL]: { type: ElementType.PHYSICAL, name: "물리", icon: "⚔️", desc: "기본 물리 공격" },
+  [ElementType.ARCANE]: { type: ElementType.ARCANE, name: "비전", icon: "✨", desc: "마법 공격" },
+  [ElementType.TECH]: { type: ElementType.TECH, name: "공학", icon: "⚙️", desc: "기계 장치" },
+  [ElementType.LIGHT]: { type: ElementType.LIGHT, name: "빛", icon: "🌟", desc: "신성 속성" },
+  [ElementType.BLOOD]: { type: ElementType.BLOOD, name: "혈액", icon: "🩸", desc: "체력 흡수" },
+  [ElementType.GRAVITY]: { type: ElementType.GRAVITY, name: "중력", icon: "🌑", desc: "적을 끌어당김" },
 };
 
 // 2. 조합법 통합 (Source of Truth from recipes.ts)

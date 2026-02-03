@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Card } from "@/game/systems/cardSystem";
+import { Card, CardType } from "@/game/systems/cardSystem";
 import { selectLevelUpCard } from "@/game/managers/state";
 import "@/styles/levelUp.css";
 
@@ -26,7 +26,7 @@ export const LevelUpModal = memo(({ choices }: LevelUpModalProps) => {
               <div className="card-content">
                 <h3 className="card-title">{card.title}</h3>
                 <p className="card-desc">{card.description}</p>
-                {card.type === "SKILL" && (
+                {card.type === CardType.WEAPON && (
                   <div className="card-recipe">
                     <span className="recipe-label">속성:</span> {card.elementType}
                   </div>

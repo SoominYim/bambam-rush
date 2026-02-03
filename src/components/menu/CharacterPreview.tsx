@@ -24,8 +24,6 @@ export const CharacterPreview: React.FC<CharacterPreviewProps> = ({ characterId,
 
     const headSize = size * 0.6;
     const headRadius = headSize / 2;
-    const centerX = canvasSize / 2;
-    const centerY = canvasSize / 2;
 
     // Clear
     ctx.clearRect(0, 0, canvasSize, canvasSize);

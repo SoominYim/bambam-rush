@@ -12,7 +12,6 @@ import { getMovementDirection } from "@/engine/systems/input";
 import { getTail, getCollectibles, addScore, getPlayer, getEnemies } from "@/game/managers/state";
 import { VFXFactory } from "@/engine/vfx/VFXFactory";
 import * as CONFIG from "../config/constants";
-import { CHARACTER_REGISTRY } from "@/game/config/characterRegistry";
 import { drawCharacter } from "@/game/utils/characterRenderer";
 
 // Position history for snake-like trailing
@@ -56,8 +55,9 @@ export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string
       const prevX = this.position.x;
       const prevY = this.position.y;
 
-      this.position.x += moveDir.x * CONFIG.PLAYER_SPEED * deltaTime;
-      this.position.y += moveDir.y * CONFIG.PLAYER_SPEED * deltaTime;
+      const speedMult = this.stats.speed || 1.0;
+      this.position.x += moveDir.x * CONFIG.PLAYER_SPEED * speedMult * deltaTime;
+      this.position.y += moveDir.y * CONFIG.PLAYER_SPEED * speedMult * deltaTime;
 
       // 1. Boundary Collision
       this.position.x = Math.max(
@@ -209,7 +209,11 @@ export const createTailSegment = (index: number, elementType: ElementType): Tail
 
       const desiredDistance = CONFIG.SNAKE_SEGMENT_SPACING;
       if (distance > desiredDistance) {
-        const moveDistance = Math.min(distance - desiredDistance, CONFIG.PLAYER_SPEED * deltaTime);
+        // Fetch player speed multiplier
+        const player = getPlayer();
+        const speedMult = player?.stats.speed || 1.0;
+
+        const moveDistance = Math.min(distance - desiredDistance, CONFIG.PLAYER_SPEED * speedMult * deltaTime);
         const ratio = moveDistance / distance;
         this.position.x += dx * ratio;
         this.position.y += dy * ratio;
@@ -226,6 +230,11 @@ export const createTailSegment = (index: number, elementType: ElementType): Tail
 
       let icon = "❓";
       let color = "#ccc";
+
+      // Scale tail segment to match Main Character Size but slightly smaller
+      const size = CONFIG.PLAYER_RADIUS * 0.85; // 85% of player size
+      const x = Math.round(this.position.x);
+      const y = Math.round(this.position.y);
 
       switch (this.type) {
         case ElementType.FIRE:
@@ -316,12 +325,39 @@ export const createTailSegment = (index: number, elementType: ElementType): Tail
           icon = "🛡️";
           color = "#4444ff";
           break;
+        case ElementType.DUAL_SHIELD:
+          icon = "🛡️";
+          color = "#4444ff";
+          break;
+        case ElementType.PHYSICAL:
+          icon = "👊";
+          color = "#ffffff";
+          break;
+        case ElementType.ARCANE:
+          icon = "🔮";
+          color = "#aa00aa";
+          break;
+        case ElementType.TECH:
+          icon = "🔧";
+          color = "#00ff00";
+          break;
+        case ElementType.LIGHT:
+          icon = "✨";
+          color = "#ffffaa";
+          break;
+        case ElementType.BLOOD:
+          icon = "🩸";
+          color = "#ff0000";
+          break;
+        case ElementType.GRAVITY:
+          icon = "🌑";
+          color = "#220022";
+          break;
+        default:
+          icon = "❓";
+          color = "#ccc";
+          break;
       }
-
-      const size = CONFIG.SNAKE_SEGMENT_RADIUS + (this.tier - 1) * 2;
-      const x = Math.round(this.position.x);
-      const y = Math.round(this.position.y);
-
       ctx.beginPath();
       ctx.arc(x, y, size + 4, 0, Math.PI * 2);
       ctx.fillStyle = color;

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { GameUI } from "./components/GameUI";
+import { DebugUI } from "./components/debug/DebugUI";
+import { StatsUI } from "./components/GameStatsUI";
 import { VirtualJoystick } from "@/components/controls/VirtualJoystick";
 import { startGame, stopGame } from "@/engine/core/gameLoop";
 import { getScore, getPlayerStats, getLevelUpState, getGameTime } from "@/game/managers/state";
@@ -144,6 +146,8 @@ function App() {
             onResume={handleResume}
             levelUpState={levelUpState}
           />
+          <StatsUI />
+          <DebugUI />
           <VirtualJoystick onMove={handleJoystickMove} />
         </>
       )}

@@ -10,6 +10,8 @@ export interface WeaponLevelScale {
   speed?: number;
   duration?: number;
   pierce?: number;
+  range?: number;
+  hitInterval?: number; // Added hitInterval
   description?: string;
 }
 
@@ -37,6 +39,8 @@ export interface WeaponDefinition {
     | "spread"
     | "gas"
     | "linear"
+    | "swing"
+    | "stab"
     | "nuke";
   tags: ElementType[];
   baseStats: {
@@ -47,6 +51,8 @@ export interface WeaponDefinition {
     speed?: number;
     duration?: number;
     pierce?: number;
+    range?: number;
+    hitInterval?: number; // Added hitInterval
   };
   levels: Record<number, WeaponLevelScale>;
   evolution?: {
@@ -60,24 +66,33 @@ export interface WeaponDefinition {
 export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W01: {
     id: "W01",
-    name: "회전 꼬리",
-    description: "캐릭터 주위를 회전하는 근접 공격",
+    name: "기본 검",
+    description: "꼬리 주변을 수호하는 회전 검",
     pattern: "orbit",
-    tags: [ElementType.PHYSICAL],
-    baseStats: { damage: 15, cooldown: 0, count: 1, size: 30, speed: 3 },
+    tags: [ElementType.SWORD],
+    baseStats: {
+      damage: 15,
+      cooldown: 0, // 지속형이므로 쿨타임 의미 없음 (업데이트 주기용)
+      count: 1,
+      size: 8,
+      speed: 0.8, // Orbit Speed
+      duration: 0,
+      range: 50, // Stab Range
+      hitInterval: 200, // 200ms (Standard Sweet Spot)
+    },
     levels: {
-      2: { damage: 3, description: "데미지 +3" },
-      3: { count: 1, description: "꼬리 수 +1" },
-      4: { damage: 5, description: "데미지 +5" },
-      5: { size: 10, description: "크기 +10" },
-      6: { damage: 8, count: 1, description: "데미지 +8, 꼬리 +1" },
-      7: { damage: 10, description: "데미지 +10" },
-      8: { damage: 15, size: 20, description: "MAX: 데미지 +15, 크기 +20" },
+      2: { damage: 5, description: "데미지 +5" },
+      3: { size: 2, range: 10, description: "크기/범위 증가" },
+      4: { speed: 0.2, description: "회전 속도 증가" },
+      5: { damage: 10, description: "데미지 +10" },
+      6: { count: 1, description: "검 +1" },
+      7: { damage: 15, description: "데미지 +15" },
+      8: { damage: 20, size: 5, range: 20, description: "MAX: 강력한 성장" },
     },
     evolution: {
-      requiredPassive: "P02",
+      requiredPassive: "P01",
       evolvedId: "W01_EVO",
-      evolvedName: "🌪️ 토네이도 링",
+      evolvedName: "⚔️ 엑스칼리버",
     },
   },
 

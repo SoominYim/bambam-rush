@@ -1,7 +1,7 @@
 import { Projectile, Scalar, ElementType, SkillBehavior } from "../types";
 import { VFXFactory } from "@/engine/vfx/VFXFactory";
 import { SPELL_STATS } from "@/game/config/spellStats";
-import { getTail, getPlayer } from "@/game/managers/state";
+import { updateProjectileBehavior } from "./projectileBehaviors";
 import * as CONFIG from "@/game/config/constants";
 
 export const createProjectile = (
@@ -29,28 +29,23 @@ export const createProjectile = (
     parentID,
     startTime: Date.now(),
     duration: stats.duration || (behavior === SkillBehavior.AREA ? CONFIG.AREA_DURATION_BASE : 0),
-    angle: angle, // For orbital: current angle. For projectile: initial angle.
+    hitTracker: {}, // Initialize
+    angle: angle,
 
     update: function (deltaTime: Scalar) {
-      if (behavior === SkillBehavior.PROJECTILE) {
-        this.position.x += Math.cos(this.angle!) * speed * deltaTime;
-        this.position.y += Math.sin(this.angle!) * speed * deltaTime;
-      } else if (behavior === SkillBehavior.ORBITAL) {
-        // Orbit around parent
-        const tail = getTail();
-        const parent = tail.find(t => t.id === this.parentID) || getPlayer();
-        if (!parent) {
-          this.isExpired = true;
-          return;
-        }
-
-        this.angle! += CONFIG.ORBITAL_ROTATION_SPEED * deltaTime;
-        this.position.x = parent.position.x + Math.cos(this.angle!) * CONFIG.ORBITAL_RADIUS;
-        this.position.y = parent.position.y + Math.sin(this.angle!) * CONFIG.ORBITAL_RADIUS;
-      } else if (behavior === SkillBehavior.AREA) {
-        // Stationary, just check duration
-        if (Date.now() - this.startTime! > this.duration!) {
-          this.isExpired = true;
+      // 새로운 행동 시스템 사용
+      if ((this as any).behavior) {
+        updateProjectileBehavior(this, deltaTime);
+      } else {
+        // 기존 SkillBehavior 호환성 유지
+        if (behavior === SkillBehavior.PROJECTILE) {
+          this.position.x += Math.cos(this.angle!) * speed * deltaTime;
+          this.position.y += Math.sin(this.angle!) * speed * deltaTime;
+        } else if (behavior === SkillBehavior.AREA) {
+          // Stationary, just check duration
+          if (Date.now() - this.startTime! > this.duration!) {
+            this.isExpired = true;
+          }
         }
       }
 
@@ -59,8 +54,8 @@ export const createProjectile = (
         VFXFactory.createTrail(this.position.x, this.position.y, type);
       }
 
-      // Projectile specialized expiration
-      if (behavior === SkillBehavior.PROJECTILE) {
+      // Projectile expiration check
+      if (behavior === SkillBehavior.PROJECTILE || (this as any).behavior) {
         const margin = 500;
         if (
           this.position.x < -margin ||
@@ -87,6 +82,34 @@ export const createProjectile = (
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.stroke();
+      } else if (type === ElementType.SWORD) {
+        // Draw Sword Shape (Corrected)
+        ctx.translate(this.position.x, this.position.y);
+        ctx.rotate(this.angle || 0);
+
+        // Dynamic Radius (Visual Size from WeaponSystem)
+        // If radius is 8, whole sword is about 20-30px long
+        const r = (this as any).radius || 10;
+
+        // Blade (Long and thin)
+        ctx.fillStyle = "#e0e0e0";
+        ctx.fillRect(0, -r * 0.2, r * 3.0, r * 0.4);
+
+        // Fuller (Groove in blade)
+        ctx.fillStyle = "#a0a0a0";
+        ctx.fillRect(r * 0.2, -r * 0.05, r * 2.5, r * 0.1);
+
+        // Guard (Crossguard)
+        ctx.fillStyle = "#daa520"; // Gold
+        ctx.fillRect(-r * 0.2, -r * 0.8, r * 0.4, r * 1.6);
+
+        // Handle (Grip)
+        ctx.fillStyle = "#8b4513"; // Brown
+        ctx.fillRect(-r * 1.0, -r * 0.2, r * 0.8, r * 0.4);
+
+        // Pommel (End cap)
+        ctx.fillStyle = "#daa520";
+        ctx.fillRect(-r * 1.2, -r * 0.3, r * 0.3, r * 0.6);
       } else {
         ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI * 2);
         ctx.fillStyle = color;

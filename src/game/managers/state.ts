@@ -175,3 +175,9 @@ const checkLevelUp = () => {
     stats.hp = Math.min(stats.maxHp, stats.hp + stats.maxHp * 0.1);
   }
 };
+
+export const addPlayerXP = (amount: number) => {
+  if (!player) return;
+  player.stats.xp += amount;
+  checkLevelUp();
+};

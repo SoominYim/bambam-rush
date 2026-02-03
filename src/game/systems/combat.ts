@@ -1,4 +1,12 @@
-import { getEnemies, getTail, getProjectiles, addProjectile, getPlayer } from "@/game/managers/state";
+import {
+  getEnemies,
+  getTail,
+  getProjectiles,
+  addProjectile,
+  getPlayer,
+  addScore,
+  addXPGem,
+} from "@/game/managers/state";
 import { createProjectile } from "@/game/entities/projectile";
 import { VFXFactory } from "@/engine/vfx/VFXFactory";
 import { SPELL_STATS } from "@/game/config/spellStats";
@@ -75,6 +83,16 @@ export const updateCombat = (_deltaTime: number) => {
       const distSq = dx * dx + dy * dy;
 
       if (distSq < hitRadius * hitRadius) {
+        // Hit Interval Check
+        const now = Date.now();
+        if (p.hitInterval && p.hitTracker) {
+          const lastHit = p.hitTracker[e.id] || 0;
+          if (now - lastHit < p.hitInterval) {
+            return; // Ignore hit if within interval
+          }
+          p.hitTracker[e.id] = now;
+        }
+
         // Hit! Applying player ATK multiplier
         const finalDamage = p.damage * player.stats.atk * (stats.behavior === SkillBehavior.AREA ? 0.1 : 1.0);
         e.hp -= finalDamage;
@@ -86,6 +104,16 @@ export const updateCombat = (_deltaTime: number) => {
         if (e.hp <= 0) {
           e.isExpired = true;
           VFXFactory.createExplosion(e.position.x, e.position.y, p.type, 15);
+
+          // XP Drop Logic moved/duplicated here to ensure it runs
+          const xpMin = e.type === "BOSS" ? 500 : e.type === "TANK" ? 10 : e.type === "FAST" ? 2 : 1;
+          const xpMax = e.type === "BOSS" ? 1000 : e.type === "TANK" ? 20 : e.type === "FAST" ? 5 : 3;
+          const xpAmount = Math.floor(xpMin + Math.random() * (xpMax - xpMin + 1));
+
+          // Need to import addXPGem and addScore first!
+          // Assuming imports are available or will be added
+          addScore(e.type === "BOSS" ? 1000 : 50);
+          addXPGem(e.position.x, e.position.y, xpAmount);
         }
 
         // Projectiles expire on hit, Areas and Orbitals don't
