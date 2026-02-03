@@ -12,9 +12,9 @@ export const PLAYER_TURN_SPEED = 6; // Radians per second of rotation sensitivit
 export const PLAYER_RADIUS = 12;
 
 // ===== SNAKE CONFIG =====
-export const SNAKE_SEGMENT_SPACING = 25; // 무기들이 잘 보이도록 간격 확대
+export const SNAKE_SEGMENT_SPACING = 30; // 무기들이 더 잘 보이도록 간격 추가 확대
 export const SNAKE_SEGMENT_RADIUS = 15;
-export const SNAKE_SEGMENT_DISTANCE = 25;
+export const SNAKE_SEGMENT_DISTANCE = 30;
 
 // ===== SPAWN RATES =====
 export const COLLECTIBLE_SPAWN_CHANCE = 0.002;

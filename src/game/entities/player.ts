@@ -199,36 +199,38 @@ export const createTailSegment = (_index: number, elementType: ElementType): Tai
     followTarget: null,
     weaponId: "", // To be assigned
 
-    update: function (deltaTime: Scalar) {
+    update: function (_deltaTime: Scalar) {
       const history = getPositionHistory();
       const tail = getTail();
       const myIndexInTail = tail.indexOf(this);
 
-      if (myIndexInTail === -1) return;
+      if (myIndexInTail === -1 || history.length < 2) return;
 
-      // Calculate path following index (Dynamic & Variable spacing)
-      const pointsPerSegment = Math.round(CONFIG.SNAKE_SEGMENT_SPACING / HISTORY_SPACING);
-      const headGapPoints = Math.round(10 / HISTORY_SPACING); // 10px tighter gap for head-to-first tail
+      // 1. Calculate Precise Floating-point Index on the path
+      // Spacing is fixed in pixels, so index = pixels / resolution
+      const pointsPerSegment = CONFIG.SNAKE_SEGMENT_SPACING / HISTORY_SPACING;
+      const headGapPoints = 15 / HISTORY_SPACING; // 7 -> 15px로 늘려 적당한 거리 유지
 
-      // Index 0 follows head at 10px, Index 1 follows at 10px + 25px, etc.
-      const historyIndex = headGapPoints + myIndexInTail * pointsPerSegment;
-      let targetX = this.position.x;
-      let targetY = this.position.y;
+      const floatIndex = headGapPoints + myIndexInTail * pointsPerSegment;
 
-      if (historyIndex < history.length) {
-        const targetPos = history[historyIndex];
-        targetX = targetPos.x;
-        targetY = targetPos.y;
-      } else if (history.length > 0) {
-        const fallbackPos = history[history.length - 1];
-        targetX = fallbackPos.x;
-        targetY = fallbackPos.y;
+      // 2. Sub-pixel Path Interpolation (Zero Lag + Perfect Smoothness)
+      if (floatIndex < history.length - 1) {
+        const i0 = Math.floor(floatIndex);
+        const i1 = i0 + 1;
+        const remainder = floatIndex - i0;
+
+        const p0 = history[i0];
+        const p1 = history[i1];
+
+        // Place exactly on the path (interpolated)
+        this.position.x = p0.x + (p1.x - p0.x) * remainder;
+        this.position.y = p0.y + (p1.y - p0.y) * remainder;
+      } else {
+        // Fallback to the very end of history
+        const last = history[history.length - 1];
+        this.position.x = last.x;
+        this.position.y = last.y;
       }
-
-      // 🔹 Tighter Lerp for Better Response
-      const lerpFactor = 1.0 - Math.pow(0.0001, deltaTime); // Faster following
-      this.position.x += (targetX - this.position.x) * lerpFactor;
-      this.position.y += (targetY - this.position.y) * lerpFactor;
 
       // Visual particles
       if (Math.random() < 0.05) {
