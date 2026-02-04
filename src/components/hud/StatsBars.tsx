@@ -14,21 +14,8 @@ export const StatsBars = memo(() => {
       const current = getPlayerStats();
       if (!current) return;
 
-      setStats(prev => {
-        if (!prev) return { ...current };
-
-        // Only update if values actually changed (Ignoring tiny HP regen decimals for UI)
-        const hpChanged = Math.ceil(prev.hp) !== Math.ceil(current.hp);
-        const statsChanged =
-          prev.maxHp !== current.maxHp ||
-          prev.atk !== current.atk ||
-          prev.def !== current.def ||
-          prev.fireRate !== current.fireRate;
-
-        if (!hpChanged && !statsChanged) return prev;
-        return { ...current };
-      });
-    }, 200); // 200ms is enough for HUD bars
+      setStats({ ...current });
+    }, 100);
     return () => clearInterval(interval);
   }, []);
 

@@ -52,6 +52,8 @@ export const updateCombat = (_deltaTime: number) => {
         handleProjectileFiring(segment, enemies, now);
         break;
       case SkillBehavior.MELEE:
+        // Skip passive melee aura for roguelike weapons (handled by stabbing projectiles)
+        if (segment.weaponId) break;
         handleMeleeAttack(segment, enemies, now, player.stats.atk);
         break;
       case SkillBehavior.ORBITAL:
@@ -80,6 +82,11 @@ export const updateCombat = (_deltaTime: number) => {
       const dx = p.position.x - e.position.x;
       const dy = p.position.y - e.position.y;
       // Use distSq to avoid Math.sqrt
+      // 2.1 Behavior-specific damage checks (e.g. Sword only damages during stab)
+      if ((p as any).behavior === "ORBIT_STAB" && (p as any).state === "ORBIT") {
+        return;
+      }
+
       const distSq = dx * dx + dy * dy;
 
       if (distSq < hitRadius * hitRadius) {

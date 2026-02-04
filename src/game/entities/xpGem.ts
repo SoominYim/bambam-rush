@@ -50,7 +50,7 @@ export class XPGemInstance implements XPGem {
       // 2. Consistent Acceleration
       // Once magnetized, we don't want it to slow down just because it's "far".
       // We want it to accelerate harder when close, but keep a strong base pull.
-      const magnetPower = player.stats.magnetPower || 500;
+      const magnetPower = 500; // Constant base power for pull speed
 
       // Minimum speed floor: Ensure it's always at least as fast as the player + a margin
       // This prevents the "falling behind" feeling when the player moves away.

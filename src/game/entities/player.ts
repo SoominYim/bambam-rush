@@ -10,7 +10,6 @@ import {
 } from "@/game/types";
 import { getMovementDirection } from "@/engine/systems/input";
 import { getTail, getCollectibles, addScore, getPlayer, getEnemies } from "@/game/managers/state";
-import { VFXFactory } from "@/engine/vfx/VFXFactory";
 import * as CONFIG from "../config/constants";
 import { drawCharacter } from "@/game/utils/characterRenderer";
 
@@ -39,7 +38,6 @@ export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string
     level: 1,
     gold: 0,
     pickupRange: 60, // Magnet range (base)
-    magnetPower: CONFIG.MAGNET_BASE_POWER,
     hpRegen: 0.5, // 0.5 HP per second base
   };
 
@@ -206,15 +204,23 @@ export const createTailSegment = (_index: number, elementType: ElementType): Tai
 
       if (myIndexInTail === -1 || history.length < 2) return;
 
-      // 1. Calculate Precise Floating-point Index on the path
-      // Spacing is fixed in pixels, so index = pixels / resolution
-      const pointsPerSegment = CONFIG.SNAKE_SEGMENT_SPACING / HISTORY_SPACING;
-      const headGapPoints = 15 / HISTORY_SPACING; // 7 -> 15px로 늘려 적당한 거리 유지
+      // Distance from Head to history[0]
+      const player = getPlayer();
+      if (!player) return;
 
-      const floatIndex = headGapPoints + myIndexInTail * pointsPerSegment;
+      const dx = player.position.x - history[0].x;
+      const dy = player.position.y - history[0].y;
+      const distToHistoryZero = Math.sqrt(dx * dx + dy * dy);
 
-      // 2. Sub-pixel Path Interpolation (Zero Lag + Perfect Smoothness)
-      if (floatIndex < history.length - 1) {
+      // 1. Calculate Target Distance along the path (in pixels)
+      const targetDistFromHead = CONFIG.SNAKE_HEAD_GAP + myIndexInTail * CONFIG.SNAKE_SEGMENT_SPACING;
+
+      // 2. Convert Distance to FloatIndex in history array
+      // floatIndex = (targetDist - currentHeadToHistoryDist) / spacing
+      const floatIndex = (targetDistFromHead - distToHistoryZero) / HISTORY_SPACING;
+
+      // 3. Sub-pixel Path Interpolation
+      if (floatIndex >= 0 && floatIndex < history.length - 1) {
         const i0 = Math.floor(floatIndex);
         const i1 = i0 + 1;
         const remainder = floatIndex - i0;
@@ -222,19 +228,22 @@ export const createTailSegment = (_index: number, elementType: ElementType): Tai
         const p0 = history[i0];
         const p1 = history[i1];
 
-        // Place exactly on the path (interpolated)
         this.position.x = p0.x + (p1.x - p0.x) * remainder;
         this.position.y = p0.y + (p1.y - p0.y) * remainder;
+      } else if (floatIndex < 0) {
+        // Between Head and history[0]
+        const t = targetDistFromHead / (distToHistoryZero || 1);
+        this.position.x = player.position.x + (history[0].x - player.position.x) * t;
+        this.position.y = player.position.y + (history[0].y - player.position.y) * t;
       } else {
-        // Fallback to the very end of history
         const last = history[history.length - 1];
         this.position.x = last.x;
         this.position.y = last.y;
       }
 
-      // Visual particles
-      if (Math.random() < 0.05) {
-        VFXFactory.createTrail(this.position.x, this.position.y, this.type);
+      // Update Level Up effect timer
+      if (this.levelUpTimer && this.levelUpTimer > 0) {
+        this.levelUpTimer -= _deltaTime;
       }
     },
 
@@ -381,37 +390,84 @@ export const createTailSegment = (_index: number, elementType: ElementType): Tai
       ctx.fillStyle = color;
       ctx.fill();
 
-      ctx.beginPath();
-      ctx.arc(x, y, size + 4, 0, Math.PI * 2);
-      ctx.lineWidth = 2;
-
-      // Tier Visuals
-      if (this.tier >= 3) {
-        // Unique (Gold/Purple)
-        ctx.strokeStyle = "#ffd700";
-        ctx.lineWidth = 4;
-        ctx.shadowColor = "#ffd700";
-        ctx.shadowBlur = 15;
-      } else if (this.tier === 2) {
-        // Rare (Cyan/Silver)
-        ctx.strokeStyle = "#00ffff";
-        ctx.lineWidth = 3;
-        ctx.shadowColor = "#00ffff";
-        ctx.shadowBlur = 10;
-      } else {
-        // Normal (White)
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2;
-        ctx.shadowBlur = 0;
+      // 3. Level/Tier Visuals (Border & Glow)
+      // Determine level (from weapon system if available, else fallback to tier)
+      let level = this.tier;
+      const playerObj = getPlayer();
+      if (this.weaponId && playerObj) {
+        const weapon = playerObj.activeWeapons.find(w => w.id === this.weaponId);
+        if (weapon) level = weapon.level;
       }
 
+      ctx.beginPath();
+      ctx.arc(x, y, size + 4, 0, Math.PI * 2);
+
+      let strokeColor = "#ffffff";
+      let shadowColor = "transparent";
+      let lineWidth = 2;
+      let shadowBlur = 0;
+
+      // Rainbow Border System (1: Red, 2: Orange, 3: Yellow, 4: Green, 5: Blue, 6: Indigo, 7: Violet, 8: Rainbow)
+      if (level >= 8) {
+        // Level 8: Animated Rainbow!
+        const hue = (Date.now() / 10) % 360;
+        strokeColor = `hsl(${hue}, 100%, 50%)`;
+        shadowColor = `hsl(${hue}, 100%, 60%)`;
+        lineWidth = CONFIG.SNAKE_SEGMENT_BORDER_MAX;
+        shadowBlur = 15;
+      } else if (level >= 1 && level <= 7) {
+        strokeColor = CONFIG.SNAKE_SEGMENT_LEVEL_COLORS[level - 1];
+        shadowColor = strokeColor;
+        lineWidth = CONFIG.SNAKE_SEGMENT_BORDER_BASE;
+        shadowBlur = 5 + level;
+      }
+
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = lineWidth;
+      ctx.shadowColor = shadowColor;
+      ctx.shadowBlur = shadowBlur;
       ctx.stroke();
+
+      // Reset shadow for icon
+      ctx.shadowBlur = 0;
 
       ctx.font = `${size * 1.8}px "Segoe UI Emoji", Arial`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#fff";
       ctx.fillText(icon, x, y + 1);
+
+      // 4. Level Up Visual Effect (Floating Text)
+      if (this.levelUpTimer && this.levelUpTimer > 0) {
+        const progress = 1.0 - this.levelUpTimer / 1.5; // 1.5s duration
+        const offsetY = -30 - progress * 12; // Lower start, more grounded float
+        const alpha = Math.min(1.0, this.levelUpTimer * 2.5); // Faster fade in/out
+
+        ctx.globalAlpha = alpha;
+        ctx.textAlign = "center";
+
+        // 1. Render LEVEL UP! Header
+        ctx.font = `bold 13px "Segoe UI", Arial, sans-serif`;
+        // Shadow
+        ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+        ctx.fillText("LEVEL UP!", x + 1, y + offsetY + 1);
+        // Rainbow effect
+        const hue = (Date.now() / 6) % 360;
+        ctx.fillStyle = `hsl(${hue}, 100%, 75%)`;
+        ctx.fillText("LEVEL UP!", x, y + offsetY);
+
+        // 2. Render Description (Enforced fallback only if registry is truly broken)
+        const desc = this.levelUpDescription || "UPGRADE";
+        ctx.font = `bold 10px "Segoe UI", Arial, sans-serif`;
+        // Shadow
+        ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+        ctx.fillText(desc, x + 1, y + offsetY + 15 + 1);
+        // Bright contrast color
+        ctx.fillStyle = "#ffff00"; // Bright Yellow for upgrades
+        ctx.fillText(desc, x, y + offsetY + 15);
+
+        ctx.globalAlpha = 1.0;
+      }
 
       ctx.restore();
     },

@@ -11,10 +11,23 @@ export const PLAYER_SPEED = 180;
 export const PLAYER_TURN_SPEED = 6; // Radians per second of rotation sensitivity
 export const PLAYER_RADIUS = 12;
 
-// ===== SNAKE CONFIG =====
-export const SNAKE_SEGMENT_SPACING = 30; // 무기들이 더 잘 보이도록 간격 추가 확대
-export const SNAKE_SEGMENT_RADIUS = 15;
-export const SNAKE_SEGMENT_DISTANCE = 30;
+// ===== SNAKE CONFIG (꼬리 설정) =====
+export const SNAKE_HEAD_GAP = 24; // 머리와 첫 번째 꼬리 사이의 간격 (값이 클수록 멀어짐)
+export const SNAKE_SEGMENT_SPACING = 26; // 꼬리 마디들 간의 간격 (값이 클수록 꼬리들이 서로 멀어짐)
+export const SNAKE_SEGMENT_RADIUS = 15; // 꼬리 마디의 충돌/그리기 반지름
+export const SNAKE_SEGMENT_DISTANCE = 26; // 논리적 거리 (SPACING과 동일하게 유지 권장)
+export const SNAKE_SEGMENT_BORDER_BASE = 2; // 꼬리 테두리 기본 두께
+export const SNAKE_SEGMENT_BORDER_MAX = 3; // 만렙(레벨 8) 꼬리 테두리 두께
+
+export const SNAKE_SEGMENT_LEVEL_COLORS = [
+  "#FF0000", // 1: Red
+  "#FF7F00", // 2: Orange
+  "#FFFF00", // 3: Yellow
+  "#00FF00", // 4: Green
+  "#0055ffff", // 5: Blue (사용자 지정)
+  "#0d0082ff", // 6: Indigo (사용자 지정)
+  "#8B00FF", // 7: Violet
+];
 
 // ===== SPAWN RATES =====
 export const COLLECTIBLE_SPAWN_CHANCE = 0.002;

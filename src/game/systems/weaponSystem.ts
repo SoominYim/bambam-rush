@@ -15,8 +15,9 @@ export const updateWeapons = (player: Player, deltaTime: Scalar) => {
     aw.timer += deltaTime * 1000; // ms
 
     const stats = getEffectiveStats(player, aw);
+    const interval = stats.attackSpeed > 0 ? 1000 / stats.attackSpeed : 999999;
 
-    if (aw.timer >= stats.cooldown) {
+    if (aw.timer >= interval) {
       aw.timer = 0;
       aw.lastFired = Date.now();
       triggerWeaponEffect(player, aw, stats);
@@ -24,7 +25,7 @@ export const updateWeapons = (player: Player, deltaTime: Scalar) => {
   });
 };
 
-const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
+export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
   const def = WEAPON_REGISTRY[aw.id];
   let stats = { ...def.baseStats };
 
@@ -33,12 +34,16 @@ const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
     const scale = def.levels[lv];
     if (scale) {
       if (scale.damage) stats.damage += scale.damage;
-      if (scale.cooldown) stats.cooldown += scale.cooldown;
+      if (scale.attackSpeed) stats.attackSpeed += scale.attackSpeed;
       if (scale.count) stats.count += scale.count;
       if (scale.size) stats.size += scale.size;
       if (scale.speed) stats.speed = (stats.speed || 0) + scale.speed;
       if (scale.pierce) stats.pierce = (stats.pierce || 0) + scale.pierce;
       if (scale.range) stats.range = (stats.range || 0) + scale.range;
+      if (scale.orbitRadiusBase) stats.orbitRadiusBase = (stats.orbitRadiusBase || 0) + scale.orbitRadiusBase;
+      if (scale.triggerRange) stats.triggerRange = (stats.triggerRange || 0) + scale.triggerRange;
+      if (scale.aggroSpeedMultiplier)
+        stats.aggroSpeedMultiplier = (stats.aggroSpeedMultiplier || 0) + scale.aggroSpeedMultiplier;
     }
   }
 
@@ -52,8 +57,8 @@ const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
       case "P01": // Might (Damage)
         stats.damage *= 1 + pVal;
         break;
-      case "P02": // Cooldown
-        stats.cooldown *= 1 + pVal;
+      case "P02": // Attack Speed Increase
+        stats.attackSpeed *= 1 + pVal;
         break;
       case "P05": // Speed
         stats.speed = (stats.speed || 0) * (1 + pVal);
@@ -70,8 +75,11 @@ const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
         break;
     }
   });
+  // 3. Player Base Stats Scaling (FireRate / Speed)
+  stats.attackSpeed *= player.stats.fireRate;
+  if (stats.speed) stats.speed *= player.stats.fireRate;
 
-  stats.cooldown = Math.max(100, stats.cooldown);
+  stats.attackSpeed = Math.max(0, stats.attackSpeed);
   return stats;
 };
 
@@ -85,54 +93,54 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
 
   switch (def.pattern) {
     case "projectile":
-      fireProjectile(origin, stats, def.tags[0], aw.id);
+      fireProjectile(player, origin, stats, def.tags[0], aw.id);
       break;
     case "line":
-      fireLine(origin, stats, def.tags[0]);
+      fireLine(player, origin, stats, def.tags[0]);
       break;
     case "chain":
-      fireChain(origin, stats, def.tags[0]);
+      fireChain(player, origin, stats, def.tags[0]);
       break;
     case "area":
-      spawnArea(origin, stats, def.tags[0], "STATIC");
+      spawnArea(player, origin, stats, def.tags[0], "STATIC");
       break;
     case "orbit":
-      fireOrbit(origin, stats, def.tags[0], ownerId, aw.id);
+      fireOrbit(player, origin, stats, def.tags[0], ownerId, aw.id);
       break;
     case "return":
       fireReturn(origin, stats, def.tags[0]);
       break;
     case "spread":
-      fireSpread(origin, stats, def.tags[0]);
+      fireSpread(player, origin, stats, def.tags[0]);
       break;
     case "linear":
-      fireLinear(origin, stats, def.tags[0]);
+      fireLinear(player, origin, stats, def.tags[0]);
       break;
     case "nova":
-      spawnArea(player.position, stats, def.tags[0], "STATIC"); // 플레이어 위치 중심 폭발
+      spawnArea(player, player.position, stats, def.tags[0], "STATIC"); // 플레이어 위치 중심 폭발
       break;
     case "aura":
       createAuraWeapon(player, stats, def.tags[0]);
       break;
     case "vortex":
-      spawnArea(origin, stats, def.tags[0], "VORTEX");
+      spawnArea(player, origin, stats, def.tags[0], "VORTEX");
       break;
     case "gas":
-      spawnArea(origin, stats, def.tags[0], "DRIFT");
+      spawnArea(player, origin, stats, def.tags[0], "DRIFT");
       break;
     case "trap":
-      spawnArea(origin, stats, def.tags[0], "TRAP");
+      spawnArea(player, origin, stats, def.tags[0], "TRAP");
       break;
     case "swing":
-      fireSwing(origin, stats, def.tags[0]);
+      fireSwing(player, origin, stats, def.tags[0]);
       break;
     case "stab":
-      fireStab(origin, stats, def.tags[0], ownerId, aw.id);
+      fireStab(player, origin, stats, def.tags[0], ownerId, aw.id);
       break;
   }
 };
 
-const fireStab = (origin: Vector2D, stats: any, type: any, _ownerId?: string, _weaponId?: string) => {
+const fireStab = (_player: Player, origin: Vector2D, stats: any, type: any, _ownerId?: string, _weaponId?: string) => {
   // 찌르기 (Orbit + Stab)
   // 천천히 회전하면서 빠르게 찌르고 돌아옴
   // 연속성을 위해 시간 기반 각도 계산
@@ -168,7 +176,7 @@ const fireStab = (origin: Vector2D, stats: any, type: any, _ownerId?: string, _w
   }
 };
 
-const fireSwing = (origin: Vector2D, stats: any, type: any) => {
+const fireSwing = (_player: Player, origin: Vector2D, stats: any, type: any) => {
   // 휘두르기 (부채꼴)
   // 꼬리의 진행 방향 또는 가장 가까운 적 방향을 기준으로 휘두름
   const target = getNearestEnemy(origin);
@@ -200,7 +208,7 @@ const fireSwing = (origin: Vector2D, stats: any, type: any) => {
   }
 };
 
-const fireProjectile = (origin: Vector2D, stats: any, type: any, weaponId?: string) => {
+const fireProjectile = (_player: Player, origin: Vector2D, stats: any, type: any, weaponId?: string) => {
   const nearby = spatialGrid.getNearbyEnemies(origin.x, origin.y, 600) as Enemy[];
   if (!nearby || nearby.length === 0) return;
 
@@ -235,7 +243,7 @@ const fireProjectile = (origin: Vector2D, stats: any, type: any, weaponId?: stri
   }
 };
 
-const fireLine = (origin: Vector2D, stats: any, type: any) => {
+const fireLine = (_player: Player, origin: Vector2D, stats: any, type: any) => {
   const target = getNearestEnemy(origin);
   const baseAngle = target
     ? Math.atan2(target.position.y - origin.y, target.position.x - origin.x)
@@ -253,7 +261,7 @@ const fireLine = (origin: Vector2D, stats: any, type: any) => {
   }
 };
 
-const fireChain = (origin: Vector2D, stats: any, type: any) => {
+const fireChain = (_player: Player, origin: Vector2D, stats: any, type: any) => {
   const target = getNearestEnemy(origin);
   if (!target) return;
 
@@ -266,7 +274,7 @@ const fireChain = (origin: Vector2D, stats: any, type: any) => {
   addProjectile(proj);
 };
 
-const fireOrbit = (origin: Vector2D, stats: any, type: any, ownerId?: string, weaponId?: string) => {
+const fireOrbit = (player: Player, origin: Vector2D, stats: any, type: any, ownerId?: string, weaponId?: string) => {
   // Guardian Orbit Logic (Persistent)
   let existingCount = 0;
 
@@ -284,15 +292,21 @@ const fireOrbit = (origin: Vector2D, stats: any, type: any, ownerId?: string, we
           // Update Stats
           p.damage = stats.damage;
           p.radius = stats.size;
-          (p as any).orbitSpeedBase = stats.speed || 1.5;
-          (p as any).stabRange = stats.range || 50;
+          (p as any).orbitSpeedBase = stats.speed || 0.7;
+          (p as any).stabRange = stats.range || 40;
+          (p as any).orbitRadiusBase = stats.orbitRadiusBase || 36;
+          (p as any).triggerRange = stats.triggerRange || 110;
+          (p as any).slotIndex = idx;
+          (p as any).slotTotal = stats.count;
 
           // Update Speed Multiplier
-          const speedMult = (stats.speed || 0.8) / 0.8;
+          const speedFactor = (stats.speed || 0.7) / 0.7;
+          const aggroFactor = stats.aggroSpeedMultiplier || 1.6;
+          const speedMult = speedFactor * aggroFactor * player.stats.fireRate;
           (p as any).speedMult = speedMult;
           (p as any).stabSpeed = 200 * speedMult;
 
-          (p as any).hitInterval = stats.hitInterval || 200; // Update Hit Interval (Default 200)
+          (p as any).hitInterval = (stats.hitInterval || 200) / player.stats.fireRate; // Update Hit Interval (Faster speed = more hits)
           // 갯수가 충분하면 루프 계속
         } else {
           // 갯수가 줄었으면 초과분 제거
@@ -315,17 +329,22 @@ const fireOrbit = (origin: Vector2D, stats: any, type: any, ownerId?: string, we
     (proj as any).behavior = "ORBIT_STAB"; // Using ORBIT_STAB behavior
 
     (proj as any).orbitAngle = angle;
-    (proj as any).orbitRadiusBase = 30; // Drastically reduced to 25 (Very close to tail)
-    (proj as any).orbitRadiusCurrent = 5;
-    (proj as any).orbitSpeed = stats.speed || 1.5;
+    (proj as any).orbitRadiusBase = stats.orbitRadiusBase || 36;
+    (proj as any).orbitRadiusCurrent = (proj as any).orbitRadiusBase;
+    (proj as any).orbitSpeed = stats.speed || 0.7;
 
-    (proj as any).stabRange = stats.range || 50; // Use Stat Range
+    (proj as any).stabRange = stats.range || 40; // Use Stat Range
+    (proj as any).slotIndex = i;
+    (proj as any).slotTotal = stats.count;
+
     // Attack Speed 비례
-    const speedMult = (stats.speed || 0.8) / 0.8;
-    (proj as any).speedMult = speedMult; // Store for cooldown calculation
-    (proj as any).stabSpeed = 200 * speedMult; // Increased base speed from 100 to 300
+    const speedFactor = (stats.speed || 0.7) / 0.7;
+    const aggroFactor = stats.aggroSpeedMultiplier || 1.6;
+    const speedMult = speedFactor * aggroFactor * (player?.stats.fireRate || 1);
+    (proj as any).speedMult = speedMult;
+    (proj as any).stabSpeed = 200 * speedMult;
 
-    (proj as any).triggerRange = 200;
+    (proj as any).triggerRange = stats.triggerRange || 110;
 
     (proj as any).state = "ORBIT";
 
@@ -369,7 +388,7 @@ const fireReturn = (origin: Vector2D, stats: any, type: any) => {
   }
 };
 
-const fireSpread = (origin: Vector2D, stats: any, type: any) => {
+const fireSpread = (_player: Player, origin: Vector2D, stats: any, type: any) => {
   const target = getNearestEnemy(origin);
   const baseAngle = target
     ? Math.atan2(target.position.y - origin.y, target.position.x - origin.x)
@@ -388,7 +407,7 @@ const fireSpread = (origin: Vector2D, stats: any, type: any) => {
   }
 };
 
-const fireLinear = (origin: Vector2D, stats: any, type: any) => {
+const fireLinear = (_player: Player, origin: Vector2D, stats: any, type: any) => {
   const angles = [0, Math.PI / 2, Math.PI, Math.PI * 1.5]; // 4방향
 
   for (let i = 0; i < stats.count; i++) {
@@ -404,7 +423,7 @@ const fireLinear = (origin: Vector2D, stats: any, type: any) => {
 };
 
 // Generic Spawn Area
-const spawnArea = (origin: Vector2D, stats: any, type: any, behavior: AreaBehavior) => {
+const spawnArea = (_player: Player, origin: Vector2D, stats: any, type: any, behavior: AreaBehavior) => {
   // 타겟이 필요한 경우(원거리 소환) 처리
   let spawnPos = { ...origin };
   if (behavior === "STATIC" || behavior === "VORTEX") {

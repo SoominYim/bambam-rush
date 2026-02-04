@@ -1,5 +1,4 @@
 import { Projectile, Scalar, ElementType, SkillBehavior } from "../types";
-import { VFXFactory } from "@/engine/vfx/VFXFactory";
 import { SPELL_STATS } from "@/game/config/spellStats";
 import { updateProjectileBehavior } from "./projectileBehaviors";
 import * as CONFIG from "@/game/config/constants";
@@ -49,11 +48,6 @@ export const createProjectile = (
         }
       }
 
-      // Trailing particles
-      if (Math.random() < 0.3) {
-        VFXFactory.createTrail(this.position.x, this.position.y, type);
-      }
-
       // Projectile expiration check
       if (behavior === SkillBehavior.PROJECTILE || (this as any).behavior) {
         const margin = 500;
@@ -83,12 +77,27 @@ export const createProjectile = (
         ctx.lineWidth = 2;
         ctx.stroke();
       } else if (type === ElementType.SWORD) {
+        // Handle visibility for ORBIT_STAB behavior
+        const p = this as any;
+        if (p.behavior === "ORBIT_STAB") {
+          if (p.state === "ORBIT") {
+            ctx.restore();
+            return;
+          }
+          // Optional: Fade out during RECOVER
+          if (p.state === "RECOVER") {
+            const baseRadius = p.orbitRadiusBase || 60;
+            const stabRange = p.stabRange || 100;
+            const progress = (p.orbitRadiusCurrent - baseRadius) / stabRange; // 1 -> 0
+            ctx.globalAlpha = Math.max(0, progress);
+          }
+        }
+
         // Draw Sword Shape (Corrected)
         ctx.translate(this.position.x, this.position.y);
         ctx.rotate(this.angle || 0);
 
         // Dynamic Radius (Visual Size from WeaponSystem)
-        // If radius is 8, whole sword is about 20-30px long
         const r = (this as any).radius || 10;
 
         // Blade (Long and thin)

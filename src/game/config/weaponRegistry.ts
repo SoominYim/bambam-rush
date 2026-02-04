@@ -3,7 +3,7 @@ import { ElementType } from "@/game/types";
 // 무기 레벨별 스케일링 정의
 export interface WeaponLevelScale {
   damage?: number;
-  cooldown?: number;
+  attackSpeed?: number;
   count?: number;
   size?: number;
   area?: number;
@@ -12,6 +12,9 @@ export interface WeaponLevelScale {
   pierce?: number;
   range?: number;
   hitInterval?: number; // Added hitInterval
+  orbitRadiusBase?: number; // Added for orbit patterns
+  triggerRange?: number; // Added for aggro behaviors
+  aggroSpeedMultiplier?: number; // Added for dash speeds
   description?: string;
 }
 
@@ -21,31 +24,31 @@ export interface WeaponDefinition {
   name: string;
   description: string;
   pattern:
-    | "orbit"
-    | "projectile"
-    | "line"
-    | "chain"
-    | "area"
-    | "return"
-    | "nova"
-    | "trap"
-    | "beam"
-    | "minion"
-    | "arc"
-    | "vortex"
-    | "bounce"
-    | "aura"
-    | "sky"
-    | "spread"
-    | "gas"
-    | "linear"
-    | "swing"
+    | "orbit" // 꼬리 주변을 회전하는 검
+    | "projectile" // 발사되는 미사일
+    | "line" // 직선으로 발사되는 탄환
+    | "chain" // 튕기며 전이되는 번개
+    | "area" // 바닥에 지속 피해를 주는 장판
+    | "return" // 던지고 회수되는 부메랑
+    | "nova" // 폭발하는 구체
+    | "trap" // 함정
+    | "beam" // 빔
+    | "minion" // 미니언
+    | "arc" // 아크
+    | "vortex" // 소용돌이
+    | "bounce" // 튕기는 탄환
+    | "aura" // 오라
+    | "sky" // 하늘
+    | "spread" // 퍼짐
+    | "gas" // 가스
+    | "linear" // 선형
+    | "swing" // 스윙
     | "stab"
     | "nuke";
   tags: ElementType[];
   baseStats: {
     damage: number;
-    cooldown: number;
+    attackSpeed: number; // Attacks per second
     count: number;
     size: number;
     speed?: number;
@@ -53,6 +56,9 @@ export interface WeaponDefinition {
     pierce?: number;
     range?: number;
     hitInterval?: number; // Added hitInterval
+    orbitRadiusBase?: number;
+    triggerRange?: number;
+    aggroSpeedMultiplier?: number;
   };
   levels: Record<number, WeaponLevelScale>;
   evolution?: {
@@ -66,28 +72,30 @@ export interface WeaponDefinition {
 export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W01: {
     id: "W01",
-    name: "기본 검",
-    description: "꼬리 주변을 수호하는 회전 검",
+    name: "🗡️ 가디언 소드",
+    description: "꼬리 주변을 수호하며 적을 추적해 찌르는 검",
     pattern: "orbit",
     tags: [ElementType.SWORD],
     baseStats: {
-      damage: 15,
-      cooldown: 0, // 지속형이므로 쿨타임 의미 없음 (업데이트 주기용)
+      damage: 10,
+      attackSpeed: 10, // Persistent sync rate
       count: 1,
-      size: 8,
-      speed: 0.8, // Orbit Speed
-      duration: 0,
-      range: 50, // Stab Range
-      hitInterval: 200, // 200ms (Standard Sweet Spot)
+      size: 6,
+      speed: 0.7,
+      range: 40,
+      hitInterval: 200,
+      orbitRadiusBase: 10,
+      triggerRange: 110,
+      aggroSpeedMultiplier: 1,
     },
     levels: {
-      2: { damage: 5, description: "데미지 +5" },
-      3: { size: 2, range: 10, description: "크기/범위 증가" },
-      4: { speed: 0.2, description: "회전 속도 증가" },
-      5: { damage: 10, description: "데미지 +10" },
-      6: { count: 1, description: "검 +1" },
-      7: { damage: 15, description: "데미지 +15" },
-      8: { damage: 20, size: 5, range: 20, description: "MAX: 강력한 성장" },
+      2: { damage: 4, size: 2, description: "데미지, 크기 증가" },
+      3: { size: 2, range: 30, description: "크기, 사거리 증가" },
+      4: { speed: 0.5, attackSpeed: 20, description: "공격 속도 증가" },
+      5: { count: 1, description: "검 +1" },
+      6: { size: 2, speed: 0.15, description: "크기, 공격 속도 증가" },
+      7: { damage: 10, count: 1, description: "데미지, 검 +1 증가" },
+      8: { damage: 12, count: 1, size: 5, range: 40, description: "MAX" },
     },
     evolution: {
       requiredPassive: "P01",
@@ -102,14 +110,14 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "가장 가까운 적을 추적하는 미사일",
     pattern: "projectile",
     tags: [ElementType.ARCANE],
-    baseStats: { damage: 20, cooldown: 2000, count: 1, size: 15, speed: 250, pierce: 1 },
+    baseStats: { damage: 20, attackSpeed: 0.5, count: 1, size: 15, speed: 250, pierce: 1 },
     levels: {
       2: { damage: 5, description: "데미지 +5" },
-      3: { cooldown: -200, description: "쿨타임 -0.2초" },
+      3: { attackSpeed: 0.05, description: "공격 속도 증가" },
       4: { count: 1, description: "미사일 +1" },
       5: { damage: 8, description: "데미지 +8" },
       6: { count: 1, description: "미사일 +1" },
-      7: { damage: 10, cooldown: -200, description: "데미지 +10, 쿨타임 -0.2초" },
+      7: { damage: 10, attackSpeed: 0.05, description: "데미지 +10, 공속 증가" },
       8: { count: 2, damage: 15, description: "MAX: 미사일 +2, 데미지 +15" },
     },
     evolution: {
@@ -125,7 +133,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "전방으로 직선 발사되는 고화력 탄환",
     pattern: "line",
     tags: [ElementType.FIRE],
-    baseStats: { damage: 35, cooldown: 1500, count: 1, size: 20, speed: 300, pierce: 2 },
+    baseStats: { damage: 35, attackSpeed: 0.67, count: 1, size: 20, speed: 300, pierce: 2 },
     levels: {
       2: { damage: 8, description: "데미지 +8" },
       3: { pierce: 1, description: "관통 +1" },
@@ -148,13 +156,13 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "적들 사이를 튕기며 전이되는 번개",
     pattern: "chain",
     tags: [ElementType.ELECTRIC],
-    baseStats: { damage: 25, cooldown: 3000, count: 1, size: 10, speed: 400, pierce: 3 },
+    baseStats: { damage: 25, attackSpeed: 0.33, count: 1, size: 10, speed: 400, pierce: 3 },
     levels: {
       2: { damage: 6, description: "데미지 +6" },
       3: { pierce: 1, description: "체인 +1" },
-      4: { cooldown: -300, description: "쿨타임 -0.3초" },
+      4: { attackSpeed: 0.04, description: "공격 속도 증가" },
       5: { damage: 10, pierce: 2, description: "데미지 +10, 체인 +2" },
-      6: { cooldown: -400, description: "쿨타임 -0.4초" },
+      6: { attackSpeed: 0.05, description: "공격 속도 증가" },
       7: { damage: 15, pierce: 2, description: "데미지 +15, 체인 +2" },
       8: { damage: 25, pierce: 5, description: "MAX: 데미지 +25, 체인 +5" },
     },
@@ -171,7 +179,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "바닥에 지속 피해를 주는 독 장판 생성",
     pattern: "area",
     tags: [ElementType.POISON],
-    baseStats: { damage: 15, cooldown: 4000, count: 1, size: 80, duration: 3000 },
+    baseStats: { damage: 15, attackSpeed: 0.25, count: 1, size: 80, duration: 3000 },
     levels: {
       2: { damage: 4, description: "데미지 +4" },
       3: { duration: 500, description: "지속시간 +0.5초" },
@@ -194,7 +202,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "던지면 돌아오며 두 번 타격",
     pattern: "return",
     tags: [ElementType.WIND],
-    baseStats: { damage: 30, cooldown: 2500, count: 1, size: 18, speed: 200 },
+    baseStats: { damage: 30, attackSpeed: 0.4, count: 1, size: 18, speed: 200 },
     levels: {
       2: { damage: 7, description: "데미지 +7" },
       3: { count: 1, description: "부메랑 +1" },
@@ -217,14 +225,14 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "플레이어 주변 폭발, 적 빙결",
     pattern: "nova",
     tags: [ElementType.ICE],
-    baseStats: { damage: 40, cooldown: 5000, count: 1, size: 120, duration: 1000 },
+    baseStats: { damage: 40, attackSpeed: 0.2, count: 1, size: 120, duration: 1000 },
     levels: {
       2: { damage: 10, description: "데미지 +10" },
       3: { size: 20, description: "범위 +20" },
-      4: { cooldown: -500, description: "쿨타임 -0.5초" },
+      4: { attackSpeed: 0.02, description: "공격 속도 증가" },
       5: { damage: 15, description: "데미지 +15" },
       6: { size: 40, description: "범위 +40" },
-      7: { cooldown: -700, description: "쿨타임 -0.7초" },
+      7: { attackSpeed: 0.03, description: "공격 속도 증가" },
       8: { damage: 30, size: 60, description: "MAX: 데미지 +30, 범위 +60" },
     },
     evolution: {
@@ -240,7 +248,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "투사체를 막고 적에게 피해를 줌",
     pattern: "orbit",
     tags: [ElementType.LIGHT],
-    baseStats: { damage: 18, cooldown: 0, count: 2, size: 25, speed: 2.5 },
+    baseStats: { damage: 18, attackSpeed: 10, count: 2, size: 25, speed: 2.5 },
     levels: {
       2: { damage: 4, description: "데미지 +4" },
       3: { count: 1, description: "구슬 +1" },
@@ -258,7 +266,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "밟으면 폭발하는 지뢰 설치",
     pattern: "trap",
     tags: [ElementType.PHYSICAL],
-    baseStats: { damage: 50, cooldown: 3000, count: 1, size: 60, duration: 8000 },
+    baseStats: { damage: 50, attackSpeed: 0.33, count: 1, size: 60, duration: 8000 },
     levels: {
       2: { damage: 12, description: "데미지 +12" },
       3: { count: 1, description: "지뢰 +1" },
@@ -276,7 +284,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "관통하는 지속 레이저 발사",
     pattern: "beam",
     tags: [ElementType.TECH],
-    baseStats: { damage: 8, cooldown: 100, count: 1, size: 10, duration: 2000, pierce: 999 },
+    baseStats: { damage: 8, attackSpeed: 10, count: 1, size: 10, duration: 2000, pierce: 999 },
     levels: {
       2: { damage: 2, description: "데미지 +2" },
       3: { duration: 500, description: "지속시간 +0.5초" },
@@ -299,7 +307,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "적을 공격하는 박쥐 소환",
     pattern: "minion",
     tags: [ElementType.BLOOD],
-    baseStats: { damage: 12, cooldown: 1000, count: 3, size: 12, speed: 150 },
+    baseStats: { damage: 12, attackSpeed: 1.0, count: 3, size: 12, speed: 150 },
     levels: {
       2: { count: 1, description: "박쥐 +1" },
       3: { damage: 3, description: "데미지 +3" },
@@ -322,7 +330,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "높은 곡사로 던져 범위 피해",
     pattern: "arc",
     tags: [ElementType.PHYSICAL],
-    baseStats: { damage: 45, cooldown: 3500, count: 1, size: 70, speed: 180 },
+    baseStats: { damage: 45, attackSpeed: 0.29, count: 1, size: 70, speed: 180 },
     levels: {
       2: { damage: 10, description: "데미지 +10" },
       3: { size: 15, description: "범위 +15" },
@@ -340,7 +348,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "적들을 중심으로 끌어당김",
     pattern: "vortex",
     tags: [ElementType.GRAVITY],
-    baseStats: { damage: 10, cooldown: 8000, count: 1, size: 150, duration: 3000 },
+    baseStats: { damage: 10, attackSpeed: 0.13, count: 1, size: 150, duration: 3000 },
     levels: {
       2: { damage: 3, description: "데미지 +3" },
       3: { duration: 500, description: "지속시간 +0.5초" },
@@ -363,7 +371,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "벽과 화면 끝에서 튕기는 칼날",
     pattern: "bounce",
     tags: [ElementType.WIND],
-    baseStats: { damage: 22, cooldown: 1800, count: 2, size: 16, speed: 280, pierce: 5 },
+    baseStats: { damage: 22, attackSpeed: 0.56, count: 2, size: 16, speed: 280, pierce: 5 },
     levels: {
       2: { damage: 5, description: "데미지 +5" },
       3: { count: 1, description: "차크람 +1" },
@@ -381,7 +389,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "플레이어 주변에 지속 화염 피해",
     pattern: "aura",
     tags: [ElementType.FIRE],
-    baseStats: { damage: 10, cooldown: 500, count: 1, size: 80, duration: 99999 },
+    baseStats: { damage: 10, attackSpeed: 2.0, count: 1, size: 80, duration: 99999 },
     levels: {
       2: { damage: 3, description: "데미지 +3" },
       3: { size: 15, description: "범위 +15" },
@@ -399,12 +407,12 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "하늘에서 랜덤하게 떨어지는 벼락",
     pattern: "sky",
     tags: [ElementType.ELECTRIC],
-    baseStats: { damage: 60, cooldown: 4000, count: 1, size: 50, duration: 500 },
+    baseStats: { damage: 60, attackSpeed: 0.25, count: 1, size: 50, duration: 500 },
     levels: {
       2: { damage: 15, description: "데미지 +15" },
       3: { count: 1, description: "벼락 +1" },
       4: { damage: 20, description: "데미지 +20" },
-      5: { cooldown: -500, description: "쿨타임 -0.5초" },
+      5: { attackSpeed: 0.03, description: "공격 속도 증가" },
       6: { count: 1, description: "벼락 +1" },
       7: { damage: 30, description: "데미지 +30" },
       8: { damage: 50, count: 2, description: "MAX: 데미지 +50, 벼락 +2" },
@@ -417,7 +425,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "부채꼴 범위로 탄환 발사",
     pattern: "spread",
     tags: [ElementType.TECH],
-    baseStats: { damage: 12, cooldown: 1200, count: 5, size: 12, speed: 320, pierce: 1 },
+    baseStats: { damage: 12, attackSpeed: 0.83, count: 5, size: 12, speed: 320, pierce: 1 },
     levels: {
       2: { damage: 3, description: "데미지 +3" },
       3: { count: 2, description: "탄환 +2" },
@@ -435,7 +443,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "움직이는 독구름 생성",
     pattern: "gas",
     tags: [ElementType.POISON],
-    baseStats: { damage: 8, cooldown: 3000, count: 1, size: 100, duration: 5000, speed: 50 },
+    baseStats: { damage: 8, attackSpeed: 0.33, count: 1, size: 100, duration: 5000, speed: 50 },
     levels: {
       2: { damage: 2, description: "데미지 +2" },
       3: { size: 20, description: "범위 +20" },
@@ -453,7 +461,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "적을 느리게 하는 빠른 투사체",
     pattern: "linear",
     tags: [ElementType.ICE],
-    baseStats: { damage: 18, cooldown: 1000, count: 3, size: 14, speed: 400, pierce: 2 },
+    baseStats: { damage: 18, attackSpeed: 1.0, count: 3, size: 14, speed: 400, pierce: 2 },
     levels: {
       2: { damage: 4, description: "데미지 +4" },
       3: { count: 1, description: "파편 +1" },
@@ -471,13 +479,13 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "긴 딜레이 후 화면 전체 초토화",
     pattern: "nuke",
     tags: [ElementType.FIRE],
-    baseStats: { damage: 200, cooldown: 15000, count: 1, size: 200, duration: 1000 },
+    baseStats: { damage: 200, attackSpeed: 0.07, count: 1, size: 200, duration: 1000 },
     levels: {
       2: { damage: 50, description: "데미지 +50" },
-      3: { cooldown: -2000, description: "쿨타임 -2초" },
+      3: { attackSpeed: 0.01, description: "공격 속도 증가" },
       4: { damage: 80, description: "데미지 +80" },
       5: { size: 50, description: "범위 +50" },
-      6: { cooldown: -2000, description: "쿨타임 -2초" },
+      6: { attackSpeed: 0.01, description: "공격 속도 증가" },
       7: { damage: 120, description: "데미지 +120" },
       8: { damage: 200, size: 100, description: "MAX: 데미지 +200, 범위 +100" },
     },

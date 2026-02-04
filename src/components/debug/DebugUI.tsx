@@ -95,7 +95,7 @@ export const DebugUI: React.FC<DebugUIProps> = memo(({ stats: initialStats }) =>
         <div>SPD: {(displayStats.speed || 1).toFixed(2)}</div>
         <div>REG: {displayStats.hpRegen.toFixed(1)}/s</div>
         <div>MAG: {displayStats.pickupRange.toFixed(0)}</div>
-        <div>PWR: {displayStats.magnetPower.toFixed(0)}</div>
+        <div>DEF: {displayStats.def.toFixed(1)}</div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -110,31 +110,105 @@ export const DebugUI: React.FC<DebugUIProps> = memo(({ stats: initialStats }) =>
           <button style={btnStyle} onClick={() => (player.stats.hp = player.stats.maxHp)}>
             Full Heal
           </button>
-          <button style={btnStyle} onClick={() => (player.stats.maxHp += 50)}>
-            +50 MaxHP
-          </button>
+          <div style={{ display: "flex", gap: "2px", alignItems: "center", gridColumn: "span 2" }}>
+            <span style={{ flex: 1 }}>MaxHP</span>
+            <button style={btnStyle} onClick={() => (player.stats.maxHp = Math.max(10, player.stats.maxHp - 10))}>
+              -10
+            </button>
+            <button style={btnStyle} onClick={() => (player.stats.maxHp += 10)}>
+              +10
+            </button>
+          </div>
         </div>
 
         <div style={{ fontWeight: "bold", fontSize: "10px", color: "#aaa", marginTop: "4px" }}>STATS</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
-          <button style={btnStyle} onClick={() => (player.stats.atk += 0.2)}>
-            +0.2 ATK
-          </button>
-          <button style={btnStyle} onClick={() => (player.stats.speed = (player.stats.speed || 1) + 0.1)}>
-            +0.1 SPD
-          </button>
-          <button style={btnStyle} onClick={() => (player.stats.hpRegen += 1)}>
-            +1.0 REG
-          </button>
-          <button style={btnStyle} onClick={() => (player.stats.fireRate += 0.1)}>
-            +0.1 FireRate
-          </button>
-          <button style={btnStyle} onClick={() => (player.stats.pickupRange += 50)}>
-            +50 Magnet
-          </button>
-          <button style={btnStyle} onClick={() => (player.stats.magnetPower += 100)}>
-            +100 Power
-          </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          {/* ATK Row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>ATK ({displayStats.atk.toFixed(2)})</span>
+            <div style={{ display: "flex", gap: "2px" }}>
+              <button style={btnStyle} onClick={() => (player.stats.atk = Math.max(0, player.stats.atk - 0.1))}>
+                -0.1
+              </button>
+              <button style={btnStyle} onClick={() => (player.stats.atk += 0.1)}>
+                +0.1
+              </button>
+            </div>
+          </div>
+
+          {/* SPD Row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>SPD ({(displayStats.speed || 1).toFixed(2)})</span>
+            <div style={{ display: "flex", gap: "2px" }}>
+              <button
+                style={btnStyle}
+                onClick={() => (player.stats.speed = Math.max(0.1, (player.stats.speed || 1) - 0.1))}
+              >
+                -0.1
+              </button>
+              <button style={btnStyle} onClick={() => (player.stats.speed = (player.stats.speed || 1) + 0.1)}>
+                +0.1
+              </button>
+            </div>
+          </div>
+
+          {/* DEF Row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>DEF ({displayStats.def.toFixed(1)})</span>
+            <div style={{ display: "flex", gap: "2px" }}>
+              <button style={btnStyle} onClick={() => (player.stats.def = Math.max(0, player.stats.def - 1))}>
+                -1
+              </button>
+              <button style={btnStyle} onClick={() => (player.stats.def += 1)}>
+                +1
+              </button>
+            </div>
+          </div>
+
+          {/* REG Row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>REG ({displayStats.hpRegen.toFixed(1)})</span>
+            <div style={{ display: "flex", gap: "2px" }}>
+              <button style={btnStyle} onClick={() => (player.stats.hpRegen = Math.max(0, player.stats.hpRegen - 0.5))}>
+                -0.5
+              </button>
+              <button style={btnStyle} onClick={() => (player.stats.hpRegen += 0.5)}>
+                +0.5
+              </button>
+            </div>
+          </div>
+
+          {/* FireRate Row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>FireRate ({displayStats.fireRate.toFixed(2)})</span>
+            <div style={{ display: "flex", gap: "2px" }}>
+              <button
+                style={btnStyle}
+                onClick={() => (player.stats.fireRate = Math.max(0.1, player.stats.fireRate - 0.1))}
+              >
+                -0.1
+              </button>
+              <button style={btnStyle} onClick={() => (player.stats.fireRate += 0.1)}>
+                +0.1
+              </button>
+            </div>
+          </div>
+
+          {/* Magnet Row */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Magnet ({displayStats.pickupRange.toFixed(0)})</span>
+            <div style={{ display: "flex", gap: "2px" }}>
+              <button
+                style={btnStyle}
+                onClick={() => (player.stats.pickupRange = Math.max(0, player.stats.pickupRange - 50))}
+              >
+                -50
+              </button>
+              <button style={btnStyle} onClick={() => (player.stats.pickupRange += 50)}>
+                +50
+              </button>
+            </div>
+          </div>
         </div>
 
         <div style={{ fontWeight: "bold", fontSize: "10px", color: "#aaa", marginTop: "4px" }}>WEAPONS</div>

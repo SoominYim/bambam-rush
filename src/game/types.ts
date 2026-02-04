@@ -60,7 +60,6 @@ export interface PlayerStats {
   level: number;
   gold: number; // Gold collected this run
   pickupRange: number; // Magnet Range
-  magnetPower: number; // Magnet Pull Speed Multiplier
   hpRegen: number; // HP per sec
   speed?: number; // Movement Speed Multiplier (added for Debug/Upgrades)
 }
@@ -108,6 +107,8 @@ export interface TailSegment extends GameObject {
   tier: number;
   followTarget: GameObject | null;
   weaponId: string;
+  levelUpTimer?: number; // Time remaining for Level Up effect
+  levelUpDescription?: string; // Description for the last level up
 }
 
 export enum SkillBehavior {

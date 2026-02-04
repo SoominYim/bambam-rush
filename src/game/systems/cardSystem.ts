@@ -140,6 +140,16 @@ export const applyCardEffect = (card: Card) => {
         const active = player.activeWeapons.find(w => w.id === card.targetId);
         if (active) {
           active.level++;
+          // Trigger Level Up effect on corresponding tail segment
+          const segment = getTail().find(s => s.weaponId === card.targetId);
+          if (segment) {
+            segment.levelUpTimer = 1.5; // Trigger effect
+            // Get description from registry for the new level
+            const def = WEAPON_REGISTRY[card.targetId];
+            if (def && def.levels[active.level]) {
+              segment.levelUpDescription = def.levels[active.level].description;
+            }
+          }
         } else {
           player.activeWeapons.push({
             id: card.targetId,
@@ -151,6 +161,8 @@ export const applyCardEffect = (card: Card) => {
           const def = WEAPON_REGISTRY[card.targetId];
           const newSegment = createTailSegment(getTail().length, def.tags[0]);
           newSegment.weaponId = card.targetId;
+          newSegment.levelUpTimer = 1.5;
+          newSegment.levelUpDescription = "NEW WEAPON";
           addTailSegment(newSegment);
         }
       }
@@ -238,7 +250,18 @@ export const addWeapon = (weaponId: string) => {
 
   const active = player.activeWeapons.find(w => w.id === weaponId);
   if (active) {
-    if (active.level < 8) active.level++;
+    if (active.level < 8) {
+      active.level++;
+      // Trigger Level Up effect on corresponding tail segment
+      const segment = getTail().find(s => s.weaponId === weaponId);
+      if (segment) {
+        segment.levelUpTimer = 1.5;
+        const def = WEAPON_REGISTRY[weaponId];
+        if (def && def.levels[active.level]) {
+          segment.levelUpDescription = def.levels[active.level].description;
+        }
+      }
+    }
   } else {
     player.activeWeapons.push({
       id: weaponId,

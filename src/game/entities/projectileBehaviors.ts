@@ -355,18 +355,35 @@ const updateOrbitStab: BehaviorFunction = (proj, dt) => {
   const baseRadius = p.orbitRadiusBase || 60;
   const stabRange = p.stabRange || 100;
   const triggerRange = p.triggerRange || 200;
-  const orbitSpeed = p.orbitSpeed || 2;
+  // const orbitSpeed = p.orbitSpeed || 2;
   const stabSpeed = p.stabSpeed || 400;
 
   // 3. State Machine
   switch (p.state) {
     case "ORBIT": {
-      // Rotation
-      p.orbitAngle += orbitSpeed * dt;
+      // Slot Alignment logic (Static positions, no rotation)
+      if (p.slotTotal > 1) {
+        const targetAngle = (Math.PI * 2 * (p.slotIndex || 0)) / p.slotTotal;
+
+        // Shortest path interpolation
+        let diff = targetAngle - p.orbitAngle;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+
+        const rotationSpeed = 15 * dt; // Fast snap back to slot
+        if (Math.abs(diff) > rotationSpeed) {
+          p.orbitAngle += Math.sign(diff) * rotationSpeed;
+        } else {
+          p.orbitAngle = targetAngle;
+        }
+      } else if (p.slotTotal === 1) {
+        // Solo sword: also stay at 0 angle (or top)
+        p.orbitAngle = 0;
+      }
 
       // Radius Restoration (Lerp back to base)
-      if (Math.abs(p.orbitRadiusCurrent - baseRadius) > 1) {
-        const lerpSpeed = 5;
+      if (Math.abs(p.orbitRadiusCurrent - baseRadius) > 0.5) {
+        const lerpSpeed = 10;
         p.orbitRadiusCurrent += (baseRadius - p.orbitRadiusCurrent) * lerpSpeed * dt;
       } else {
         p.orbitRadiusCurrent = baseRadius;
@@ -376,23 +393,27 @@ const updateOrbitStab: BehaviorFunction = (proj, dt) => {
       p.attackCooldown = (p.attackCooldown || 0) - dt;
       if (p.attackCooldown > 0) break;
 
-      // Check Trigger
+      // Find Nearest Enemy to target
       const enemies = getEnemies() as any[];
-
-      let foundTarget = false;
-      const sqTrigger = triggerRange * triggerRange;
+      let nearest = null;
+      let minDSq = triggerRange * triggerRange;
 
       for (const e of enemies) {
         if (e.isExpired) continue;
         const dx = e.position.x - center.x;
         const dy = e.position.y - center.y;
-        if (dx * dx + dy * dy < sqTrigger) {
-          foundTarget = true;
-          break;
+        const dSq = dx * dx + dy * dy;
+        if (dSq < minDSq) {
+          minDSq = dSq;
+          nearest = e;
         }
       }
 
-      if (foundTarget) {
+      if (nearest) {
+        // Aim exactly at the enemy + Slight Offset to keep multiple swords visible
+        const baseAngle = Math.atan2(nearest.position.y - center.y, nearest.position.x - center.x);
+        const jitter = ((p.slotIndex || 0) - (p.slotTotal - 1) / 2) * 0.15;
+        p.orbitAngle = baseAngle + jitter;
         p.state = "STAB";
       }
       break;

@@ -50,6 +50,7 @@ const mergeSegments = (seg1: TailSegment, seg2: TailSegment, newType: ElementTyp
   // Upgrade seg1
   seg1.type = newType;
   seg1.tier = newTier;
+  seg1.levelUpTimer = 1.5; // Trigger effect
 
   // Remove seg2
   seg2.isExpired = true;
@@ -67,6 +68,7 @@ const merge3Segments = (
   // Upgrade seg1
   seg1.type = newType;
   seg1.tier = newTier;
+  seg1.levelUpTimer = 1.5; // Trigger effect
 
   // Remove seg2, seg3
   seg2.isExpired = true;
