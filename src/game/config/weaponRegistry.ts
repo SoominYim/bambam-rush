@@ -18,6 +18,8 @@ export interface WeaponLevelScale {
   burnDamage?: number; // 화상 데미지
   burnDuration?: number; // 화상 지속 시간
   explosionRadius?: number; // 폭발 반경
+  chainCount?: number; // 전이 횟수
+  chainRange?: number; // 전이 범위
   description?: string;
 }
 
@@ -65,6 +67,8 @@ export interface WeaponDefinition {
     burnDamage?: number;
     burnDuration?: number;
     explosionRadius?: number;
+    chainCount?: number;
+    chainRange?: number;
   };
   levels: Record<number, WeaponLevelScale>;
   evolution?: {
@@ -173,15 +177,24 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "적들 사이를 튕기며 전이되는 번개",
     pattern: "chain",
     tags: [ElementType.ELECTRIC],
-    baseStats: { damage: 25, attackSpeed: 0.33, count: 1, size: 10, speed: 400, pierce: 3 },
+    baseStats: {
+      damage: 18,
+      attackSpeed: 0.5,
+      count: 1,
+      size: 5,
+      speed: 600,
+      range: 400,
+      chainCount: 3,
+      chainRange: 150,
+    },
     levels: {
-      2: { damage: 6, description: "데미지 +6" },
-      3: { pierce: 1, description: "체인 +1" },
-      4: { attackSpeed: 0.04, description: "공격 속도 증가" },
-      5: { damage: 10, pierce: 2, description: "데미지 +10, 체인 +2" },
-      6: { attackSpeed: 0.05, description: "공격 속도 증가" },
-      7: { damage: 15, pierce: 2, description: "데미지 +15, 체인 +2" },
-      8: { damage: 25, pierce: 5, description: "MAX: 데미지 +25, 체인 +5" },
+      2: { damage: 5, description: "데미지 +5" },
+      3: { chainCount: 1, description: "전이 횟수 +1" },
+      4: { attackSpeed: 0.1, description: "공격 속도 증가" },
+      5: { damage: 10, chainRange: 50, description: "데미지 +10, 전이 거리 증가" },
+      6: { chainCount: 2, count: 1, description: "전이 횟수 +2, 줄기 +1" },
+      7: { attackSpeed: 0.15, chainRange: 50, description: "공격 속도, 전이 거리 증가" },
+      8: { damage: 20, chainCount: 4, count: 1, description: "MAX: 데미지 +20, 전이+4, 줄기+1" },
     },
     evolution: {
       requiredPassive: "P02",

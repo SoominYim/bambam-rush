@@ -5,6 +5,10 @@ import { addProjectile, getEnemies, getTail, getProjectiles } from "@/game/manag
 import { createProjectile } from "@/game/entities/projectile";
 import { spatialGrid } from "@/game/managers/grid";
 import { createArea, AreaBehavior } from "@/game/entities/area";
+import { applyChainLightning } from "./combat";
+import { VFXFactory } from "@/engine/vfx/VFXFactory";
+import { addScore, addXPGem } from "@/game/managers/state";
+import { damageTextManager } from "@/game/managers/damageTextManager";
 
 export const updateWeapons = (player: Player, deltaTime: Scalar) => {
   player.activeWeapons.forEach(aw => {
@@ -47,6 +51,8 @@ export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
       if (scale.burnDamage) stats.burnDamage = (stats.burnDamage || 0) + scale.burnDamage;
       if (scale.burnDuration) stats.burnDuration = (stats.burnDuration || 0) + scale.burnDuration;
       if (scale.explosionRadius) stats.explosionRadius = (stats.explosionRadius || 0) + scale.explosionRadius;
+      if (scale.chainCount) stats.chainCount = (stats.chainCount || 0) + scale.chainCount;
+      if (scale.chainRange) stats.chainRange = (stats.chainRange || 0) + scale.chainRange;
     }
   }
 
@@ -102,7 +108,7 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
       fireLine(player, origin, stats, def.tags[0]);
       break;
     case "chain":
-      fireChain(player, origin, stats, def.tags[0]);
+      fireChain(player, origin, stats);
       break;
     case "area":
       spawnArea(player, origin, stats, def.tags[0], "STATIC");
@@ -284,17 +290,46 @@ const fireLine = (_player: Player, origin: Vector2D, stats: any, type: any) => {
   }
 };
 
-const fireChain = (_player: Player, origin: Vector2D, stats: any, type: any) => {
-  const target = getNearestEnemy(origin);
-  if (!target) return;
+// ==========================================
+// [Chain Lightning] - Instant Hit Logic
+// ==========================================
+const fireChain = (player: Player, origin: Vector2D, stats: any) => {
+  const range = stats.range || 400;
+  const nearby = spatialGrid.getNearbyEnemies(origin.x, origin.y, range) as Enemy[];
+  if (!nearby || nearby.length === 0) return;
 
-  const angle = Math.atan2(target.position.y - origin.y, target.position.x - origin.x);
-  const proj = createProjectile(origin.x, origin.y, angle, type, 1, "PROJECTILE" as any);
-  proj.damage = stats.damage;
-  (proj as any).speed = stats.speed || 300;
-  (proj as any).radius = stats.size;
-  proj.penetration = stats.pierce || 3;
-  addProjectile(proj);
+  const targets = [...nearby]
+    .filter(e => !e.isExpired && e.hp > 0)
+    .sort((a, b) => {
+      const distA = Math.pow(a.position.x - origin.x, 2) + Math.pow(a.position.y - origin.y, 2);
+      const distB = Math.pow(b.position.x - origin.x, 2) + Math.pow(b.position.y - origin.y, 2);
+      return distA - distB;
+    });
+
+  for (let i = 0; i < stats.count; i++) {
+    const target = targets[i % targets.length];
+    if (!target) break;
+
+    // 1. 첫 번째 타격 (즉시 데미지)
+    const finalDamage = stats.damage * player.stats.atk;
+    target.hp -= finalDamage;
+    damageTextManager.show(target.position.x, target.position.y, Math.floor(finalDamage), false);
+
+    // 2. 번개 시각 효과 생성 (발사 지점에서 첫 적까지)
+    VFXFactory.createLightningChain(origin.x, origin.y, target.position.x, target.position.y);
+
+    // 3. 첫 적 처치 체크 (폭발 제거)
+    if (target.hp <= 0) {
+      target.isExpired = true;
+      addScore(50);
+      addXPGem(target.position.x, target.position.y, 2);
+    }
+
+    // 4. 전이 시작
+    const chainCount = stats.chainCount || 3;
+    const chainRange = stats.chainRange || 150;
+    applyChainLightning(target, stats.damage, chainCount, chainRange, [target.id]);
+  }
 };
 
 const fireOrbit = (player: Player, origin: Vector2D, stats: any, type: any, ownerId?: string, weaponId?: string) => {

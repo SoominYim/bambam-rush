@@ -21,6 +21,8 @@ interface TailDetail {
   burnDuration: number;
   explosionRadius: number;
   explosionDamage: number;
+  chainCount: number;
+  chainRange: number;
 }
 
 interface StatsUIProps {
@@ -68,6 +70,8 @@ export const StatsUI: React.FC<StatsUIProps> = memo(({ stats: initialStats }) =>
               explosionRadius: (eff as any).explosionRadius,
               explosionDamage:
                 (eff as any).explosionRadius !== undefined ? eff.damage * (stats?.atk || 1) * 0.7 : undefined,
+              chainCount: (eff as any).chainCount,
+              chainRange: (eff as any).chainRange,
             } as any;
           })
           .filter(Boolean) as TailDetail[];
@@ -226,6 +230,18 @@ export const StatsUI: React.FC<StatsUIProps> = memo(({ stats: initialStats }) =>
                       <span>{(info.explosionDamage || 0).toFixed(0)}</span>
                     </div>
                   </>
+                )}
+                {info.chainCount !== undefined && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#ffff88" }}>ChainC:</span>
+                    <span>{info.chainCount || 0}</span>
+                  </div>
+                )}
+                {info.chainRange !== undefined && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#ffff88" }}>ChainR:</span>
+                    <span>{info.chainRange || 0}</span>
+                  </div>
                 )}
               </div>
             </div>

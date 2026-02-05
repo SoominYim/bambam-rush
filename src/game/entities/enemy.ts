@@ -137,8 +137,8 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      // HP Bar
-      const hpPct = this.hp / this.maxHp;
+      // HP Bar (Clamped to prevent negative overflow)
+      const hpPct = Math.max(0, Math.min(1, this.hp / this.maxHp));
       ctx.fillStyle = "#f00";
       ctx.fillRect(this.position.x - size, this.position.y - size - 10, size * 2 * hpPct, 4);
 

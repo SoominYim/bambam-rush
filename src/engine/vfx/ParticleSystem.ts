@@ -6,7 +6,7 @@ export interface ParticleOptions {
   vx: number;
   vy: number;
   life: number; // in seconds
-  size: number;
+  size?: number;
   color: string;
   decay?: number; // scale decay
   alpha?: number;
@@ -14,6 +14,9 @@ export interface ParticleOptions {
   drag?: number;
   glow?: boolean;
   growth?: number; // size increase per update
+  // -- Lightning Bolt support --
+  points?: { x: number; y: number }[]; // Jagged line points
+  width?: number;
 }
 
 class Particle {
@@ -31,6 +34,8 @@ class Particle {
   drag: number;
   glow: boolean;
   growth: number;
+  points: { x: number; y: number }[] | null;
+  width: number;
 
   constructor(opts: ParticleOptions) {
     this.x = opts.x;
@@ -39,7 +44,7 @@ class Particle {
     this.vy = opts.vy;
     this.life = opts.life;
     this.maxLife = opts.life;
-    this.size = opts.size;
+    this.size = opts.size || 0;
     this.color = opts.color;
     this.decay = opts.decay || 1;
     this.alpha = opts.alpha !== undefined ? opts.alpha : 1;
@@ -47,6 +52,8 @@ class Particle {
     this.drag = opts.drag || 0.98;
     this.glow = opts.glow || false;
     this.growth = opts.growth || 0;
+    this.points = opts.points || null;
+    this.width = opts.width || 2;
   }
 
   update(dt: number): boolean {
@@ -67,20 +74,39 @@ class Particle {
   draw(ctx: CanvasRenderingContext2D) {
     const lifeRatio = this.life / this.maxLife;
     ctx.globalAlpha = this.alpha * lifeRatio;
-
-    // PERFORMANCE: shadowBlur is a major bottleneck on Canvas.
-    // Removing it significantly improves FPS when many particles are active.
+    ctx.strokeStyle = this.color;
     ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();
+
+    if (this.points && this.points.length > 1) {
+      // --- Lightning Bolt Drawing ---
+      ctx.lineWidth = this.width;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      if (this.glow) {
+        ctx.shadowBlur = 15 * lifeRatio;
+        ctx.shadowColor = this.color;
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(this.points[0].x, this.points[0].y);
+      for (let i = 1; i < this.points.length; i++) {
+        ctx.lineTo(this.points[i].x, this.points[i].y);
+      }
+      ctx.stroke();
+    } else {
+      // --- Regular Circular Particle ---
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 
 class ParticleManager {
   private particles: Particle[] = [];
   private static instance: ParticleManager;
-  private readonly MAX_PARTICLES = 300; // Lowered cap for better performance
+  private readonly MAX_PARTICLES = 1000; // 화려한 연출을 위해 한도 확장
 
   private constructor() {}
 

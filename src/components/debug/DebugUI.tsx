@@ -1,8 +1,9 @@
 import React, { useState, memo, useEffect } from "react";
-import { getPlayer, addPlayerXP, getPlayerStats } from "@/game/managers/state";
+import { getPlayer, addPlayerXP, getPlayerStats, addEnemy } from "@/game/managers/state";
 import { addWeapon } from "@/game/systems/cardSystem";
+import { createEnemy } from "@/game/entities/enemy";
 import { WEAPON_REGISTRY } from "@/game/config/weaponRegistry";
-import { PlayerStats } from "@/game/types";
+import { PlayerStats, EnemyType } from "@/game/types";
 
 interface DebugUIProps {
   stats?: PlayerStats | null;
@@ -236,6 +237,27 @@ export const DebugUI: React.FC<DebugUIProps> = memo(({ stats: initialStats }) =>
         >
           ADD WEAPON
         </button>
+
+        <div style={{ fontWeight: "bold", fontSize: "10px", color: "#aaa", marginTop: "8px" }}>SPAWN</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
+          {[EnemyType.BASIC, EnemyType.FAST, EnemyType.TANK, EnemyType.BOSS].map(type => (
+            <button
+              key={type}
+              style={btnStyle}
+              onClick={() => {
+                const p = getPlayer();
+                if (!p) return;
+                // Spawn 150-200 units away from player
+                const ang = Math.random() * Math.PI * 2;
+                const dist = 150 + Math.random() * 50;
+                const e = createEnemy(p.position.x + Math.cos(ang) * dist, p.position.y + Math.sin(ang) * dist, type);
+                addEnemy(e);
+              }}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

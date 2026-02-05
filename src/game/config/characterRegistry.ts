@@ -26,7 +26,7 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "테스트",
     description: "테스트 캐릭터",
     icon: "⚔️",
-    startWeaponIds: ["W02"],
+    startWeaponIds: ["W04"],
     startPassiveIds: ["P01"],
     unlocked: true,
     visual: { primary: "#8B9DC3", secondary: "#5C6B8A", eye: "#FFFFFF" },

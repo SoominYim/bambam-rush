@@ -160,7 +160,6 @@ export const updateCombat = (_deltaTime: number) => {
 
             if (neighbor.hp <= 0) {
               neighbor.isExpired = true;
-              VFXFactory.createExplosion(neighbor.position.x, neighbor.position.y, p.type, 15);
             }
           });
         } else {
@@ -169,7 +168,6 @@ export const updateCombat = (_deltaTime: number) => {
 
         if (e.hp <= 0) {
           e.isExpired = true;
-          VFXFactory.createExplosion(e.position.x, e.position.y, p.type, 15);
           addScore(e.type === "BOSS" ? 1000 : 50);
           const xpMin = e.type === "BOSS" ? 500 : e.type === "TANK" ? 10 : e.type === "FAST" ? 2 : 1;
           const xpMax = e.type === "BOSS" ? 1000 : e.type === "TANK" ? 20 : e.type === "FAST" ? 5 : 3;
@@ -178,6 +176,13 @@ export const updateCombat = (_deltaTime: number) => {
         }
 
         if (stats.behavior === SkillBehavior.PROJECTILE) {
+          // --- Chain Lightning Logic ---
+          if ((p as any).chainCount && (p as any).chainCount > 0) {
+            const chainCount = (p as any).chainCount;
+            const chainRange = (p as any).chainRange || 150;
+            applyChainLightning(e, finalDamage, chainCount, chainRange, [e.id]);
+          }
+
           p.penetration--;
           if (p.penetration <= 0) {
             p.isExpired = true;
@@ -296,7 +301,6 @@ const handleMeleeAttack = (segment: any, _enemies: any[], now: number, playerAtk
       VFXFactory.createImpact(e.position.x, e.position.y, segment.type);
       if (e.hp <= 0) {
         e.isExpired = true;
-        VFXFactory.createExplosion(e.position.x, e.position.y, segment.type, 15);
       }
       hitAny = true;
     }
@@ -307,4 +311,44 @@ const handleMeleeAttack = (segment: any, _enemies: any[], now: number, playerAtk
 const getFireRate = (tier: number, fireRateStat: number) => {
   const baseRate = Math.max(100, CONFIG.TURRET_BASE_FIRE_RATE - (tier - 1) * CONFIG.TURRET_FIRE_RATE_PER_TIER);
   return baseRate / fireRateStat;
+};
+
+export const applyChainLightning = (
+  currentEnemy: Enemy,
+  baseDamage: number,
+  remainingChains: number,
+  range: number,
+  hitIds: string[],
+) => {
+  if (remainingChains <= 0) return;
+
+  const player = getPlayer();
+  const playerAtk = player?.stats.atk || 1;
+
+  const nearby = spatialGrid.getNearbyEnemies(currentEnemy.position.x, currentEnemy.position.y, range);
+  const nextTarget = nearby.find(n => !n.isExpired && n.hp > 0 && !hitIds.includes(n.id));
+
+  if (nextTarget) {
+    const nextDamage = baseDamage * 0.85; // 전이될 때마다 데미지 15% 감소
+    const actualDamage = nextDamage * playerAtk;
+
+    nextTarget.hp -= actualDamage;
+    damageTextManager.show(nextTarget.position.x, nextTarget.position.y, Math.floor(actualDamage), false);
+    VFXFactory.createLightningChain(
+      currentEnemy.position.x,
+      currentEnemy.position.y,
+      nextTarget.position.x,
+      nextTarget.position.y,
+    );
+
+    // 적 처치 체크 (폭발 제거)
+    if (nextTarget.hp <= 0) {
+      nextTarget.isExpired = true;
+      addScore(50);
+      addXPGem(nextTarget.position.x, nextTarget.position.y, 2);
+    }
+
+    // 다음 전이
+    applyChainLightning(nextTarget, nextDamage, remainingChains - 1, range, [...hitIds, nextTarget.id]);
+  }
 };
