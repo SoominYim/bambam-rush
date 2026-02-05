@@ -2,7 +2,7 @@ import { vfx } from "./ParticleSystem";
 import { ElementType } from "@/game/types";
 
 export const VFXFactory = {
-  createExplosion: (x: number, y: number, type: ElementType, count: number = 20) => {
+  createExplosion: (x: number, y: number, type: ElementType, count: number = 20, scale: number = 1.0) => {
     let color = "#ffffff";
     let actualCount = count;
 
@@ -52,20 +52,70 @@ export const VFXFactory = {
         break;
     }
 
-    for (let i = 0; i < actualCount; i++) {
+    // --- [1] Small Spark/Impact (일반적인 피격이나 적은 개수의 파티클) ---
+    if (actualCount <= 10) {
+      for (let i = 0; i < actualCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 40 + Math.random() * 60;
+        vfx.emit({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 0.2 + Math.random() * 0.2,
+          size: (1 + Math.random() * 2) * scale,
+          color,
+          decay: 0.9,
+          glow: true,
+        });
+      }
+      return; // 일반 피격은 여기서 종료
+    }
+
+    // --- [2] Real Weapon Explosion (진짜 폭발 - 많은 개수의 파티클일 때만) ---
+    // (기존의 묵직한 화염 로직은 FIRE 타입일 때 더 강조)
+    const isFire = type === ElementType.FIRE;
+
+    for (let i = 0; i < actualCount * 2; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 50 + Math.random() * 150;
+      const speed = (15 + Math.random() * 25) * scale;
+      const isCore = Math.random() > 0.6;
+
       vfx.emit({
         x,
         y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 0.5 + Math.random() * 0.5,
-        size: 2 + Math.random() * 3,
-        color,
-        decay: 0.95,
+        vx: Math.cos(angle) * speed * 4,
+        vy: Math.sin(angle) * speed * 4,
+        life: 0.5 + Math.random() * 0.4,
+        size: (3 + Math.random() * 5) * scale,
+        color: isFire ? (isCore ? "#ffcc00" : "#ff4400") : color,
+        decay: 0.94,
+        alpha: 0.8,
         glow: true,
+        drag: 0.92,
+        growth: Math.random() * 2,
       });
+    }
+
+    // 남는 불씨 (FIRE 일때만)
+    if (isFire) {
+      for (let i = 0; i < 15; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = (5 + Math.random() * 15) * scale;
+        vfx.emit({
+          x,
+          y,
+          vx: Math.cos(angle) * speed * 2,
+          vy: Math.sin(angle) * speed * 2 - 20,
+          life: 0.8 + Math.random() * 0.5,
+          size: (1 + Math.random() * 2) * scale,
+          color: "#ff8800",
+          alpha: 0.6,
+          decay: 0.98,
+          glow: true,
+          gravity: -0.1,
+        });
+      }
     }
   },
 

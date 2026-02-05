@@ -17,6 +17,10 @@ interface TailDetail {
   orbitRadiusBase: number;
   triggerRange: number;
   aggroSpeedMultiplier: number;
+  burnDamage: number;
+  burnDuration: number;
+  explosionRadius: number;
+  explosionDamage: number;
 }
 
 interface StatsUIProps {
@@ -59,7 +63,12 @@ export const StatsUI: React.FC<StatsUIProps> = memo(({ stats: initialStats }) =>
               orbitRadiusBase: (eff as any).orbitRadiusBase || 0,
               triggerRange: (eff as any).triggerRange || 0,
               aggroSpeedMultiplier: (eff as any).aggroSpeedMultiplier || 0,
-            } as TailDetail;
+              burnDamage: (eff as any).burnDamage,
+              burnDuration: (eff as any).burnDuration,
+              explosionRadius: (eff as any).explosionRadius,
+              explosionDamage:
+                (eff as any).explosionRadius !== undefined ? eff.damage * (stats?.atk || 1) * 0.7 : undefined,
+            } as any;
           })
           .filter(Boolean) as TailDetail[];
 
@@ -144,38 +153,80 @@ export const StatsUI: React.FC<StatsUIProps> = memo(({ stats: initialStats }) =>
                   <span style={{ color: "#aaa" }}>AS:</span>
                   <span style={{ color: "#40c4ff" }}>{info.attackSpeed.toFixed(2)}/s</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#aaa" }}>Count:</span>
-                  <span>{info.count}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#aaa" }}>Size:</span>
-                  <span>{info.size}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#aaa" }}>Speed:</span>
-                  <span>{info.speed.toFixed(2)}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#aaa" }}>Range:</span>
-                  <span>{info.range}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#aaa" }}>HitInt:</span>
-                  <span>{info.hitInterval}ms</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#aaa" }}>Orbit:</span>
-                  <span>{info.orbitRadiusBase}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#aaa" }}>TrigR:</span>
-                  <span>{info.triggerRange}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#aaa" }}>AggroX:</span>
-                  <span>{info.aggroSpeedMultiplier}x</span>
-                </div>
+
+                {/* 0이 아닌 유효한 스탯만 조건부 렌더링 */}
+                {info.count > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#aaa" }}>Count:</span>
+                    <span>{info.count}</span>
+                  </div>
+                )}
+                {info.size > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#aaa" }}>Size:</span>
+                    <span>{info.size}</span>
+                  </div>
+                )}
+                {info.speed > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#aaa" }}>Speed:</span>
+                    <span>{info.speed.toFixed(0)}</span>
+                  </div>
+                )}
+                {info.range > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#aaa" }}>Range:</span>
+                    <span>{info.range}</span>
+                  </div>
+                )}
+                {info.hitInterval > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#aaa" }}>HitInt:</span>
+                    <span>{info.hitInterval}ms</span>
+                  </div>
+                )}
+                {info.orbitRadiusBase > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#aaa" }}>Orbit:</span>
+                    <span>{info.orbitRadiusBase}</span>
+                  </div>
+                )}
+                {info.triggerRange > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#aaa" }}>TrigR:</span>
+                    <span>{info.triggerRange}</span>
+                  </div>
+                )}
+                {info.aggroSpeedMultiplier > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#aaa" }}>AggroX:</span>
+                    <span>{info.aggroSpeedMultiplier}x</span>
+                  </div>
+                )}
+                {info.burnDamage !== undefined && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#ffab40" }}>BurnD:</span>
+                    <span>{(info.burnDamage || 0).toFixed(1)}</span>
+                  </div>
+                )}
+                {info.burnDuration !== undefined && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#ffab40" }}>BurnT:</span>
+                    <span>{((info.burnDuration || 0) / 1000).toFixed(1)}s</span>
+                  </div>
+                )}
+                {info.explosionRadius !== undefined && (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#ff5252" }}>ExplodeR:</span>
+                      <span>{info.explosionRadius || 0}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#ff5252" }}>ExplodeD:</span>
+                      <span>{(info.explosionDamage || 0).toFixed(0)}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           ))}

@@ -10,10 +10,11 @@ import {
 import { createProjectile } from "@/game/entities/projectile";
 import { VFXFactory } from "@/engine/vfx/VFXFactory";
 import { SPELL_STATS } from "@/game/config/spellStats";
-import { SkillBehavior, ElementType } from "@/game/types";
+import { SkillBehavior, ElementType, Enemy } from "@/game/types";
 import * as CONFIG from "@/game/config/constants";
 import { spatialGrid } from "@/game/managers/grid";
 import { damageTextManager } from "@/game/managers/damageTextManager";
+import { StatusEffectType } from "@/game/types";
 
 // Cooldown tracker
 const fireTimers: Record<string, number> = {};
@@ -81,8 +82,7 @@ export const updateCombat = (_deltaTime: number) => {
 
       const dx = p.position.x - e.position.x;
       const dy = p.position.y - e.position.y;
-      // Use distSq to avoid Math.sqrt
-      // 2.1 Behavior-specific damage checks (e.g. Sword only damages during stab)
+
       if ((p as any).behavior === "ORBIT_STAB" && (p as any).state === "ORBIT") {
         return;
       }
@@ -90,41 +90,93 @@ export const updateCombat = (_deltaTime: number) => {
       const distSq = dx * dx + dy * dy;
 
       if (distSq < hitRadius * hitRadius) {
-        // Hit Interval Check (Same Enemy Multi-hit Prevention)
+        // Hit Interval Check
         const now = Date.now();
         if (p.hitInterval) {
           if (!p.hitTracker) p.hitTracker = {};
           const lastHit = p.hitTracker[e.id] || 0;
           if (now - lastHit < p.hitInterval) {
-            return; // Ignore hit if within interval
+            return;
           }
           p.hitTracker[e.id] = now;
         }
 
-        // Hit! Applying player ATK multiplier
+        // Hit!
         const finalDamage = p.damage * player.stats.atk * (stats.behavior === SkillBehavior.AREA ? 0.1 : 1.0);
         e.hp -= finalDamage;
-
         damageTextManager.show(e.position.x, e.position.y, finalDamage, finalDamage > p.damage * 1.5);
 
-        VFXFactory.createImpact(p.position.x, p.position.y, p.type);
+        // --- Status Effect Application ---
+        if (p.type === ElementType.FIRE) {
+          const burnDamage = (p as any).burnDamage || p.damage * 0.2;
+          const burnDuration = (p as any).burnDuration || 3000;
+          const existingBurn = e.statusEffects.find(eff => eff.type === StatusEffectType.BURN);
+          if (existingBurn) {
+            existingBurn.duration = burnDuration;
+            existingBurn.damage = Math.max(existingBurn.damage, burnDamage);
+          } else {
+            e.statusEffects.push({
+              type: StatusEffectType.BURN,
+              damage: burnDamage,
+              duration: burnDuration,
+              lastTick: Date.now(),
+              tickInterval: 500,
+            });
+          }
+        }
+
+        // --- Explosion Logic ---
+        if ((p as any).explosionRadius && (p as any).explosionRadius > 0) {
+          const radius = (p as any).explosionRadius;
+          const explosionDamage = finalDamage * 0.7; // Explosion deals 70% damage
+
+          // 폭발 반경에 비례하여 비주얼 스케일 조정
+          const visualScale = Math.max(1.2, radius / 50);
+          VFXFactory.createExplosion(p.position.x, p.position.y, p.type, 35, visualScale);
+
+          const neighbors = spatialGrid.getNearbyEnemies(p.position.x, p.position.y, radius);
+          neighbors.forEach((neighbor: Enemy) => {
+            if (neighbor.isExpired || neighbor.id === e.id) return;
+
+            neighbor.hp -= explosionDamage;
+            damageTextManager.show(neighbor.position.x, neighbor.position.y, Math.floor(explosionDamage), false);
+
+            if (p.type === ElementType.FIRE) {
+              const burnDamage = (p as any).burnDamage || p.damage * 0.2;
+              const burnDuration = (p as any).burnDuration || 3000;
+              const nBurn = neighbor.statusEffects.find(eff => eff.type === StatusEffectType.BURN);
+              if (nBurn) {
+                nBurn.duration = burnDuration;
+              } else {
+                neighbor.statusEffects.push({
+                  type: StatusEffectType.BURN,
+                  damage: burnDamage,
+                  duration: burnDuration,
+                  lastTick: Date.now(),
+                  tickInterval: 500,
+                });
+              }
+            }
+
+            if (neighbor.hp <= 0) {
+              neighbor.isExpired = true;
+              VFXFactory.createExplosion(neighbor.position.x, neighbor.position.y, p.type, 15);
+            }
+          });
+        } else {
+          VFXFactory.createImpact(p.position.x, p.position.y, p.type);
+        }
 
         if (e.hp <= 0) {
           e.isExpired = true;
           VFXFactory.createExplosion(e.position.x, e.position.y, p.type, 15);
-
-          // XP Drop Logic moved/duplicated here to ensure it runs
+          addScore(e.type === "BOSS" ? 1000 : 50);
           const xpMin = e.type === "BOSS" ? 500 : e.type === "TANK" ? 10 : e.type === "FAST" ? 2 : 1;
           const xpMax = e.type === "BOSS" ? 1000 : e.type === "TANK" ? 20 : e.type === "FAST" ? 5 : 3;
           const xpAmount = Math.floor(xpMin + Math.random() * (xpMax - xpMin + 1));
-
-          // Need to import addXPGem and addScore first!
-          // Assuming imports are available or will be added
-          addScore(e.type === "BOSS" ? 1000 : 50);
           addXPGem(e.position.x, e.position.y, xpAmount);
         }
 
-        // Projectiles expire on hit, Areas and Orbitals don't
         if (stats.behavior === SkillBehavior.PROJECTILE) {
           p.penetration--;
           if (p.penetration <= 0) {
@@ -135,14 +187,13 @@ export const updateCombat = (_deltaTime: number) => {
     });
   });
 
-  // Cleanup expired skill IDs
+  // Cleanup
   getProjectiles().forEach(p => {
     if (p.isExpired && p.parentID) {
       activeSkillIds.delete(`${p.parentID}_${p.type}`);
     }
   });
 
-  // 3. Cleanup old fire timers
   const activeTailIds = new Set(tail.map(s => s.id));
   Object.keys(fireTimers).forEach(id => {
     if (!activeTailIds.has(id)) {
@@ -152,7 +203,6 @@ export const updateCombat = (_deltaTime: number) => {
 };
 
 const handleProjectileFiring = (segment: any, _enemies: any[], now: number) => {
-  // Optimized lookup
   const nearby = spatialGrid.getNearbyEnemies(segment.position.x, segment.position.y, CONFIG.TURRET_RANGE);
   let nearest: any = null;
   let minDistSq = CONFIG.TURRET_RANGE * CONFIG.TURRET_RANGE;
@@ -186,7 +236,6 @@ const handleProjectileFiring = (segment: any, _enemies: any[], now: number) => {
 const handleOrbitalSkill = (segment: any, now: number) => {
   const skillKey = `${segment.id}_${segment.type}`;
   if (activeSkillIds.has(skillKey)) return;
-
   const orbital = createProjectile(
     segment.position.x,
     segment.position.y,
@@ -202,11 +251,9 @@ const handleOrbitalSkill = (segment: any, now: number) => {
 };
 
 const handleAreaSkill = (segment: any, _enemies: any[], now: number) => {
-  // Optimized lookup
   const nearby = spatialGrid.getNearbyEnemies(segment.position.x, segment.position.y, CONFIG.TURRET_RANGE);
   let targetE: any = null;
   let minDistSq = CONFIG.TURRET_RANGE * CONFIG.TURRET_RANGE;
-
   nearby.forEach(e => {
     if (e.isExpired || e.hp <= 0) return;
     const dx = e.position.x - segment.position.x;
@@ -235,23 +282,18 @@ const handleAreaSkill = (segment: any, _enemies: any[], now: number) => {
 const handleMeleeAttack = (segment: any, _enemies: any[], now: number, playerAtk: number) => {
   const stats = SPELL_STATS[segment.type as ElementType];
   let hitAny = false;
-
   const nearby = spatialGrid.getNearbyEnemies(segment.position.x, segment.position.y, CONFIG.MELEE_RANGE);
   const rangeSq = CONFIG.MELEE_RANGE * CONFIG.MELEE_RANGE;
-
   nearby.forEach(e => {
     if (e.isExpired || e.hp <= 0) return;
-
     const dx = e.position.x - segment.position.x;
     const dy = e.position.y - segment.position.y;
     const distSq = dx * dx + dy * dy;
-
     if (distSq < rangeSq) {
       const damage = stats.damage * segment.tier * playerAtk;
       e.hp -= damage;
       damageTextManager.show(e.position.x, e.position.y, damage, false);
       VFXFactory.createImpact(e.position.x, e.position.y, segment.type);
-
       if (e.hp <= 0) {
         e.isExpired = true;
         VFXFactory.createExplosion(e.position.x, e.position.y, segment.type, 15);
@@ -259,10 +301,7 @@ const handleMeleeAttack = (segment: any, _enemies: any[], now: number, playerAtk
       hitAny = true;
     }
   });
-
-  if (hitAny) {
-    fireTimers[segment.id] = now;
-  }
+  if (hitAny) fireTimers[segment.id] = now;
 };
 
 const getFireRate = (tier: number, fireRateStat: number) => {

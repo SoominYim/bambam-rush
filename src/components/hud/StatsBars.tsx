@@ -3,20 +3,39 @@ import { getPlayerStats } from "@/game/managers/state";
 import "@/styles/hud.css";
 
 export const StatsBars = memo(() => {
-  // Initialize with a clone to avoid reference comparison issues
   const [stats, setStats] = useState(() => {
     const s = getPlayerStats();
     return s ? { ...s } : null;
   });
 
   useEffect(() => {
+    let isMounted = true;
     const interval = setInterval(() => {
+      if (!isMounted) return;
       const current = getPlayerStats();
       if (!current) return;
 
-      setStats({ ...current });
-    }, 100);
-    return () => clearInterval(interval);
+      setStats(prev => {
+        // [핵심] 모든 수치를 비교해서 하나라도 다를 때만 업데이트를 승인함
+        // 이전 상태(prev)를 그대로 반환하면 리액트는 렌더링을 아예 시도하지 않음
+        if (
+          prev &&
+          prev.hp === current.hp &&
+          prev.maxHp === current.maxHp &&
+          prev.atk === current.atk &&
+          prev.def === current.def &&
+          prev.fireRate === current.fireRate
+        ) {
+          return prev;
+        }
+        return { ...current };
+      });
+    }, 150); // 0.15초마다 체크 (렉 감소)
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   if (!stats) return null;
@@ -47,4 +66,5 @@ export const StatsBars = memo(() => {
     </div>
   );
 });
+
 StatsBars.displayName = "StatsBars";

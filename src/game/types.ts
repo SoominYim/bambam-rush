@@ -142,12 +142,28 @@ export enum EnemyType {
   BOSS = "BOSS",
 }
 
+export enum StatusEffectType {
+  BURN = "BURN",
+  CHILL = "CHILL",
+  SHOCK = "SHOCK",
+  POISON = "POISON",
+}
+
+export interface StatusEffect {
+  type: StatusEffectType;
+  damage: number; // tick당 데미지
+  duration: number; // 남은 시간 (ms)
+  lastTick: number; // 마지막 데미지 시각
+  tickInterval: number; // 데미지 주기 (ms)
+}
+
 export interface Enemy extends GameObject {
   type: EnemyType;
   hp: number;
   maxHp: number;
   speed: number;
   damage: number;
+  statusEffects: StatusEffect[]; // 추가됨
 }
 
 export interface Projectile extends GameObject {

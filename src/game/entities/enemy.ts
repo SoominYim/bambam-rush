@@ -1,6 +1,7 @@
 import { Enemy, Scalar, EnemyType } from "@/game/types";
 import { getPlayer, addScore, addXPGem, addGold } from "@/game/managers/state";
 import * as CONFIG from "@/game/config/constants";
+import { damageTextManager } from "@/game/managers/damageTextManager";
 
 export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BASIC): Enemy => {
   let speed = CONFIG.ENEMY_BASE_SPEED + Math.random() * CONFIG.ENEMY_SPEED_VARIANCE;
@@ -51,6 +52,7 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
     speed,
     damage: CONFIG.ENEMY_DAMAGE,
     isExpired: false,
+    statusEffects: [],
 
     update: function (deltaTime: Scalar) {
       const player = getPlayer();
@@ -68,6 +70,26 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
         this.position.x += moveX * this.speed * deltaTime;
         this.position.y += moveY * this.speed * deltaTime;
       }
+
+      // --- Status Effects Processing ---
+      const now = Date.now();
+      this.statusEffects = this.statusEffects.filter(effect => {
+        // Duration reduction
+        effect.duration -= deltaTime * 1000;
+        if (effect.duration <= 0) return false;
+
+        // Tick damage
+        if (now - effect.lastTick >= effect.tickInterval) {
+          const tickDamage = effect.damage;
+          this.hp -= tickDamage;
+          effect.lastTick = now;
+
+          // 도트 데미지 텍스트 출력
+          damageTextManager.show(this.position.x, this.position.y, tickDamage, false);
+        }
+        return true;
+      });
+      // -------------------------------
 
       // Check if dead
       if (this.hp <= 0 && !this.isExpired) {
@@ -99,7 +121,17 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
 
       ctx.beginPath();
       ctx.arc(this.position.x, this.position.y, size, 0, Math.PI * 2);
-      ctx.fillStyle = color;
+
+      // BURN 상태일 때 시각 효과
+      const isBurning = this.statusEffects.some(e => e.type === "BURN");
+      if (isBurning) {
+        ctx.fillStyle = "#ff6600"; // 화상 시 주황색
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#ff0000";
+      } else {
+        ctx.fillStyle = color;
+      }
+
       ctx.fill();
       ctx.strokeStyle = "#000";
       ctx.lineWidth = 1;

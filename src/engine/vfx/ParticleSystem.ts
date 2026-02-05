@@ -13,6 +13,7 @@ export interface ParticleOptions {
   gravity?: number;
   drag?: number;
   glow?: boolean;
+  growth?: number; // size increase per update
 }
 
 class Particle {
@@ -29,6 +30,7 @@ class Particle {
   gravity: number;
   drag: number;
   glow: boolean;
+  growth: number;
 
   constructor(opts: ParticleOptions) {
     this.x = opts.x;
@@ -44,6 +46,7 @@ class Particle {
     this.gravity = opts.gravity || 0;
     this.drag = opts.drag || 0.98;
     this.glow = opts.glow || false;
+    this.growth = opts.growth || 0;
   }
 
   update(dt: number): boolean {
@@ -56,6 +59,7 @@ class Particle {
 
     this.life -= dt;
     this.size *= Math.pow(this.decay, dt * 60);
+    this.size += this.growth * dt * 60;
 
     return this.life > 0;
   }

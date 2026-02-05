@@ -32,6 +32,20 @@ export const createProjectile = (
     angle: angle,
 
     update: function (deltaTime: Scalar) {
+      // --- Range Limit Check ---
+      if ((this as any).range) {
+        if (!(this as any).startPos) {
+          (this as any).startPos = { x: this.position.x, y: this.position.y };
+        }
+        const start = (this as any).startPos;
+        const distSq = Math.pow(this.position.x - start.x, 2) + Math.pow(this.position.y - start.y, 2);
+        if (distSq > Math.pow((this as any).range, 2)) {
+          this.isExpired = true;
+          return;
+        }
+      }
+      // -------------------------
+
       // 새로운 행동 시스템 사용
       if ((this as any).behavior) {
         updateProjectileBehavior(this, deltaTime);

@@ -44,6 +44,9 @@ export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
       if (scale.triggerRange) stats.triggerRange = (stats.triggerRange || 0) + scale.triggerRange;
       if (scale.aggroSpeedMultiplier)
         stats.aggroSpeedMultiplier = (stats.aggroSpeedMultiplier || 0) + scale.aggroSpeedMultiplier;
+      if (scale.burnDamage) stats.burnDamage = (stats.burnDamage || 0) + scale.burnDamage;
+      if (scale.burnDuration) stats.burnDuration = (stats.burnDuration || 0) + scale.burnDuration;
+      if (scale.explosionRadius) stats.explosionRadius = (stats.explosionRadius || 0) + scale.explosionRadius;
     }
   }
 
@@ -249,7 +252,11 @@ const fireProjectile = (
     (proj as any).speed = stats.speed || 300;
     (proj as any).radius = stats.size;
     proj.penetration = stats.pierce || 1;
-    (proj as any).hitInterval = 250; // 동일 적 중복 타격 방지
+    (proj as any).hitInterval = 250;
+    (proj as any).burnDamage = stats.burnDamage;
+    (proj as any).burnDuration = stats.burnDuration;
+    (proj as any).range = stats.range || 800; // 사거리 전달 (기본 800)
+    (proj as any).explosionRadius = stats.explosionRadius || 0; // 폭발 반경 전달
     addProjectile(proj);
   }
 };
@@ -268,6 +275,11 @@ const fireLine = (_player: Player, origin: Vector2D, stats: any, type: any) => {
     (proj as any).speed = stats.speed || 300;
     (proj as any).radius = stats.size;
     proj.penetration = stats.pierce || 1;
+    (proj as any).hitInterval = 200;
+    (proj as any).burnDamage = stats.burnDamage;
+    (proj as any).burnDuration = stats.burnDuration;
+    (proj as any).range = stats.range || 800; // 사거리 전달 (기본 800)
+    (proj as any).explosionRadius = stats.explosionRadius || 0; // 폭발 반경 전달
     addProjectile(proj);
   }
 };

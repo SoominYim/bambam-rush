@@ -15,6 +15,9 @@ export interface WeaponLevelScale {
   orbitRadiusBase?: number; // Added for orbit patterns
   triggerRange?: number; // Added for aggro behaviors
   aggroSpeedMultiplier?: number; // Added for dash speeds
+  burnDamage?: number; // 화상 데미지
+  burnDuration?: number; // 화상 지속 시간
+  explosionRadius?: number; // 폭발 반경
   description?: string;
 }
 
@@ -59,6 +62,9 @@ export interface WeaponDefinition {
     orbitRadiusBase?: number;
     triggerRange?: number;
     aggroSpeedMultiplier?: number;
+    burnDamage?: number;
+    burnDuration?: number;
+    explosionRadius?: number;
   };
   levels: Record<number, WeaponLevelScale>;
   evolution?: {
@@ -110,7 +116,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "가장 가까운 적을 추적하는 미사일",
     pattern: "projectile",
     tags: [ElementType.ARCANE],
-    baseStats: { damage: 25, attackSpeed: 0.8, count: 1, size: 15, speed: 120, pierce: 1 },
+    baseStats: { damage: 25, attackSpeed: 0.8, count: 1, size: 15, speed: 120, pierce: 1, range: 500 }, // 짧은 사거리에서 시작
     levels: {
       2: { damage: 5, description: "데미지 +5" },
       3: { attackSpeed: 0.2, speed: 30, description: "공격 속도 투사체 속도 증가" },
@@ -130,18 +136,29 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W03: {
     id: "W03",
     name: "화염구",
-    description: "전방으로 직선 발사되는 고화력 탄환",
+    description: "강력한 화상을 입히는 화염 탄환",
     pattern: "line",
     tags: [ElementType.FIRE],
-    baseStats: { damage: 35, attackSpeed: 0.67, count: 1, size: 20, speed: 300, pierce: 2 },
+    baseStats: {
+      damage: 15,
+      attackSpeed: 0.6,
+      count: 1,
+      size: 24,
+      speed: 300,
+      pierce: 1,
+      burnDamage: 10,
+      burnDuration: 3000,
+      range: 750,
+      explosionRadius: 0, // 기본은 폭발 없음
+    },
     levels: {
-      2: { damage: 8, description: "데미지 +8" },
-      3: { pierce: 1, description: "관통 +1" },
-      4: { damage: 12, description: "데미지 +12" },
+      2: { damage: 10, description: "데미지 +10" },
+      3: { explosionRadius: 80, description: "충돌 시 폭발 추가" },
+      4: { size: 10, burnDuration: 1000, description: "크기, 화상 시간 증가" },
       5: { count: 1, description: "화염구 +1" },
-      6: { damage: 15, pierce: 2, description: "데미지 +15, 관통 +2" },
-      7: { damage: 20, description: "데미지 +20" },
-      8: { damage: 30, size: 15, description: "MAX: 데미지 +30, 크기 +15" },
+      6: { explosionRadius: 40, burnDamage: 10, description: "폭발 범위 및 화상 데미지 증가" },
+      7: { pierce: 1, description: "관통 +1" },
+      8: { damage: 20, burnDamage: 30, explosionRadius: 80, description: "MAX" },
     },
     evolution: {
       requiredPassive: "P01",
