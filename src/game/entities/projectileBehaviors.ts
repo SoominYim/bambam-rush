@@ -1,5 +1,8 @@
 import { Projectile } from "@/game/types";
 import { getPlayer, getEnemies, getTail } from "@/game/managers/state";
+import { addArea } from "@/game/managers/entityStore"; // Fix circular dependency
+import { createArea } from "@/game/entities/area";
+import { VFXFactory } from "@/engine/vfx/VFXFactory";
 
 /**
  * Projectile 행동 타입
@@ -14,7 +17,8 @@ export type ProjectileBehavior =
   | "SWING"
   | "STAB"
   | "ORBIT_STAB"
-  | "HOMING";
+  | "HOMING"
+  | "BOTTLE";
 
 /**
  * 행동 함수 타입
@@ -514,8 +518,63 @@ const updateHoming: BehaviorFunction = (proj, dt) => {
 
   // 3. Move forward
   const angle = proj.angle || 0;
-  proj.position.x += Math.cos(angle) * speed * dt;
   proj.position.y += Math.sin(angle) * speed * dt;
+};
+
+/**
+ * BOTTLE - 지정된 위치로 포물선을 그리며 투척됨
+ */
+const updateBottle: BehaviorFunction = (proj, dt) => {
+  const p = proj as any;
+  if (!p.targetPos) {
+    proj.isExpired = true;
+    return;
+  }
+
+  // [필독] 거리에 상관없이 터지는 시간은 무조건 동일하게 (800ms)
+  const FLIGHT_DURATION = 0.8;
+  p.elapsedTime = (p.elapsedTime || 0) + dt;
+  const progress = Math.min(1, p.elapsedTime / FLIGHT_DURATION);
+
+  // 시작점 저장
+  if (!p.startPos) {
+    p.startPos = { x: proj.position.x, y: proj.position.y };
+  }
+
+  // 선형 보간으로 현재 물리 위치 계산 (속도가 거리에 비례하게 자동 계산됨)
+  proj.position.x = p.startPos.x + (p.targetPos.x - p.startPos.x) * progress;
+  proj.position.y = p.startPos.y + (p.targetPos.y - p.startPos.y) * progress;
+
+  // 1. 포물선 높이 (Y축 오프셋)
+  p.arcHeight = Math.sin(progress * Math.PI) * 120; // 높이 상향
+
+  // 2. 원근법: 하늘 높이 올라갈수록 화면 앞으로 나오는 느낌 (Scale 1.0 -> 3.0 -> 1.0)
+  p.visualScale = 1.0 + Math.sin(progress * Math.PI) * 2.0;
+
+  // 회전 연출
+  proj.angle = (proj.angle || 0) + 6 * dt;
+
+  // 비행 시간 종료 시 소멸 및 장판 생성
+  if (progress >= 1) {
+    proj.isExpired = true;
+    p.hasReachedTarget = true;
+
+    // [중요] 여기서 즉시 장판 생성
+    const areaStats = p.areaStats;
+    if (areaStats) {
+      console.log("[BOTTLE] Shattering at", proj.position);
+
+      // 장판 생성
+      const area = createArea(proj.position.x, proj.position.y, proj.type, "STATIC", areaStats);
+      addArea(area);
+      console.log("[BOTTLE] Area created:", area.id);
+
+      // 병 깨지는 시각 효과 (폭발 VFX)
+      VFXFactory.createExplosion(proj.position.x, proj.position.y, proj.type, 15, 0.6);
+    } else {
+      console.error("[BOTTLE] No areaStats found!");
+    }
+  }
 };
 
 /**
@@ -532,6 +591,7 @@ const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
   STAB: updateStab,
   ORBIT_STAB: updateOrbitStab,
   HOMING: updateHoming,
+  BOTTLE: updateBottle,
 };
 
 /**

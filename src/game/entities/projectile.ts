@@ -133,6 +133,48 @@ export const createProjectile = (
         // Pommel (End cap)
         ctx.fillStyle = "#daa520";
         ctx.fillRect(-r * 1.2, -r * 0.3, r * 0.3, r * 0.6);
+      } else if (type === ElementType.POISON && (this as any).behavior === "BOTTLE") {
+        // --- Poison Bottle Drawing (원근법 적용) ---
+        const p = this as any;
+        const visualY = -(p.arcHeight || 0);
+        const scale = p.visualScale || 1.0;
+
+        ctx.translate(this.position.x, this.position.y + visualY);
+        ctx.scale(scale, scale); // 원근법: 공중에 뜰수록 커짐
+        ctx.rotate(this.angle || 0);
+
+        const w = 12;
+        const h = 16;
+
+        // 1. Bottle Body
+        ctx.fillStyle = "#6a00b0";
+        ctx.beginPath();
+        // ctx.roundRect fallback
+        const r = 3;
+        ctx.moveTo(-w / 2 + r, -h / 2);
+        ctx.lineTo(w / 2 - r, -h / 2);
+        ctx.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r);
+        ctx.lineTo(w / 2, h / 2 - r);
+        ctx.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2);
+        ctx.lineTo(-w / 2 + r, h / 2);
+        ctx.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r);
+        ctx.lineTo(-w / 2, -h / 2 + r);
+        ctx.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
+        ctx.fill();
+
+        // 2. Liquid inside (brighter)
+        ctx.fillStyle = "#aa00ff";
+        ctx.fillRect(-w / 2 + 2, 0, w - 4, h / 2 - 2);
+
+        // 3. Neck & Cork
+        ctx.fillStyle = "#444";
+        ctx.fillRect(-w / 4, -h / 2 - 4, w / 2, 4);
+        ctx.fillStyle = "#8b4513";
+        ctx.fillRect(-w / 6, -h / 2 - 6, w / 3, 2);
+
+        // 4. Glow
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#aa00ff";
       } else {
         ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI * 2);
         ctx.fillStyle = color;

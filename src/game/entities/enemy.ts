@@ -7,6 +7,7 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
   let speed = CONFIG.ENEMY_BASE_SPEED + Math.random() * CONFIG.ENEMY_SPEED_VARIANCE;
   let hp = CONFIG.ENEMY_BASE_HP;
   let maxHp = CONFIG.ENEMY_BASE_HP;
+  let defense = 1; // 기본 방어력 1
   let size = CONFIG.ENEMY_RADIUS;
   let color = "#880000";
   let xpMin = 1;
@@ -51,6 +52,7 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
     maxHp,
     speed,
     damage: CONFIG.ENEMY_DAMAGE,
+    defense, // Add defense property
     isExpired: false,
     statusEffects: [],
 
@@ -80,12 +82,15 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
 
         // Tick damage
         if (now - effect.lastTick >= effect.tickInterval) {
-          const tickDamage = effect.damage;
-          this.hp -= tickDamage;
+          const rawDamage = effect.damage;
+          // 방어력 적용 (최소 데미지 1 보장)
+          const finalDamage = Math.max(1, rawDamage - (this.defense || 0));
+
+          this.hp -= finalDamage;
           effect.lastTick = now;
 
           // 도트 데미지 텍스트 출력
-          damageTextManager.show(this.position.x, this.position.y, tickDamage, false);
+          damageTextManager.show(this.position.x, this.position.y, finalDamage, false);
         }
         return true;
       });
@@ -122,9 +127,15 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
       ctx.beginPath();
       ctx.arc(this.position.x, this.position.y, size, 0, Math.PI * 2);
 
-      // BURN 상태일 때 시각 효과
-      const isBurning = this.statusEffects.some(e => e.type === "BURN");
-      if (isBurning) {
+      // STATUS EFFECTS VISUALS
+      const isBurning = this.statusEffects.some(e => e.type === ("BURN" as any));
+      const isPoisoned = this.statusEffects.some(e => e.type === ("POISON" as any));
+
+      if (isPoisoned) {
+        ctx.fillStyle = "#aa00ff"; // 독 중독 시 보라색
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#8800ff";
+      } else if (isBurning) {
         ctx.fillStyle = "#ff6600"; // 화상 시 주황색
         ctx.shadowBlur = 10;
         ctx.shadowColor = "#ff0000";

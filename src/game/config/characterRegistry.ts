@@ -18,6 +18,19 @@ export interface CharacterDefinition {
   unlocked: boolean;
   unlockCondition?: string;
   visual: CharacterVisuals;
+  baseStats?: {
+    hp: number;
+    maxHp: number;
+    atk: number;
+    def: number;
+    speed: number;
+    fireRate: number;
+    xp: number;
+    maxXp: number;
+    level: number;
+    pickupRange: number;
+    gold: number;
+  };
 }
 
 export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
@@ -26,7 +39,20 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "테스트",
     description: "테스트 캐릭터",
     icon: "⚔️",
-    startWeaponIds: ["W04"],
+    startWeaponIds: ["W05"], // 맹독 웅덩이로 시작
+    baseStats: {
+      hp: 150,
+      maxHp: 150,
+      atk: 1.5,
+      def: 5,
+      speed: 1.1,
+      fireRate: 1.0,
+      xp: 0,
+      maxXp: 100,
+      level: 1,
+      pickupRange: 150,
+      gold: 0,
+    },
     startPassiveIds: ["P01"],
     unlocked: true,
     visual: { primary: "#8B9DC3", secondary: "#5C6B8A", eye: "#FFFFFF" },

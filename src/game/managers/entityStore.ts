@@ -8,6 +8,7 @@ export const state = {
   enemies: [] as Enemy[],
   projectiles: [] as Projectile[],
   xpGems: [] as XPGemInstance[],
+  areas: [] as any[], // Area entities
   player: null as Player | null,
   score: 0,
   isLevelUpPending: false,
@@ -16,6 +17,7 @@ export const state = {
 
 export const getPlayer = () => state.player;
 export const addEnemy = (e: Enemy) => state.enemies.push(e);
+export const addArea = (a: any) => state.areas.push(a);
 
 export const resetEntityStore = (p: Player) => {
   state.player = p;
@@ -25,6 +27,7 @@ export const resetEntityStore = (p: Player) => {
   state.enemies = [];
   state.projectiles = [];
   state.xpGems = [];
+  state.areas = [];
   state.score = 0;
   state.isLevelUpPending = false;
   state.levelUpChoices = [];

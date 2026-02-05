@@ -6,7 +6,7 @@ import { damageTextManager } from "@/game/managers/damageTextManager";
 import { applyCardEffect, draftCards } from "@/game/systems/cardSystem";
 import { setPaused } from "@/engine/systems/input";
 import { waveManager } from "@/game/managers/waveManager";
-import { state, resetEntityStore, getPlayer, addEnemy } from "./entityStore";
+import { state, resetEntityStore, getPlayer, addEnemy, addArea as storeAddArea } from "./entityStore";
 import * as CONFIG from "../config/constants";
 
 export const initGameState = (p: Player) => {
@@ -22,6 +22,7 @@ export const addTailSegment = (segment: TailSegment): void => {
 };
 export { addEnemy };
 export const addProjectile = (p: Projectile) => state.projectiles.push(p);
+export const addArea = (a: any) => storeAddArea(a);
 export const addXPGem = (x: number, y: number, amount: number) => {
   state.xpGems.push(new XPGemInstance(x, y, amount));
 };
@@ -32,6 +33,7 @@ export const getTail = () => state.tail;
 export const getEnemies = () => state.enemies;
 export const getProjectiles = () => state.projectiles;
 export const getXPGems = () => state.xpGems;
+export const getAreas = () => state.areas;
 export { getPlayer };
 
 // Level Up Interface
@@ -79,10 +81,11 @@ export const getPlayerStats = () => state.player?.stats || null;
 export const updateGameState = (deltaTime: number) => {
   const { player } = state;
   if (player) player.update(deltaTime);
-  state.tail.forEach(t => t.update(deltaTime)); // 꼬리도 업데이트해야 플레이어를 따라다님!
+  state.tail.forEach(t => t.update(deltaTime));
   state.collectibles.forEach(c => c.update(deltaTime));
   state.enemies.forEach(e => e.update(deltaTime));
   state.projectiles.forEach(p => p.update(deltaTime));
+  state.areas.forEach(a => a.update(deltaTime));
 
   if (player) {
     const pPos = player.position;
@@ -106,12 +109,9 @@ export const updateGameState = (deltaTime: number) => {
       gem.update(deltaTime, player);
 
       // Check Collection (Collision with Player)
-      // Radius ~20 for collection
       const dx = pPos.x - gem.position.x;
       const dy = pPos.y - gem.position.y;
       if (dx * dx + dy * dy < 400) {
-        // 20*20
-        // Collect!
         gem.isExpired = true;
         player.stats.xp += gem.amount;
         checkLevelUp();
@@ -124,6 +124,7 @@ export const updateGameState = (deltaTime: number) => {
   state.enemies = state.enemies.filter(e => !e.isExpired);
   state.projectiles = state.projectiles.filter(p => !p.isExpired);
   state.xpGems = state.xpGems.filter(g => !g.isExpired);
+  state.areas = state.areas.filter(a => !a.isExpired);
   state.tail = state.tail.filter(t => !t.isExpired);
 
   // Update particles
@@ -132,20 +133,29 @@ export const updateGameState = (deltaTime: number) => {
   // Update Damage Text
   damageTextManager.update(deltaTime);
 
-  // Update Spatial Grid for efficient combat lookups
+  // Update Spatial Grid
   spatialGrid.clear();
   state.enemies.forEach(e => spatialGrid.insert(e));
 };
 
 export const drawGameState = (ctx: CanvasRenderingContext2D) => {
+  // [Layer 1] Ground Effects (Areas, Pools) - 바닥에 깔리는 요소
+  state.areas.forEach(a => a.draw(ctx));
+
+  // [Layer 2] Ground Items (Collectibles, XP Gems)
   state.collectibles.forEach(c => c.draw(ctx));
-  state.enemies.forEach(e => e.draw(ctx));
-
-  state.tail.forEach(t => t.draw(ctx));
-
-  if (state.player) state.player.draw(ctx);
-  state.projectiles.forEach(p => p.draw(ctx));
   state.xpGems.forEach(g => g.draw(ctx));
+
+  // [Layer 3] Characters (Enemies, Tail, Player)
+  state.enemies.forEach(e => e.draw(ctx));
+  state.tail.forEach(t => t.draw(ctx));
+  if (state.player) state.player.draw(ctx);
+
+  // [Layer 4] Low-Flying Objects / Effects
+  // ...
+
+  // [Layer 5] High-Flying Projectiles
+  state.projectiles.forEach(p => p.draw(ctx));
 
   // Draw Damage Text
   damageTextManager.draw(ctx);
@@ -159,17 +169,14 @@ const checkLevelUp = () => {
 
   const stats = state.player.stats;
   if (stats.xp >= stats.maxXp) {
-    // Level Up!
     stats.xp -= stats.maxXp;
     stats.level++;
-    stats.maxXp = Math.floor(stats.maxXp * 1.5); // Increase XP requirement
+    stats.maxXp = Math.floor(stats.maxXp * 1.5);
 
-    // Trigger Level Up UI
     state.isLevelUpPending = true;
     state.levelUpChoices = draftCards(3);
     setPaused(true);
 
-    // Heal slightly on level up?
     stats.hp = Math.min(stats.maxHp, stats.hp + stats.maxHp * 0.1);
   }
 };

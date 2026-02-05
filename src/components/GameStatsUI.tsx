@@ -23,6 +23,7 @@ interface TailDetail {
   explosionDamage: number;
   chainCount: number;
   chainRange: number;
+  duration?: number; // Duration for area-of-effect weapons
 }
 
 interface StatsUIProps {
@@ -72,6 +73,7 @@ export const StatsUI: React.FC<StatsUIProps> = memo(({ stats: initialStats }) =>
                 (eff as any).explosionRadius !== undefined ? eff.damage * (stats?.atk || 1) * 0.7 : undefined,
               chainCount: (eff as any).chainCount,
               chainRange: (eff as any).chainRange,
+              duration: (eff as any).duration, // Map duration from effective stats
             } as any;
           })
           .filter(Boolean) as TailDetail[];
@@ -167,7 +169,7 @@ export const StatsUI: React.FC<StatsUIProps> = memo(({ stats: initialStats }) =>
                 )}
                 {info.size > 0 && (
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "#aaa" }}>Size:</span>
+                    <span style={{ color: "#aaa" }}>WellSize:</span>
                     <span>{info.size}</span>
                   </div>
                 )}
@@ -179,8 +181,15 @@ export const StatsUI: React.FC<StatsUIProps> = memo(({ stats: initialStats }) =>
                 )}
                 {info.range > 0 && (
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "#aaa" }}>Range:</span>
+                    <span style={{ color: "#aaa" }}>ThrowR:</span>
                     <span>{info.range}</span>
+                  </div>
+                )}
+                {/* Poison Dot Display for W05 */}
+                {(info.name.includes("웅덩이") || info.name.includes("Poison")) && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#aaa" }}>PoisonDot:</span>
+                    <span style={{ color: "#aa00ff" }}>{(info.damage * 0.3).toFixed(0)}</span>
                   </div>
                 )}
                 {info.hitInterval > 0 && (
@@ -241,6 +250,12 @@ export const StatsUI: React.FC<StatsUIProps> = memo(({ stats: initialStats }) =>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ color: "#ffff88" }}>ChainR:</span>
                     <span>{info.chainRange || 0}</span>
+                  </div>
+                )}
+                {info.duration !== undefined && info.duration > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "#a2cf6e" }}>AreaT:</span> {/* Area Duration */}
+                    <span>{(info.duration / 1000).toFixed(1)}s</span>
                   </div>
                 )}
               </div>

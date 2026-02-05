@@ -87,6 +87,11 @@ export const updateCombat = (_deltaTime: number) => {
         return;
       }
 
+      // 던지는 병(BOTTLE)은 날아가는 도중 적과 충돌하지 않음
+      if ((p as any).behavior === "BOTTLE") {
+        return;
+      }
+
       const distSq = dx * dx + dy * dy;
 
       if (distSq < hitRadius * hitRadius) {
@@ -102,7 +107,13 @@ export const updateCombat = (_deltaTime: number) => {
         }
 
         // Hit!
-        const finalDamage = p.damage * player.stats.atk * (stats.behavior === SkillBehavior.AREA ? 0.1 : 1.0);
+        // 방어력 적용 (최소 1 데미지)
+        const def = (e as any).defense || 0;
+        let finalDamage = Math.max(
+          1,
+          p.damage * player.stats.atk * (stats.behavior === SkillBehavior.AREA ? 0.1 : 1.0) - def,
+        );
+
         e.hp -= finalDamage;
         damageTextManager.show(e.position.x, e.position.y, finalDamage, finalDamage > p.damage * 1.5);
 
@@ -128,7 +139,7 @@ export const updateCombat = (_deltaTime: number) => {
         // --- Explosion Logic ---
         if ((p as any).explosionRadius && (p as any).explosionRadius > 0) {
           const radius = (p as any).explosionRadius;
-          const explosionDamage = finalDamage * 0.7; // Explosion deals 70% damage
+          const explosionDamageRaw = finalDamage * 0.7; // Explosion deals 70% damage
 
           // 폭발 반경에 비례하여 비주얼 스케일 조정
           const visualScale = Math.max(1.2, radius / 50);
@@ -138,8 +149,11 @@ export const updateCombat = (_deltaTime: number) => {
           neighbors.forEach((neighbor: Enemy) => {
             if (neighbor.isExpired || neighbor.id === e.id) return;
 
-            neighbor.hp -= explosionDamage;
-            damageTextManager.show(neighbor.position.x, neighbor.position.y, Math.floor(explosionDamage), false);
+            const nDef = (neighbor as any).defense || 0;
+            const finalExplosionDamage = Math.max(1, explosionDamageRaw - nDef);
+
+            neighbor.hp -= finalExplosionDamage;
+            damageTextManager.show(neighbor.position.x, neighbor.position.y, Math.floor(finalExplosionDamage), false);
 
             if (p.type === ElementType.FIRE) {
               const burnDamage = (p as any).burnDamage || p.damage * 0.2;
@@ -192,10 +206,12 @@ export const updateCombat = (_deltaTime: number) => {
     });
   });
 
-  // Cleanup
+  // Cleanup & On-Death Events
   getProjectiles().forEach(p => {
-    if (p.isExpired && p.parentID) {
-      activeSkillIds.delete(`${p.parentID}_${p.type}`);
+    if (p.isExpired) {
+      if (p.parentID) {
+        activeSkillIds.delete(`${p.parentID}_${p.type}`);
+      }
     }
   });
 

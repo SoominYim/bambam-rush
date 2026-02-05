@@ -163,6 +163,7 @@ export interface Enemy extends GameObject {
   maxHp: number;
   speed: number;
   damage: number;
+  defense: number; // 방어력 추가
   statusEffects: StatusEffect[]; // 추가됨
 }
 

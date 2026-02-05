@@ -1,4 +1,4 @@
-import { Player, ActiveWeapon, Scalar, Vector2D, Enemy, PassiveInstance } from "@/game/types";
+import { Player, ActiveWeapon, Scalar, Vector2D, Enemy, PassiveInstance, ElementType } from "@/game/types";
 import { WEAPON_REGISTRY } from "@/game/config/weaponRegistry";
 import { PASSIVE_REGISTRY } from "@/game/config/passiveRegistry";
 import { addProjectile, getEnemies, getTail, getProjectiles } from "@/game/managers/state";
@@ -9,6 +9,7 @@ import { applyChainLightning } from "./combat";
 import { VFXFactory } from "@/engine/vfx/VFXFactory";
 import { addScore, addXPGem } from "@/game/managers/state";
 import { damageTextManager } from "@/game/managers/damageTextManager";
+import { waveManager } from "@/game/managers/waveManager";
 
 export const updateWeapons = (player: Player, deltaTime: Scalar) => {
   player.activeWeapons.forEach(aw => {
@@ -111,7 +112,10 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
       fireChain(player, origin, stats);
       break;
     case "area":
-      spawnArea(player, origin, stats, def.tags[0], "STATIC");
+      // 시작하자마자 허공에 던지는 것 방지
+      if (waveManager.getPlayTime() > 0.1) {
+        spawnArea(player, origin, stats, def.tags[0], "STATIC");
+      }
       break;
     case "orbit":
       fireOrbit(player, origin, stats, def.tags[0], ownerId, aw.id);
@@ -482,13 +486,48 @@ const fireLinear = (_player: Player, origin: Vector2D, stats: any, type: any) =>
 
 // Generic Spawn Area
 const spawnArea = (_player: Player, origin: Vector2D, stats: any, type: any, behavior: AreaBehavior) => {
+  // Poison Bottle 던지는 연출 (POISON 타입 + STATIC 장판 전용)
+  if (type === ElementType.POISON && behavior === "STATIC") {
+    const weaponRange = stats.range || 300;
+    const target = getNearestEnemy(origin, weaponRange);
+
+    // 적이 없으면 아예 던지지 않음 (허공 투척 버그 방지)
+    if (!target) return;
+
+    for (let i = 0; i < stats.count; i++) {
+      let finalPos = { ...target.position };
+
+      // 여러 개를 던질 경우 흩어짐 효과
+      if (i > 0) {
+        finalPos.x += (Math.random() - 0.5) * 150;
+        finalPos.y += (Math.random() - 0.5) * 150;
+      }
+
+      const proj = createProjectile(origin.x, origin.y, 0, type, 1, "PROJECTILE" as any);
+      (proj as any).behavior = "BOTTLE";
+      (proj as any).targetPos = finalPos; // 최초 타겟 지점 고정
+      (proj as any).startPos = { ...origin };
+      (proj as any).speed = stats.speed || 200; // 레지스트리 스탯 사용 (기본 200으로 하향)
+      (proj as any).areaStats = {
+        damage: stats.damage,
+        radius: stats.size,
+        duration: stats.duration || 3000,
+        tickRate: 200,
+      };
+      addProjectile(proj);
+    }
+    return;
+  }
+
   // 타겟이 필요한 경우(원거리 소환) 처리
   let spawnPos = { ...origin };
   if (behavior === "STATIC" || behavior === "VORTEX") {
-    const target = getNearestEnemy(origin);
+    const weaponRange = stats.range || 300;
+    const target = getNearestEnemy(origin, weaponRange);
     if (target) {
       spawnPos = { ...target.position };
     } else {
+      // 일반 소환의 경우 적이 없으면 주변 랜덤 위치 (병 던지기 말고 일반 마법)
       spawnPos.x += (Math.random() - 0.5) * 200;
       spawnPos.y += (Math.random() - 0.5) * 200;
     }
@@ -536,10 +575,10 @@ const createAuraWeapon = (player: Player, stats: any, type: any) => {
   addProjectile(area as any);
 };
 
-const getNearestEnemy = (origin: Vector2D): Enemy | null => {
+const getNearestEnemy = (origin: Vector2D, maxRange: number = Infinity): Enemy | null => {
   const enemies = getEnemies() as Enemy[];
   let nearest: Enemy | null = null;
-  let minDistSq = Infinity;
+  let minDistSq = maxRange * maxRange;
 
   enemies.forEach(e => {
     if (e.isExpired) return;
