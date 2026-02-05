@@ -21,6 +21,16 @@ export interface CharacterDefinition {
 }
 
 export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
+  TEST: {
+    id: "TEST",
+    name: "테스트",
+    description: "테스트 캐릭터",
+    icon: "⚔️",
+    startWeaponIds: ["W02"],
+    startPassiveIds: ["P01"],
+    unlocked: true,
+    visual: { primary: "#8B9DC3", secondary: "#5C6B8A", eye: "#FFFFFF" },
+  },
   BASIC: {
     id: "BASIC",
     name: "전사",

@@ -35,7 +35,7 @@ export const updateCombat = (_deltaTime: number) => {
     }
 
     const stats = SPELL_STATS[segment.type];
-    if (!stats) return;
+    if (!stats || segment.weaponId) return; // 새로운 무기 시스템이 적용된 세그먼트는 여기서 제외
 
     // Calculate attack speed: Base / (Player FireRate * Skill Mult)
     const fireRateMult = stats.fireRateMult || 1.0;
@@ -90,9 +90,10 @@ export const updateCombat = (_deltaTime: number) => {
       const distSq = dx * dx + dy * dy;
 
       if (distSq < hitRadius * hitRadius) {
-        // Hit Interval Check
+        // Hit Interval Check (Same Enemy Multi-hit Prevention)
         const now = Date.now();
-        if (p.hitInterval && p.hitTracker) {
+        if (p.hitInterval) {
+          if (!p.hitTracker) p.hitTracker = {};
           const lastHit = p.hitTracker[e.id] || 0;
           if (now - lastHit < p.hitInterval) {
             return; // Ignore hit if within interval

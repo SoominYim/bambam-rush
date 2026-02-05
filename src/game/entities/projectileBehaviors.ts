@@ -475,7 +475,7 @@ const updateHoming: BehaviorFunction = (proj, dt) => {
   if (!p.homingTarget || p.homingTarget.isExpired) {
     const enemies = getEnemies();
     let nearest = null;
-    let minDSq = 600 * 600; // Search range
+    let minDSq = 1000 * 1000; // 탐색 범위 대폭 확장 (600 -> 1000)
 
     for (const e of enemies) {
       if (e.isExpired) continue;

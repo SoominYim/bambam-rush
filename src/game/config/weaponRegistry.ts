@@ -2,15 +2,15 @@ import { ElementType } from "@/game/types";
 
 // 무기 레벨별 스케일링 정의
 export interface WeaponLevelScale {
-  damage?: number;
-  attackSpeed?: number;
-  count?: number;
-  size?: number;
-  area?: number;
-  speed?: number;
-  duration?: number;
-  pierce?: number;
-  range?: number;
+  damage?: number; // 데미지
+  attackSpeed?: number; // 공격 속도
+  count?: number; // 개수
+  size?: number; // 크기
+  area?: number; // 면적
+  speed?: number; // 속도
+  duration?: number; // 지속 시간
+  pierce?: number; // 관통
+  range?: number; // 사거리
   hitInterval?: number; // Added hitInterval
   orbitRadiusBase?: number; // Added for orbit patterns
   triggerRange?: number; // Added for aggro behaviors
@@ -110,15 +110,15 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     description: "가장 가까운 적을 추적하는 미사일",
     pattern: "projectile",
     tags: [ElementType.ARCANE],
-    baseStats: { damage: 20, attackSpeed: 0.5, count: 1, size: 15, speed: 250, pierce: 1 },
+    baseStats: { damage: 25, attackSpeed: 0.8, count: 1, size: 15, speed: 120, pierce: 1 },
     levels: {
       2: { damage: 5, description: "데미지 +5" },
-      3: { attackSpeed: 0.05, description: "공격 속도 증가" },
+      3: { attackSpeed: 0.2, speed: 30, description: "공격 속도 투사체 속도 증가" },
       4: { count: 1, description: "미사일 +1" },
-      5: { damage: 8, description: "데미지 +8" },
+      5: { damage: 10, speed: 50, description: "데미지 +10, 투사체 속도 증가" },
       6: { count: 1, description: "미사일 +1" },
-      7: { damage: 10, attackSpeed: 0.05, description: "데미지 +10, 공속 증가" },
-      8: { count: 2, damage: 15, description: "MAX: 미사일 +2, 데미지 +15" },
+      7: { attackSpeed: 0.3, speed: 70, description: "공격 속도, 투사체 속도 증가" },
+      8: { count: 2, damage: 15, attackSpeed: 0.5, speed: 100, description: "MAX" },
     },
     evolution: {
       requiredPassive: "P13",

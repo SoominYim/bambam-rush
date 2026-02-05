@@ -93,7 +93,7 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
 
   switch (def.pattern) {
     case "projectile":
-      fireProjectile(player, origin, stats, def.tags[0], aw.id);
+      fireProjectile(player, origin, stats, def.tags[0], segments, aw.id);
       break;
     case "line":
       fireLine(player, origin, stats, def.tags[0]);
@@ -208,7 +208,14 @@ const fireSwing = (_player: Player, origin: Vector2D, stats: any, type: any) => 
   }
 };
 
-const fireProjectile = (_player: Player, origin: Vector2D, stats: any, type: any, weaponId?: string) => {
+const fireProjectile = (
+  _player: Player,
+  origin: Vector2D,
+  stats: any,
+  type: any,
+  segments: any[],
+  weaponId?: string,
+) => {
   const nearby = spatialGrid.getNearbyEnemies(origin.x, origin.y, 600) as Enemy[];
   if (!nearby || nearby.length === 0) return;
 
@@ -225,20 +232,24 @@ const fireProjectile = (_player: Player, origin: Vector2D, stats: any, type: any
   const isHoming = weaponId === "W02" || weaponId === "W02_EVO";
 
   for (let i = 0; i < stats.count; i++) {
+    // 여러 세그먼트가 있으면 순차적으로 발사 지점 선택
+    const currentSegment = segments[i % segments.length] || segments[0];
+    const currentOrigin = currentSegment ? currentSegment.position : origin;
     const target = targets[i % targets.length];
-    const angle = Math.atan2(target.position.y - origin.y, target.position.x - origin.x);
+    const angle = Math.atan2(target.position.y - currentOrigin.y, target.position.x - currentOrigin.x);
 
-    const proj = createProjectile(origin.x, origin.y, angle, type, 1, "PROJECTILE" as any);
+    const proj = createProjectile(currentOrigin.x, currentOrigin.y, angle, type, 1, "PROJECTILE" as any);
 
     if (isHoming) {
       (proj as any).behavior = "HOMING";
-      (proj as any).turnSpeed = 6; // Radians per second
+      (proj as any).turnSpeed = 8; // 회전 속도 상향 (6 -> 8)
     }
 
     proj.damage = stats.damage;
     (proj as any).speed = stats.speed || 300;
     (proj as any).radius = stats.size;
     proj.penetration = stats.pierce || 1;
+    (proj as any).hitInterval = 250; // 동일 적 중복 타격 방지
     addProjectile(proj);
   }
 };
