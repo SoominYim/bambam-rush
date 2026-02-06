@@ -24,6 +24,8 @@ export const resetPositionHistory = () => {
   positionHistory = [];
 };
 
+import { ELEMENT_STYLES } from "@/game/config/elementStyles";
+
 export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string = "BASIC"): Player => {
   positionHistory = [{ x: startX, y: startY }];
 
@@ -256,136 +258,14 @@ export const createTailSegment = (_index: number, elementType: ElementType): Tai
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
 
-      let icon = "❓";
-      let color = "#ccc";
-
       // Scale tail segment to match Main Character Size but slightly smaller
       const size = CONFIG.PLAYER_RADIUS * 0.85; // 85% of player size
       const x = this.position.x;
       const y = this.position.y;
 
-      switch (this.type) {
-        case ElementType.FIRE:
-          icon = "🔥";
-          color = "#ff4400";
-          break;
-        case ElementType.WATER:
-          icon = "💧";
-          color = "#0088ff";
-          break;
-        case ElementType.ICE:
-          icon = "❄️";
-          color = "#00ffff";
-          break;
-        case ElementType.WIND:
-          icon = "💨";
-          color = "#00ff88";
-          break;
-        case ElementType.POISON:
-          icon = "☠️";
-          color = "#aa00ff";
-          break;
-        case ElementType.ELECTRIC:
-          icon = "⚡";
-          color = "#ffff00";
-          break;
-        case ElementType.SWORD:
-          icon = "🗡️";
-          color = "#cccccc";
-          break;
-        case ElementType.BOOK:
-          icon = "📖";
-          color = "#885522";
-          break;
-        case ElementType.INFERNO:
-          icon = "☄️";
-          color = "#ff4400";
-          break;
-        case ElementType.BLIZZARD:
-          icon = "🌨️";
-          color = "#ccffff";
-          break;
-        case ElementType.POISON_SWAMP:
-          icon = "🟣";
-          color = "#880088";
-          break;
-        case ElementType.LIGHTNING_CHAIN:
-          icon = "🌩️";
-          color = "#ffff00";
-          break;
-        case ElementType.SWORD_DANCE:
-          icon = "⚔️";
-          color = "#ffffff";
-          break;
-        case ElementType.STEAM:
-          icon = "☁️";
-          color = "#dddddd";
-          break;
-        case ElementType.LAVA:
-          icon = "🌋";
-          color = "#ff4400";
-          break;
-        case ElementType.ICEBERG:
-          icon = "🧊";
-          color = "#000088";
-          break;
-        case ElementType.STORM:
-          icon = "🌪️";
-          color = "#ffff00";
-          break;
-        case ElementType.MELTDOWN:
-          icon = "🫠";
-          color = "#aaffaa";
-          break;
-        case ElementType.PARALYSIS:
-          icon = "🤢";
-          color = "#aaff00";
-          break;
-        case ElementType.FREEZE_SHOCK:
-          icon = "🥶";
-          color = "#00ccff";
-          break;
-        case ElementType.HOLY_SWORD:
-          icon = "✝️";
-          color = "#ffff88";
-          break;
-        case ElementType.DUAL_SHIELD:
-          icon = "🛡️";
-          color = "#4444ff";
-          break;
-        case ElementType.DUAL_SHIELD:
-          icon = "🛡️";
-          color = "#4444ff";
-          break;
-        case ElementType.PHYSICAL:
-          icon = "👊";
-          color = "#ffffff";
-          break;
-        case ElementType.ARCANE:
-          icon = "🔮";
-          color = "#aa00aa";
-          break;
-        case ElementType.TECH:
-          icon = "🔧";
-          color = "#00ff00";
-          break;
-        case ElementType.LIGHT:
-          icon = "✨";
-          color = "#ffffaa";
-          break;
-        case ElementType.BLOOD:
-          icon = "🩸";
-          color = "#ff0000";
-          break;
-        case ElementType.GRAVITY:
-          icon = "🌑";
-          color = "#220022";
-          break;
-        default:
-          icon = "❓";
-          color = "#ccc";
-          break;
-      }
+      const style = ELEMENT_STYLES[this.type] || ELEMENT_STYLES.DEFAULT;
+      const color = style.color;
+
       ctx.beginPath();
       ctx.arc(x, y, size + 4, 0, Math.PI * 2);
       ctx.fillStyle = color;
@@ -429,23 +309,17 @@ export const createTailSegment = (_index: number, elementType: ElementType): Tai
       ctx.shadowBlur = shadowBlur;
       ctx.stroke();
 
-      // 431 Reset shadow for icon
+      // Reset shadow for icon
       ctx.shadowBlur = 0;
 
-      // Try drawing SVG Icon first
+      // Try drawing SVG Icon (only if weapon is assigned)
       const svgImg = this.weaponId ? getWeaponIconImage(this.weaponId) : null;
       if (svgImg) {
         // Draw Image centered
-        const iconSize = size * 1.4; // Slightly smaller than full radius constraints
+        const iconSize = size * 1.4;
         ctx.drawImage(svgImg, x - iconSize / 2, y - iconSize / 2, iconSize, iconSize);
-      } else {
-        // Fallback to Emoji Text
-        ctx.font = `${size * 1.8}px "Segoe UI Emoji", Arial`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "#fff";
-        ctx.fillText(icon, x, y + 1);
       }
+      // No fallback emoji - just show colored circle if no weapon assigned
 
       // 4. Level Up Visual Effect (Floating Text)
       if (this.levelUpTimer && this.levelUpTimer > 0) {

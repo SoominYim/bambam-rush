@@ -432,6 +432,16 @@ const fireOrbit = (player: Player, origin: Vector2D, stats: any, type: any, owne
 };
 
 const fireReturn = (origin: Vector2D, stats: any, type: any) => {
+  // Check if any boomerangs are still active (not returned yet)
+  const activeBoomerangs = getProjectiles().filter(
+    p => (p as any).behavior === "RETURN" && !(p as any).hasFullyReturned,
+  );
+
+  // Don't fire new boomerangs if any are still out
+  if (activeBoomerangs.length > 0) {
+    return;
+  }
+
   const target = getNearestEnemy(origin);
   const angle = target
     ? Math.atan2(target.position.y - origin.y, target.position.x - origin.x)
@@ -443,6 +453,7 @@ const fireReturn = (origin: Vector2D, stats: any, type: any) => {
     (proj as any).behavior = "RETURN";
     (proj as any).returnDistance = 400;
     (proj as any).hasReturned = false;
+    (proj as any).hasFullyReturned = false; // Track when it's fully back
     (proj as any).speed = stats.speed || 400;
     proj.damage = stats.damage;
     (proj as any).radius = stats.size;

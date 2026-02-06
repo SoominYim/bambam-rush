@@ -174,6 +174,7 @@ const updateReturn: BehaviorFunction = (proj, dt) => {
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist < 20) {
+      (proj as any).hasFullyReturned = true;
       proj.isExpired = true;
       return;
     }

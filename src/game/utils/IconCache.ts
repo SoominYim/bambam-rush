@@ -19,8 +19,16 @@ export const getWeaponIconImage = (weaponId: string): HTMLImageElement | null =>
     loadingSet.add(weaponId);
 
     const img = new Image();
+
+    // Inject explicit width/height into SVG string for consistent Canvas rendering
+    // Many browsers fail to render SVG to Canvas if width/height are missing (only viewBox)
+    let svgSource = def.icon;
+    if (!svgSource.includes("width=")) {
+      svgSource = svgSource.replace("<svg", '<svg width="64" height="64"');
+    }
+
     // Encode SVG safely
-    const svgEncoded = encodeURIComponent(def.icon);
+    const svgEncoded = encodeURIComponent(svgSource);
     img.src = `data:image/svg+xml;charset=utf-8,${svgEncoded}`;
 
     img.onload = () => {
