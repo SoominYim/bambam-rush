@@ -12,6 +12,7 @@ import { getMovementDirection } from "@/engine/systems/input";
 import { getTail, getCollectibles, addScore, getPlayer, getEnemies } from "@/game/managers/state";
 import * as CONFIG from "../config/constants";
 import { drawCharacter } from "@/game/utils/characterRenderer";
+import { getWeaponIconImage } from "@/game/utils/IconCache";
 
 // Position history for snake-like trailing (Breadcrumb system)
 let positionHistory: Vector2D[] = [];
@@ -428,14 +429,23 @@ export const createTailSegment = (_index: number, elementType: ElementType): Tai
       ctx.shadowBlur = shadowBlur;
       ctx.stroke();
 
-      // Reset shadow for icon
+      // 431 Reset shadow for icon
       ctx.shadowBlur = 0;
 
-      ctx.font = `${size * 1.8}px "Segoe UI Emoji", Arial`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = "#fff";
-      ctx.fillText(icon, x, y + 1);
+      // Try drawing SVG Icon first
+      const svgImg = this.weaponId ? getWeaponIconImage(this.weaponId) : null;
+      if (svgImg) {
+        // Draw Image centered
+        const iconSize = size * 1.4; // Slightly smaller than full radius constraints
+        ctx.drawImage(svgImg, x - iconSize / 2, y - iconSize / 2, iconSize, iconSize);
+      } else {
+        // Fallback to Emoji Text
+        ctx.font = `${size * 1.8}px "Segoe UI Emoji", Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#fff";
+        ctx.fillText(icon, x, y + 1);
+      }
 
       // 4. Level Up Visual Effect (Floating Text)
       if (this.levelUpTimer && this.levelUpTimer > 0) {

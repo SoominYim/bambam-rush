@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { WEAPON_REGISTRY } from "@/game/config/weaponRegistry";
 import { PASSIVE_REGISTRY } from "@/game/config/passiveRegistry";
 import "@/styles/library.css";
+import { WeaponIcon } from "@/components/common/WeaponIcon";
 
 interface LibraryProps {
   onClose: () => void;
@@ -40,7 +41,9 @@ export const Library: React.FC<LibraryProps> = ({ onClose }) => {
               {weapons.map(w => (
                 <div key={w.id} className="library-item">
                   <div className="item-icon-wrapper">
-                    <span className="item-icon">{getIconForWeapon(w)}</span>
+                    <span className="item-icon">
+                      <WeaponIcon weapon={w} />
+                    </span>
                   </div>
                   <div className="item-info">
                     <h3 className="item-name">{w.name}</h3>
@@ -80,31 +83,6 @@ export const Library: React.FC<LibraryProps> = ({ onClose }) => {
       </div>
     </div>
   );
-};
-
-// Helpers (Duplicates for now, should be in a shared util)
-const getIconForWeapon = (w: any): string => {
-  const first = w.tags[0];
-  switch (first) {
-    case "FIRE":
-      return "🔥";
-    case "WATER":
-      return "💧";
-    case "ICE":
-      return "❄️";
-    case "WIND":
-      return "💨";
-    case "POISON":
-      return "☠️";
-    case "ELECTRIC":
-      return "⚡";
-    case "PHYSICAL":
-      return "🗡️";
-    case "ARCANE":
-      return "✨";
-    default:
-      return "⚔️";
-  }
 };
 
 const getPassiveIcon = (id: string): string => {

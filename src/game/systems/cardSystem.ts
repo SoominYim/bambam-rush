@@ -78,7 +78,7 @@ const draftWeaponCard = (player: any, seenIds: Set<string>): Card | null => {
     type: CardType.WEAPON,
     title: active ? `${def.name} (Lv.${nextLevel})` : `${def.name} 획득`,
     description: active ? levelDesc : def.description,
-    icon: getIconForTags(def.tags),
+    icon: def.icon || getIconForTags(def.tags),
     rarity: "COMMON",
     targetId: randomId,
     elementType: def.tags[0] || "무속성",

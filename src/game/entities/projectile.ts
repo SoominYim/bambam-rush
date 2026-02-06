@@ -133,6 +133,53 @@ export const createProjectile = (
         // Pommel (End cap)
         ctx.fillStyle = "#daa520";
         ctx.fillRect(-r * 1.2, -r * 0.3, r * 0.3, r * 0.6);
+        // Pommel (End cap)
+        ctx.fillStyle = "#daa520";
+        ctx.fillRect(-r * 1.2, -r * 0.3, r * 0.3, r * 0.6);
+      } else if (type === ElementType.WIND) {
+        // --- Boomerang (Wind) Drawing ---
+        const rotation = (this as any).visualAngle || this.angle || 0;
+        ctx.translate(this.position.x, this.position.y);
+        ctx.rotate(rotation);
+
+        const r = (this as any).radius || 15;
+
+        // V-Shape Boomerang
+        ctx.beginPath();
+        ctx.fillStyle = "#87CEFA"; // Light Sky Blue
+        // Top Wing
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(r * 0.5, -r * 0.5, r, -r); // Tip
+        ctx.quadraticCurveTo(r * 0.2, -r * 0.2, 0, -r * 0.4); // Inner arc
+        // Bottom Wing
+        ctx.quadraticCurveTo(-r * 0.2, -r * 0.2, -r, -r); // Tip (Wait, this logic draws 2 wings? Boomerang usually has 2 wings)
+        // Let's redraw: Center is (0,0). Wings go out.
+        // Wing 1
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(r * 0.5, -r * 0.2, r, -r * 0.8);
+        ctx.quadraticCurveTo(r * 0.2, -r * 0.5, 0, -r * 0.2);
+        // Wing 2
+        ctx.quadraticCurveTo(-r * 0.5, 0.2, -r, 0.8);
+        ctx.quadraticCurveTo(-r * 0.2, 0.5, 0, 0.2);
+        ctx.fill();
+
+        // Better Boomerang Shape: 3-blade or 2-blade?
+        // Standard 2-blade V shape:
+        ctx.beginPath();
+        ctx.fillStyle = "#E0FFFF"; // Light Cyan
+        const width = r * 0.3;
+        const length = r;
+
+        ctx.moveTo(width, 0);
+        ctx.quadraticCurveTo(width, -length / 2, length, -length); // Wing 1 Tip
+        ctx.quadraticCurveTo(0, -width, -width, 0); // Center Inner
+        ctx.quadraticCurveTo(0, width, length, length); // Wing 2 Tip
+        ctx.quadraticCurveTo(width, length / 2, width, 0); // Center Outer
+        ctx.fill();
+
+        // Wind Trail / Glow
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#00BFFF";
       } else if (type === ElementType.POISON && (this as any).behavior === "BOTTLE") {
         // --- Poison Bottle Drawing (원근법 적용) ---
         const p = this as any;

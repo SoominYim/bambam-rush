@@ -1,4 +1,5 @@
 import { ElementType } from "@/game/types";
+import { WEAPON_ICONS } from "./weaponIcons";
 
 // 무기 레벨별 스케일링 정의
 export interface WeaponLevelScale {
@@ -27,6 +28,7 @@ export interface WeaponLevelScale {
 export interface WeaponDefinition {
   id: string;
   name: string;
+  icon?: string; // Custom SVG Icon
   description: string;
   pattern:
     | "orbit" // 꼬리 주변을 회전하는 검
@@ -83,6 +85,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W01: {
     id: "W01",
     name: "🗡️ 가디언 소드",
+    icon: WEAPON_ICONS.GUARDIAN_SWORD,
     description: "꼬리 주변을 수호하며 적을 추적해 찌르는 검",
     pattern: "orbit",
     tags: [ElementType.SWORD],
@@ -117,6 +120,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W02: {
     id: "W02",
     name: "매직 미사일",
+    icon: WEAPON_ICONS.MAGIC_MISSILE,
     description: "가장 가까운 적을 추적하는 미사일",
     pattern: "projectile",
     tags: [ElementType.ARCANE],
@@ -140,6 +144,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W03: {
     id: "W03",
     name: "화염구",
+    icon: WEAPON_ICONS.FIREBALL,
     description: "강력한 화상을 입히는 화염 탄환",
     pattern: "line",
     tags: [ElementType.FIRE],
@@ -174,6 +179,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W04: {
     id: "W04",
     name: "체인 라이트닝",
+    icon: WEAPON_ICONS.CHAIN_LIGHTNING,
     description: "적들 사이를 튕기며 전이되는 번개",
     pattern: "chain",
     tags: [ElementType.ELECTRIC],
@@ -206,6 +212,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W05: {
     id: "W05",
     name: "맹독 웅덩이",
+    icon: WEAPON_ICONS.POISON_PUDDLE,
     description: "바닥에 지속 피해를 주는 독 장판 생성",
     pattern: "area",
     tags: [ElementType.POISON],
@@ -237,17 +244,18 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W06: {
     id: "W06",
     name: "부메랑",
-    description: "던지면 돌아오며 두 번 타격",
+    icon: WEAPON_ICONS.BOOMERANG,
+    description: "적들을 관통하며 돌아오는 바람의 칼날",
     pattern: "return",
     tags: [ElementType.WIND],
-    baseStats: { damage: 30, attackSpeed: 0.4, count: 1, size: 18, speed: 200 },
+    baseStats: { damage: 35, attackSpeed: 0.5, count: 1, size: 24, speed: 450, pierce: 999 },
     levels: {
       2: { damage: 7, description: "데미지 +7" },
       3: { count: 1, description: "부메랑 +1" },
-      4: { speed: 30, description: "속도 +30" },
+      4: { speed: 50, description: "속도 +50" },
       5: { damage: 12, description: "데미지 +12" },
       6: { count: 1, description: "부메랑 +1" },
-      7: { damage: 15, speed: 50, description: "데미지 +15, 속도 +50" },
+      7: { damage: 15, size: 10, description: "데미지 +15, 크기 +10" },
       8: { damage: 25, count: 2, description: "MAX: 데미지 +25, 부메랑 +2" },
     },
     evolution: {
@@ -260,6 +268,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W07: {
     id: "W07",
     name: "서리 폭발",
+    icon: WEAPON_ICONS.FROST_NOVA,
     description: "플레이어 주변 폭발, 적 빙결",
     pattern: "nova",
     tags: [ElementType.ICE],
@@ -283,6 +292,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W08: {
     id: "W08",
     name: "수호의 구슬",
+    icon: WEAPON_ICONS.GUARDIAN_ORB,
     description: "투사체를 막고 적에게 피해를 줌",
     pattern: "orbit",
     tags: [ElementType.LIGHT],
@@ -301,6 +311,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W09: {
     id: "W09",
     name: "바늘 지뢰",
+    icon: WEAPON_ICONS.NEEDLE_MINE,
     description: "밟으면 폭발하는 지뢰 설치",
     pattern: "trap",
     tags: [ElementType.PHYSICAL],
@@ -319,6 +330,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W10: {
     id: "W10",
     name: "레이저 빔",
+    icon: WEAPON_ICONS.LASER_BEAM,
     description: "관통하는 지속 레이저 발사",
     pattern: "beam",
     tags: [ElementType.TECH],
@@ -342,6 +354,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W11: {
     id: "W11",
     name: "박쥐 소환",
+    icon: WEAPON_ICONS.SUMMON_BAT,
     description: "적을 공격하는 박쥐 소환",
     pattern: "minion",
     tags: [ElementType.BLOOD],
@@ -365,6 +378,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W12: {
     id: "W12",
     name: "도끼 투척",
+    icon: WEAPON_ICONS.AXE_THROW,
     description: "높은 곡사로 던져 범위 피해",
     pattern: "arc",
     tags: [ElementType.PHYSICAL],
@@ -383,6 +397,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W13: {
     id: "W13",
     name: "블랙홀",
+    icon: WEAPON_ICONS.BLACK_HOLE,
     description: "적들을 중심으로 끌어당김",
     pattern: "vortex",
     tags: [ElementType.GRAVITY],
@@ -406,6 +421,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W14: {
     id: "W14",
     name: "차크람",
+    icon: WEAPON_ICONS.CHAKRAM,
     description: "벽과 화면 끝에서 튕기는 칼날",
     pattern: "bounce",
     tags: [ElementType.WIND],
@@ -424,6 +440,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W15: {
     id: "W15",
     name: "화염 오라",
+    icon: WEAPON_ICONS.FIRE_AURA,
     description: "플레이어 주변에 지속 화염 피해",
     pattern: "aura",
     tags: [ElementType.FIRE],
@@ -442,6 +459,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W16: {
     id: "W16",
     name: "천둥 번개",
+    icon: WEAPON_ICONS.THUNDERSTORM,
     description: "하늘에서 랜덤하게 떨어지는 벼락",
     pattern: "sky",
     tags: [ElementType.ELECTRIC],
@@ -460,6 +478,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W17: {
     id: "W17",
     name: "샷건",
+    icon: WEAPON_ICONS.SHOTGUN,
     description: "부채꼴 범위로 탄환 발사",
     pattern: "spread",
     tags: [ElementType.TECH],
@@ -478,6 +497,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W18: {
     id: "W18",
     name: "역병 구름",
+    icon: WEAPON_ICONS.PLAGUE_CLOUD,
     description: "움직이는 독구름 생성",
     pattern: "gas",
     tags: [ElementType.POISON],
@@ -496,6 +516,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W19: {
     id: "W19",
     name: "얼음 파편",
+    icon: WEAPON_ICONS.ICE_SHARD,
     description: "적을 느리게 하는 빠른 투사체",
     pattern: "linear",
     tags: [ElementType.ICE],
@@ -514,6 +535,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
   W20: {
     id: "W20",
     name: "메테오",
+    icon: WEAPON_ICONS.METEOR,
     description: "긴 딜레이 후 화면 전체 초토화",
     pattern: "nuke",
     tags: [ElementType.FIRE],
@@ -526,6 +548,31 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
       6: { attackSpeed: 0.01, description: "공격 속도 증가" },
       7: { damage: 120, description: "데미지 +120" },
       8: { damage: 200, size: 100, description: "MAX: 데미지 +200, 범위 +100" },
+    },
+  },
+  W06_EVO: {
+    id: "W06_EVO",
+    name: "🌀 스톰 룰러",
+    icon: WEAPON_ICONS.STORM_RULER,
+    description: "폭풍을 휘감은 거대한 부메랑 (무한 관통)",
+    pattern: "return",
+    tags: [ElementType.WIND, ElementType.STORM],
+    baseStats: {
+      damage: 60,
+      attackSpeed: 0.8,
+      count: 2,
+      size: 40,
+      speed: 600,
+      pierce: 999,
+    },
+    levels: {
+      2: { damage: 15, description: "데미지 +15" },
+      3: { count: 1, description: "부메랑 +1" },
+      4: { speed: 100, size: 10, description: "속도 +100, 크기 +10" },
+      5: { damage: 25, description: "데미지 +25" },
+      6: { count: 1, description: "부메랑 +1" },
+      7: { attackSpeed: 0.2, description: "공격 속도 증가" },
+      8: { damage: 50, count: 2, size: 20, description: "MAX: 폭풍의 지배자" },
     },
   },
 };

@@ -140,6 +140,9 @@ const updateOrbit: BehaviorFunction = (proj, dt) => {
  * RETURN - 부메랑 (일정 거리 후 플레이어로 복귀)
  */
 const updateReturn: BehaviorFunction = (proj, dt) => {
+  // Visual Spin Effect (Renderer uses visualAngle if present)
+  (proj as any).visualAngle = ((proj as any).visualAngle || 0) + 20 * dt;
+
   const player = getPlayer();
   if (!player) {
     proj.isExpired = true;

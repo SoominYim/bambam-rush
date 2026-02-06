@@ -446,6 +446,8 @@ const fireReturn = (origin: Vector2D, stats: any, type: any) => {
     (proj as any).speed = stats.speed || 400;
     proj.damage = stats.damage;
     (proj as any).radius = stats.size;
+    proj.penetration = stats.pierce || 1; // 기본 관통 1, 부메랑은 999
+    (proj as any).hitInterval = 150; // 다단 히트 간격 설정
     addProjectile(proj);
   }
 };
