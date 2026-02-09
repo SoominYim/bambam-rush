@@ -20,7 +20,8 @@ export type ProjectileBehavior =
   | "ORBIT_STAB"
   | "HOMING"
   | "BOTTLE"
-  | "BEAM";
+  | "BEAM"
+  | "BAT";
 
 /**
  * 행동 함수 타입
@@ -691,6 +692,104 @@ const updateBeam = (proj: Projectile, dt: number) => {
 };
 
 /**
+ * BAT - 박쥐 소환 (유도 + 웨이브 이동 + 흡혈)
+ */
+const updateBat: BehaviorFunction = (proj, dt) => {
+  const p = proj as any;
+  const speed = p.speed || 150;
+  const turnSpeed = 4 * dt; // 회전 속도
+
+  // 1. 적 추적 (HOMING)
+  if (!p.homingTarget || p.homingTarget.isExpired || p.homingTarget.hp <= 0) {
+    const enemies = getEnemies();
+    let nearest = null;
+    let minDSq = 800 * 800; // 탐색 범위
+
+    for (const e of enemies) {
+      if (e.isExpired || e.hp <= 0) continue;
+      const dx = e.position.x - proj.position.x;
+      const dy = e.position.y - proj.position.y;
+      const dSq = dx * dx + dy * dy;
+      if (dSq < minDSq) {
+        minDSq = dSq;
+        nearest = e;
+      }
+    }
+    p.homingTarget = nearest;
+  }
+
+  // 2. 각도 조정
+  let targetAngle = proj.angle || 0;
+  if (p.homingTarget) {
+    targetAngle = Math.atan2(p.homingTarget.position.y - proj.position.y, p.homingTarget.position.x - proj.position.x);
+  }
+
+  // 부드러운 회전
+  let currentAngle = proj.angle || 0;
+  let angleDiff = targetAngle - currentAngle;
+  while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+  while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+  if (Math.abs(angleDiff) < turnSpeed) {
+    proj.angle = targetAngle;
+  } else {
+    proj.angle = currentAngle + Math.sign(angleDiff) * turnSpeed;
+  }
+
+  // 3. 이동 (웨이브 모션)
+  p.waveTime = (p.waveTime || 0) + dt * 5; // 날개짓 속도
+  const waveAmplitude = 5; // 위아래 흔들림 폭
+  const waveOffset = Math.sin(p.waveTime + (p.waveOffset || 0)) * waveAmplitude;
+
+  // 진행 방향(angle)에 수직인 벡터 계산
+  const perpX = Math.cos(proj.angle + Math.PI / 2);
+  const perpY = Math.sin(proj.angle + Math.PI / 2);
+
+  // 기본 이동 + 웨이브 오프셋
+  const moveX = Math.cos(proj.angle) * speed * dt + perpX * waveOffset * dt * 20; // 웨이브 효과 강조
+  const moveY = Math.sin(proj.angle) * speed * dt + perpY * waveOffset * dt * 20;
+
+  proj.position.x += moveX;
+  proj.position.y += moveY;
+
+  // 4. 충돌 체크 및 흡혈
+  // 성능을 위해 간단한 거리 체크
+  if (p.homingTarget) {
+    const dx = p.homingTarget.position.x - proj.position.x;
+    const dy = p.homingTarget.position.y - proj.position.y;
+    const distSq = dx * dx + dy * dy;
+    const hitRadius = ((proj as any).radius || 10) + 20; // 적 크기 고려
+
+    if (distSq < hitRadius * hitRadius) {
+      // 충돌!
+      const damage = proj.damage;
+      p.homingTarget.hp -= damage;
+      damageTextManager.show(p.homingTarget.position.x, p.homingTarget.position.y, damage, false);
+
+      // 흡혈
+      if (p.lifeSteal > 0) {
+        const player = getPlayer();
+        if (player) {
+          const oldHp = player.stats.hp;
+          player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + p.lifeSteal);
+          const healed = player.stats.hp - oldHp;
+          if (healed > 0) {
+            // 힐 텍스트 표시 (초록색)
+            damageTextManager.show(player.position.x, player.position.y - 30, healed, false);
+          }
+        }
+      }
+
+      // 소멸 (관통 1이므로)
+      proj.isExpired = true;
+
+      // 타격 이펙트
+      VFXFactory.createExplosion(proj.position.x, proj.position.y, proj.type, 10, 0.5);
+    }
+  }
+};
+
+/**
  * 행동 맵
  */
 const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
@@ -706,6 +805,7 @@ const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
   HOMING: updateHoming,
   BOTTLE: updateBottle,
   BEAM: updateBeam,
+  BAT: updateBat,
 };
 
 /**

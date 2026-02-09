@@ -30,6 +30,17 @@ export const WeaponIcon = memo(({ weapon, size = "100%" }: WeaponIconProps) => {
     );
   }
 
+  // 1 (b). Image Path Check
+  if (weapon?.icon && (weapon.icon.trim().startsWith("/") || weapon.icon.includes("."))) {
+    return (
+      <img
+        src={weapon.icon}
+        alt={weapon.name}
+        style={{ width: size, height: size, objectFit: "contain", display: "block" }}
+      />
+    );
+  }
+
   // 2. If weapon has a text icon (emoji) - legacy fallback
   if (weapon?.icon) {
     return <div style={{ fontSize: `calc(${size} * 0.8)`, lineHeight: size, textAlign: "center" }}>{weapon.icon}</div>;

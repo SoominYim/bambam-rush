@@ -182,6 +182,37 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
     case "beam":
       fireBeam(player, origin, stats, def.tags[0], ownerId);
       break;
+    case "bat":
+      fireBat(player, origin, stats, def.tags[0], ownerId);
+      break;
+  }
+};
+
+const fireBat = (_player: Player, origin: Vector2D, stats: any, type: any, ownerId?: string) => {
+  for (let i = 0; i < stats.count; i++) {
+    // 플레이어 주변에서 랜덤한 위치에 생성
+    const angle = Math.random() * Math.PI * 2;
+    const offset = 30; // 플레이어로부터 거리
+    const x = origin.x + Math.cos(angle) * offset;
+    const y = origin.y + Math.sin(angle) * offset;
+
+    // 초기 진행 방향 (랜덤)
+    const moveAngle = Math.random() * Math.PI * 2;
+
+    const proj = createProjectile(x, y, moveAngle, type, 1, "PROJECTILE" as any);
+    (proj as any).behavior = "BAT";
+    (proj as any).ownerId = ownerId;
+    (proj as any).speed = stats.speed || 150;
+    proj.damage = stats.damage;
+    (proj as any).radius = stats.size;
+    proj.penetration = 1; // 1명만 공격하고 사라짐
+    (proj as any).duration = stats.duration || 5000;
+    (proj as any).lifeSteal = stats.lifeSteal || 0;
+
+    // 웨이브 모션을 위한 초기 오프셋
+    (proj as any).waveOffset = Math.random() * Math.PI * 2;
+
+    addProjectile(proj);
   }
 };
 

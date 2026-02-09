@@ -3,6 +3,11 @@ import { SPELL_STATS } from "@/game/config/spellStats";
 import { updateProjectileBehavior } from "./projectileBehaviors";
 import * as CONFIG from "@/game/config/constants";
 
+// SVG Path Data for Bat
+const PATH_WING_LEFT = "M45 30C35 15 15 10 0 25C10 30 20 30 25 35C30 45 40 40 45 30Z";
+const PATH_WING_RIGHT = "M55 30C65 15 85 10 100 25C90 30 80 30 75 35C70 45 60 40 55 30Z";
+const PATH_EARS = "M50 20L44 10L46 22L54 22L56 10L50 20Z";
+
 export const createProjectile = (
   x: Scalar,
   y: Scalar,
@@ -302,12 +307,76 @@ export const createProjectile = (
 
         ctx.shadowBlur = 0; // Reset shadow
         ctx.globalAlpha = 1.0;
+      } else if ((this as any).behavior === "BAT") {
+        // 박쥐 렌더링 (SVG 기반 Path2D 사용)
+        const size = ((this as any).radius || 10) * 2.5;
+        const waveTime = (this as any).waveTime || 0;
+
+        // Animation params based on CSS: Slower flap
+        const speed = 5;
+        const t = (Math.sin(waveTime * speed) + 1) / 2; // 0 ~ 1 oscillation
+
+        const angleL = ((20 * Math.PI) / 180) * t;
+        const angleR = ((-20 * Math.PI) / 180) * t;
+        const scaleY = 1.0 - t * 0.6;
+
+        // SVG ViewBox 100x60. Center 50,30.
+        // We want width approx 'size * 2'.
+        // SVG width 100. Scale factor = (size * 2) / 100 = size / 50.
+        const scaleFactor = size / 50;
+
+        ctx.save();
+        ctx.translate(this.position.x, this.position.y);
+        ctx.rotate((this.angle || 0) + Math.PI / 2);
+
+        // Global visual scale
+        ctx.scale(scaleFactor, scaleFactor);
+
+        // Align SVG Center(50,30) to (0,0)
+        ctx.translate(-50, -30);
+
+        // Body Color #1a1a1a (from SVG)
+        ctx.fillStyle = "#1a1a1a";
+
+        // Left Wing
+        ctx.save();
+        ctx.translate(45, 30); // Origin
+        ctx.rotate(angleL);
+        ctx.scale(1, scaleY);
+        ctx.translate(-45, -30);
+        ctx.fill(new Path2D(PATH_WING_LEFT));
+        ctx.restore();
+
+        // Right Wing
+        ctx.save();
+        ctx.translate(55, 30); // Origin
+        ctx.rotate(angleR);
+        ctx.scale(1, scaleY);
+        ctx.translate(-55, -30);
+        ctx.fill(new Path2D(PATH_WING_RIGHT));
+        ctx.restore();
+
+        // Ears
+        ctx.fill(new Path2D(PATH_EARS));
+
+        // Body (Circle)
+        ctx.beginPath();
+        ctx.arc(50, 30, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes (White)
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(47, 28, 2, 0, Math.PI * 2);
+        ctx.arc(53, 28, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
       } else {
         const currentRadius = (this as any).radius || radius;
         ctx.arc(this.position.x, this.position.y, currentRadius, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
-        ctx.shadowBlur = 0;
       }
 
       ctx.restore();

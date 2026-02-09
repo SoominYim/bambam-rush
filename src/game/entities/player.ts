@@ -327,9 +327,22 @@ export const createTailSegment = (_index: number, elementType: ElementType): Tai
       // Try drawing SVG Icon (only if weapon is assigned)
       const svgImg = this.weaponId ? getWeaponIconImage(this.weaponId) : null;
       if (svgImg) {
+        // 비율 유지하며 크기 최대화
+        const maxIconSize = size * 2.5;
+        let drawW = maxIconSize;
+        let drawH = maxIconSize;
+
+        if (svgImg.naturalWidth > 0 && svgImg.naturalHeight > 0) {
+          const ratio = svgImg.naturalWidth / svgImg.naturalHeight;
+          if (ratio > 1) {
+            drawH = maxIconSize / ratio;
+          } else {
+            drawW = maxIconSize * ratio;
+          }
+        }
+
         // Draw Image centered
-        const iconSize = size * 1.4;
-        ctx.drawImage(svgImg, x - iconSize / 2, y - iconSize / 2, iconSize, iconSize);
+        ctx.drawImage(svgImg, x - drawW / 2, y - drawH / 2, drawW, drawH);
       }
       // No fallback emoji - just show colored circle if no weapon assigned
 

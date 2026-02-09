@@ -25,6 +25,7 @@ export interface WeaponLevelScale {
   chillAmount?: number; // 둔화율 (0.0 ~ 1.0)
   chillDuration?: number; // 둔화 지속 시간
   orbitSpeedAggro?: number; // 적 감지 시 회전 속도
+  lifeSteal?: number; // 흡혈량
   description?: string;
 }
 
@@ -55,7 +56,8 @@ export interface WeaponDefinition {
     | "linear" // 선형
     | "swing" // 스윙
     | "stab"
-    | "nuke";
+    | "nuke"
+    | "bat"; // 박쥐 소환
   tags: ElementType[];
   baseStats: {
     damage: number;
@@ -79,6 +81,7 @@ export interface WeaponDefinition {
     chillAmount?: number;
     chillDuration?: number;
     orbitSpeedAggro?: number;
+    lifeSteal?: number; // 흡혈량
   };
   levels: Record<number, WeaponLevelScale>;
   evolution?: {
@@ -160,7 +163,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
       damage: 15,
       attackSpeed: 0.6,
       count: 1,
-      size: 24,
+      size: 5,
       speed: 300,
       pierce: 1,
       burnDamage: 10,
@@ -284,9 +287,9 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
       damage: 30,
       attackSpeed: 0.8,
       count: 1,
-      size: 20, // 투사체 크기
+      size: 5, // 투사체 크기
       speed: 400,
-      explosionRadius: 80, // 폭발 반경
+      explosionRadius: 20, // 폭발 반경
       chillAmount: 0.1, // 초반엔 10% 둔화 (약함)
       chillDuration: 3000,
     },
@@ -386,16 +389,16 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     id: "W11",
     name: "박쥐 소환",
     icon: WEAPON_ICONS.SUMMON_BAT,
-    description: "적을 공격하는 박쥐 소환",
-    pattern: "minion",
+    description: "적을 추적하여 체력을 흡수하는 박쥐 소환",
+    pattern: "bat",
     tags: [ElementType.BLOOD],
-    baseStats: { damage: 12, attackSpeed: 1.0, count: 3, size: 12, speed: 150 },
+    baseStats: { damage: 20, attackSpeed: 0.5, count: 2, size: 8, speed: 200, duration: 5000, lifeSteal: 0.5 },
     levels: {
-      2: { count: 1, description: "박쥐 +1" },
+      2: { count: 2, attackSpeed: 0.2, description: "박쥐 +2, 공격 속도 증가" },
       3: { damage: 3, description: "데미지 +3" },
       4: { count: 2, description: "박쥐 +2" },
       5: { damage: 5, description: "데미지 +5" },
-      6: { count: 2, description: "박쥐 +2" },
+      6: { count: 2, lifeSteal: 0.5, description: "박쥐 +2, 흡혈량 증가" },
       7: { damage: 8, description: "데미지 +8" },
       8: { count: 5, damage: 12, description: "MAX: 박쥐 +5, 데미지 +12" },
     },

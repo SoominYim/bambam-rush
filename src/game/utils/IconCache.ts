@@ -14,7 +14,7 @@ export const getWeaponIconImage = (weaponId: string): HTMLImageElement | null =>
   const def = WEAPON_REGISTRY[weaponId];
   if (!def || !def.icon) return null; // No icon available
 
-  // Only handle SVG strings for now
+  // Handle SVG strings
   if (def.icon.startsWith("<svg")) {
     loadingSet.add(weaponId);
 
@@ -38,6 +38,25 @@ export const getWeaponIconImage = (weaponId: string): HTMLImageElement | null =>
 
     img.onerror = () => {
       console.error(`Failed to load icon for weapon ${weaponId}`);
+      loadingSet.delete(weaponId);
+    };
+  } else {
+    // Handle Image Paths (e.g. "/bat.svg")
+    loadingSet.add(weaponId);
+
+    const img = new Image();
+    img.src = def.icon;
+
+    img.onload = () => {
+      imageCache[weaponId] = img;
+      loadingSet.delete(weaponId);
+    };
+
+    img.onerror = () => {
+      // Don't log error for emojis or simple text, only likely paths
+      if (def.icon!.includes("/") || def.icon!.includes(".")) {
+        console.error(`Failed to load icon for weapon ${weaponId}: ${def.icon}`);
+      }
       loadingSet.delete(weaponId);
     };
   }
