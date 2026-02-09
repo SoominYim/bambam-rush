@@ -3,6 +3,7 @@ import { getPlayer, getEnemies, getTail } from "@/game/managers/state";
 import { addArea } from "@/game/managers/entityStore"; // Fix circular dependency
 import { createArea } from "@/game/entities/area";
 import { VFXFactory } from "@/engine/vfx/VFXFactory";
+import { damageTextManager } from "@/game/managers/damageTextManager";
 
 /**
  * Projectile 행동 타입
@@ -18,7 +19,8 @@ export type ProjectileBehavior =
   | "STAB"
   | "ORBIT_STAB"
   | "HOMING"
-  | "BOTTLE";
+  | "BOTTLE"
+  | "BEAM";
 
 /**
  * 행동 함수 타입
@@ -602,6 +604,93 @@ const updateBottle: BehaviorFunction = (proj, dt) => {
 };
 
 /**
+ * BEAM - 레이저 빔 (고정 위치, 일직선, 틱 데미지)
+ */
+const updateBeam = (proj: Projectile, dt: number) => {
+  const p = proj as any;
+
+  // 1. 소유자 위치 동기화 (꼬리 따라다니기)
+  if (p.ownerId) {
+    const tailList = getTail();
+    const tail = tailList.find((t: any) => t.id === p.ownerId);
+
+    if (tail) {
+      // 꼬리 위치로 이동
+      proj.position.x = tail.position.x;
+      proj.position.y = tail.position.y;
+    } else {
+      // 꼬리가 없으면 플레이어인지 확인
+      const player = getPlayer();
+      if (player && player.id === p.ownerId) {
+        proj.position.x = player.position.x;
+        proj.position.y = player.position.y;
+      }
+    }
+  }
+
+  // 지속 시간 감소
+  if (!p.beamDuration) p.beamDuration = p.duration || 2000;
+  p.beamDuration -= dt * 1000;
+
+  if (p.beamDuration <= 0) {
+    proj.isExpired = true;
+    return;
+  }
+
+  // 틱 데미지 처리
+  const now = Date.now();
+  if (!p.lastBeamTick) p.lastBeamTick = 0;
+  const tickInterval = p.hitInterval || 100;
+
+  if (now - p.lastBeamTick >= tickInterval) {
+    p.lastBeamTick = now;
+
+    // 레이저 선과 교차하는 적 찾기
+    const beamLength = p.range || 1000;
+    const beamWidth = p.radius || 10;
+    const enemies = getEnemies();
+
+    const startX = proj.position.x;
+    const startY = proj.position.y;
+    const angle = proj.angle || 0;
+    const endX = startX + Math.cos(angle) * beamLength;
+    const endY = startY + Math.sin(angle) * beamLength;
+
+    enemies.forEach((enemy: any) => {
+      if (enemy.isExpired || enemy.hp <= 0) return;
+
+      // 점과 선분 사이의 거리 계산
+      const ex = enemy.position.x;
+      const ey = enemy.position.y;
+
+      // 선분의 벡터
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const lenSq = dx * dx + dy * dy;
+
+      if (lenSq === 0) return; // 길이 0인 레이저
+
+      // 적 위치를 선분에 투영
+      const t = Math.max(0, Math.min(1, ((ex - startX) * dx + (ey - startY) * dy) / lenSq));
+      const projX = startX + t * dx;
+      const projY = startY + t * dy;
+
+      // 투영점과 적 사이의 거리
+      const distSq = (ex - projX) * (ex - projX) + (ey - projY) * (ey - projY);
+      const hitRadius = beamWidth + 20; // 적 크기 고려
+
+      if (distSq <= hitRadius * hitRadius) {
+        // 데미지 적용
+        enemy.hp -= proj.damage;
+
+        // 데미지 텍스트 표시
+        damageTextManager.show(enemy.position.x, enemy.position.y, proj.damage, false);
+      }
+    });
+  }
+};
+
+/**
  * 행동 맵
  */
 const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
@@ -616,6 +705,7 @@ const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
   ORBIT_STAB: updateOrbitStab,
   HOMING: updateHoming,
   BOTTLE: updateBottle,
+  BEAM: updateBeam,
 };
 
 /**

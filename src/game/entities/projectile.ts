@@ -257,11 +257,57 @@ export const createProjectile = (
         // 4. Glow
         ctx.shadowBlur = 15;
         ctx.shadowColor = "#aa00ff";
+      } else if ((this as any).behavior === "BEAM") {
+        // 레이저 빔 렌더링
+        const range = (this as any).range || 1000;
+        let width = (this as any).radius || 10;
+
+        // Beam Width Animation (Sine Wave: 0 -> 1 -> 0)
+        const duration = (this as any).duration || 300;
+        const currentDuration = (this as any).beamDuration !== undefined ? (this as any).beamDuration : duration;
+
+        // progress: 0 (Start) -> 0.5 (Peak) -> 1 (End)
+        // beamDuration은 duration -> 0으로 감소하므로:
+        const progress = 1 - currentDuration / duration;
+
+        // Sin(0~PI) => 0 -> 1 -> 0
+        const widthFactor = Math.sin(progress * Math.PI);
+        width *= 0.2 + widthFactor * 0.8; // 최소 20% 두께 보장
+
+        const startX = this.position.x;
+        const startY = this.position.y;
+        const angle = this.angle || 0;
+        const endX = startX + Math.cos(angle) * range;
+        const endY = startY + Math.sin(angle) * range;
+
+        // Core Beam
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = "#FFFFFF";
+        ctx.lineWidth = width * 0.6;
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        // Outer Glow
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.globalAlpha = 0.6;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+        ctx.stroke();
+
+        ctx.shadowBlur = 0; // Reset shadow
+        ctx.globalAlpha = 1.0;
       } else {
         const currentRadius = (this as any).radius || radius;
         ctx.arc(this.position.x, this.position.y, currentRadius, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
+        ctx.shadowBlur = 0;
       }
 
       ctx.restore();

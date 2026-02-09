@@ -179,6 +179,9 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
     case "stab":
       fireStab(player, origin, stats, def.tags[0], ownerId, aw.id);
       break;
+    case "beam":
+      fireBeam(player, origin, stats, def.tags[0], ownerId);
+      break;
   }
 };
 
@@ -547,6 +550,30 @@ const fireLinear = (_player: Player, origin: Vector2D, stats: any, type: any) =>
     (proj as any).chillAmount = stats.chillAmount;
     (proj as any).chillDuration = stats.chillDuration;
     (proj as any).freezeDuration = stats.freezeDuration;
+    addProjectile(proj);
+  }
+};
+
+const fireBeam = (_player: Player, origin: Vector2D, stats: any, type: any, ownerId?: string) => {
+  // 가장 가까운 적 찾기
+  const target = getNearestEnemy(origin);
+  const baseAngle = target
+    ? Math.atan2(target.position.y - origin.y, target.position.x - origin.x)
+    : Math.random() * Math.PI * 2; // 적 없으면 랜덤 방향
+
+  const spread = 0.3; // 레이저 간 각도 분산
+  for (let i = 0; i < stats.count; i++) {
+    const angle = baseAngle + (i - (stats.count - 1) / 2) * spread;
+    const proj = createProjectile(origin.x, origin.y, angle, type, 1, "PROJECTILE" as any);
+    (proj as any).behavior = "BEAM"; // 레이저 빔 behavior
+    (proj as any).ownerId = ownerId; // 소유자 ID 저장 (꼬리 등)
+    (proj as any).speed = 0; // 레이저는 움직이지 않음
+    proj.damage = stats.damage;
+    (proj as any).radius = stats.size;
+    proj.penetration = stats.pierce || 999; // 무한 관통
+    (proj as any).range = stats.range || 1000; // 레이저 길이
+    (proj as any).duration = stats.duration || 2000; // 지속 시간
+    (proj as any).hitInterval = 2000; // 한 번만 타격
     addProjectile(proj);
   }
 };
