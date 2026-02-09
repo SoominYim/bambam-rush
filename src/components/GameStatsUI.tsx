@@ -116,7 +116,23 @@ export const StatsUI: React.FC<StatsUIProps> = memo(({ stats: initialStats }) =>
         <span>⚡ Atk Spd:</span>
         <span style={{ textAlign: "right" }}>{stats.fireRate.toFixed(2)}x</span>
         <span>🏃 Move Spd:</span>
-        <span style={{ textAlign: "right" }}>{(stats.speed || 1.0).toFixed(2)}x</span>
+        <span style={{ textAlign: "right" }}>{(stats.moveSpeed || 1.0).toFixed(2)}x</span>
+        <span>🏹 Proj Spd:</span>
+        <span style={{ textAlign: "right" }}>{(stats.projectileSpeed || 1.0).toFixed(2)}x</span>
+        <span>⏳ Duration:</span>
+        <span style={{ textAlign: "right" }}>{(stats.duration || 1.0).toFixed(2)}x</span>
+        <span>📏 Area:</span>
+        <span style={{ textAlign: "right" }}>{(stats.area || 1.0).toFixed(2)}x</span>
+        <span>⏱️ CD Reduc:</span>
+        <span style={{ textAlign: "right" }}>-{(stats.cooldown * 100).toFixed(0)}%</span>
+        <span>🔢 Amount:</span>
+        <span style={{ textAlign: "right" }}>+{stats.amount || 0}</span>
+        <span>🍀 Luck:</span>
+        <span style={{ textAlign: "right" }}>{(stats.luck || 1.0).toFixed(2)}x</span>
+        <span>🔄 Revival:</span>
+        <span style={{ textAlign: "right" }}>{stats.revival || 0}</span>
+        <span>🧲 Magnet:</span>
+        <span style={{ textAlign: "right" }}>{stats.pickupRange}px</span>
       </div>
 
       {tailInfo.length > 0 && (

@@ -180,6 +180,41 @@ export const createProjectile = (
         // Wind Trail / Glow
         ctx.shadowBlur = 15;
         ctx.shadowColor = "#00BFFF";
+      } else if (type === ElementType.ICE) {
+        // --- Ice Shard / Crystal Drawing ---
+        ctx.translate(this.position.x, this.position.y);
+        ctx.rotate(this.angle || 0);
+
+        // 얼음 결정 (십자 + X자 형태)
+        const size = (this as any).radius || 10;
+
+        ctx.beginPath();
+        // Main Crystal Body (Rhombus/Shard)
+        ctx.moveTo(size, 0);
+        ctx.lineTo(size * 0.3, size * 0.3);
+        ctx.lineTo(0, size); // Tip
+        ctx.lineTo(-size * 0.3, size * 0.3);
+        ctx.lineTo(-size, 0);
+        ctx.lineTo(-size * 0.3, -size * 0.3);
+        ctx.lineTo(0, -size); // Top Tip
+        ctx.lineTo(size * 0.3, -size * 0.3);
+        ctx.closePath();
+
+        // Inner Gradient
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+        g.addColorStop(0, "#ffffff");
+        g.addColorStop(0.5, "#aaddff");
+        g.addColorStop(1, "#0088ff");
+
+        ctx.fillStyle = g;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#00ffff";
+        ctx.fill();
+
+        // Sharp Outline
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
       } else if (type === ElementType.POISON && (this as any).behavior === "BOTTLE") {
         // --- Poison Bottle Drawing (원근법 적용) ---
         const p = this as any;

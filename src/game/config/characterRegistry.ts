@@ -23,12 +23,19 @@ export interface CharacterDefinition {
     maxHp: number;
     atk: number;
     def: number;
-    speed: number;
+    moveSpeed: number; // Renamed from speed
     fireRate: number;
+    projectileSpeed: number;
+    duration: number;
+    area: number;
+    cooldown: number;
+    amount: number;
+    luck: number;
+    revival: number;
+    pickupRange: number;
     xp: number;
     maxXp: number;
     level: number;
-    pickupRange: number;
     gold: number;
   };
 }
@@ -39,18 +46,25 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "테스트",
     description: "테스트 캐릭터",
     icon: "⚔️",
-    startWeaponIds: ["W06"],
+    startWeaponIds: ["W02"],
     baseStats: {
       hp: 150,
       maxHp: 150,
-      atk: 1.5,
+      atk: 1.5, // 높은 공격력
       def: 5,
-      speed: 1.1,
+      moveSpeed: 1.1,
       fireRate: 1.0,
+      projectileSpeed: 1.0,
+      duration: 1.0,
+      area: 1.0,
+      cooldown: 0,
+      amount: 0,
+      luck: 1.0,
+      revival: 0,
       xp: 0,
       maxXp: 100,
       level: 1,
-      pickupRange: 150,
+      pickupRange: 80, // 하향
       gold: 0,
     },
     startPassiveIds: ["P01"],
@@ -66,6 +80,26 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     startPassiveIds: ["P01"],
     unlocked: true,
     visual: { primary: "#8B9DC3", secondary: "#5C6B8A", eye: "#FFFFFF" },
+    baseStats: {
+      hp: 100,
+      maxHp: 100,
+      atk: 1.0,
+      def: 0,
+      moveSpeed: 1.0,
+      fireRate: 1.0,
+      projectileSpeed: 1.0,
+      duration: 1.0,
+      area: 1.0,
+      cooldown: 0,
+      amount: 0,
+      luck: 1.0,
+      revival: 0,
+      xp: 0,
+      maxXp: 100,
+      level: 1,
+      pickupRange: 50,
+      gold: 0,
+    },
   },
 
   FIRE_MAGE: {
@@ -77,6 +111,26 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     startPassiveIds: ["P01"],
     unlocked: true,
     visual: { primary: "#FF6B4A", secondary: "#CC4422", eye: "#FFEE00" },
+    baseStats: {
+      hp: 80,
+      maxHp: 80,
+      atk: 1.2,
+      def: 0,
+      moveSpeed: 0.9,
+      fireRate: 1.0,
+      projectileSpeed: 1.0,
+      duration: 1.0,
+      area: 1.1, // 넓은 범위
+      cooldown: 0,
+      amount: 0,
+      luck: 1.0,
+      revival: 0,
+      xp: 0,
+      maxXp: 100,
+      level: 1,
+      pickupRange: 50,
+      gold: 0,
+    },
   },
 
   FROST_MAGE: {
@@ -88,6 +142,26 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     startPassiveIds: ["P03"],
     unlocked: true,
     visual: { primary: "#6EC6FF", secondary: "#3498DB", eye: "#FFFFFF" },
+    baseStats: {
+      hp: 90,
+      maxHp: 90,
+      atk: 1.0,
+      def: 1,
+      moveSpeed: 0.9,
+      fireRate: 1.0,
+      projectileSpeed: 1.0,
+      duration: 1.2, // 긴 지속 시간
+      area: 1.1,
+      cooldown: 0,
+      amount: 0,
+      luck: 1.0,
+      revival: 0,
+      xp: 0,
+      maxXp: 100,
+      level: 1,
+      pickupRange: 50,
+      gold: 0,
+    },
   },
 
   WIND_RANGER: {
@@ -99,6 +173,26 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     startPassiveIds: ["P05"],
     unlocked: true,
     visual: { primary: "#7ED321", secondary: "#4A9010", eye: "#FFFFFF" },
+    baseStats: {
+      hp: 80,
+      maxHp: 80,
+      atk: 1.1,
+      def: 0,
+      moveSpeed: 1.2, // 빠른 이속
+      fireRate: 1.1, // 빠른 공속
+      projectileSpeed: 1.3, // 매우 빠른 투사체
+      duration: 1.0,
+      area: 1.0,
+      cooldown: 0,
+      amount: 0,
+      luck: 1.0,
+      revival: 0,
+      xp: 0,
+      maxXp: 100,
+      level: 1,
+      pickupRange: 60,
+      gold: 0,
+    },
   },
 
   SPEEDSTER: {
@@ -111,6 +205,26 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     unlocked: false,
     unlockCondition: "15분 생존 성공",
     visual: { primary: "#FFD93D", secondary: "#F39C12", eye: "#FFFFFF" },
+    baseStats: {
+      hp: 70,
+      maxHp: 70,
+      atk: 0.8,
+      def: 0,
+      moveSpeed: 1.5, // 극단적인 이속
+      fireRate: 1.2,
+      projectileSpeed: 1.0,
+      duration: 1.0,
+      area: 1.0,
+      cooldown: 0.1, // 쿨감 10%
+      amount: 0,
+      luck: 1.0,
+      revival: 0,
+      xp: 0,
+      maxXp: 100,
+      level: 1,
+      pickupRange: 100,
+      gold: 0,
+    },
   },
 
   TANK: {
@@ -123,6 +237,26 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     unlocked: false,
     unlockCondition: "한 게임에서 누적 1000 데미지 받기",
     visual: { primary: "#9B59B6", secondary: "#6C3483", eye: "#FFFFFF" },
+    baseStats: {
+      hp: 200,
+      maxHp: 200,
+      atk: 0.8,
+      def: 5, // 높은 방어
+      moveSpeed: 0.8, // 느린 이속
+      fireRate: 0.8,
+      projectileSpeed: 1.0,
+      duration: 1.0,
+      area: 1.2, // 넓은 범위 (덩치값)
+      cooldown: 0,
+      amount: 0,
+      luck: 1.0,
+      revival: 0,
+      xp: 0,
+      maxXp: 100,
+      level: 1,
+      pickupRange: 50,
+      gold: 0,
+    },
   },
 
   ELEMENTALIST: {
@@ -135,6 +269,26 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     unlocked: false,
     unlockCondition: "화염, 얼음, 전기 무기 모두 진화",
     visual: { primary: "#E056FD", secondary: "#9B2CF0", eye: "#00FFFF" },
+    baseStats: {
+      hp: 100,
+      maxHp: 100,
+      atk: 1.0,
+      def: 0,
+      moveSpeed: 1.0,
+      fireRate: 1.0,
+      projectileSpeed: 1.0,
+      duration: 1.1,
+      area: 1.1,
+      cooldown: 0.05,
+      amount: 1, // 기본 투사체 +1 !
+      luck: 1.0,
+      revival: 0,
+      xp: 0,
+      maxXp: 100,
+      level: 1,
+      pickupRange: 50,
+      gold: 0,
+    },
   },
 
   GAMBLER: {
@@ -147,6 +301,26 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     unlocked: false,
     unlockCondition: "누적 5000 골드 획득",
     visual: { primary: "#1ABC9C", secondary: "#16A085", eye: "#FFD700" },
+    baseStats: {
+      hp: 100,
+      maxHp: 100,
+      atk: 1.0,
+      def: 0,
+      moveSpeed: 1.0,
+      fireRate: 1.0,
+      projectileSpeed: 1.0,
+      duration: 1.0,
+      area: 1.0,
+      cooldown: 0,
+      amount: 0,
+      luck: 1.5, // 행운 50% 증가
+      revival: 1, // 부활 1회
+      xp: 0,
+      maxXp: 100,
+      level: 1,
+      pickupRange: 50,
+      gold: 0,
+    },
   },
   GOD: {
     id: "GOD",

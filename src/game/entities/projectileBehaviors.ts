@@ -522,6 +522,7 @@ const updateHoming: BehaviorFunction = (proj, dt) => {
 
   // 3. Move forward
   const angle = proj.angle || 0;
+  proj.position.x += Math.cos(angle) * speed * dt; // 누락된 X축 이동 추가
   proj.position.y += Math.sin(angle) * speed * dt;
 };
 

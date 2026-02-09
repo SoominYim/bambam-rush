@@ -136,6 +136,44 @@ export const updateCombat = (_deltaTime: number) => {
           }
         }
 
+        if (p.type === ElementType.ICE) {
+          const chillAmount = (p as any).chillAmount || 0.3;
+          const chillDuration = (p as any).chillDuration || 3000;
+          const freezeDuration = (p as any).freezeDuration || 0;
+
+          // 빙결 적용
+          if (freezeDuration > 0) {
+            const existingFreeze = e.statusEffects.find(eff => eff.type === StatusEffectType.FREEZE);
+            if (existingFreeze) {
+              existingFreeze.duration = Math.max(existingFreeze.duration, freezeDuration);
+            } else {
+              e.statusEffects.push({
+                type: StatusEffectType.FREEZE,
+                damage: 0,
+                duration: freezeDuration,
+                lastTick: Date.now(),
+                tickInterval: 999999,
+              });
+            }
+          }
+
+          // 둔화 적용
+          const existingChill = e.statusEffects.find(eff => eff.type === StatusEffectType.CHILL);
+          if (existingChill) {
+            existingChill.duration = Math.max(existingChill.duration, chillDuration);
+            if (chillAmount > (existingChill.value || 0)) existingChill.value = chillAmount;
+          } else {
+            e.statusEffects.push({
+              type: StatusEffectType.CHILL,
+              damage: 0,
+              duration: chillDuration,
+              lastTick: Date.now(),
+              tickInterval: 999999,
+              value: chillAmount,
+            });
+          }
+        }
+
         // --- Explosion Logic ---
         if ((p as any).explosionRadius && (p as any).explosionRadius > 0) {
           const radius = (p as any).explosionRadius;
@@ -168,6 +206,42 @@ export const updateCombat = (_deltaTime: number) => {
                   duration: burnDuration,
                   lastTick: Date.now(),
                   tickInterval: 500,
+                });
+              }
+            }
+
+            if (p.type === ElementType.ICE) {
+              const chillAmount = (p as any).chillAmount || 0.3;
+              const chillDuration = (p as any).chillDuration || 3000;
+              const freezeDuration = (p as any).freezeDuration || 0;
+
+              // Freeze Transfer
+              if (freezeDuration > 0) {
+                const nFreeze = neighbor.statusEffects.find(eff => eff.type === StatusEffectType.FREEZE);
+                if (nFreeze) nFreeze.duration = Math.max(nFreeze.duration, freezeDuration);
+                else
+                  neighbor.statusEffects.push({
+                    type: StatusEffectType.FREEZE,
+                    damage: 0,
+                    duration: freezeDuration,
+                    lastTick: Date.now(),
+                    tickInterval: 999999,
+                  });
+              }
+
+              // Chill Transfer
+              const nChill = neighbor.statusEffects.find(eff => eff.type === StatusEffectType.CHILL);
+              if (nChill) {
+                nChill.duration = Math.max(nChill.duration, chillDuration);
+                if (chillAmount > (nChill.value || 0)) nChill.value = chillAmount;
+              } else {
+                neighbor.statusEffects.push({
+                  type: StatusEffectType.CHILL,
+                  damage: 0,
+                  duration: chillDuration,
+                  lastTick: Date.now(),
+                  tickInterval: 999999,
+                  value: chillAmount,
                 });
               }
             }

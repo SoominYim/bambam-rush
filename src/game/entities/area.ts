@@ -20,6 +20,14 @@ export interface Area extends GameObject {
   driftSpeed?: number; // DRIFT용
   driftAngle?: number; // DRIFT용
   isTrapArmed?: boolean; // TRAP용
+
+  // 상태 이상 속성
+  startTime: number;
+  chillAmount?: number;
+  chillDuration?: number;
+  freezeDuration?: number;
+
+  applyEffect: () => void;
 }
 
 export const createArea = (
@@ -32,6 +40,9 @@ export const createArea = (
     radius: number;
     duration: number;
     tickRate?: number;
+    chillAmount?: number;
+    chillDuration?: number;
+    freezeDuration?: number;
   },
 ): Area => {
   return {
@@ -43,6 +54,9 @@ export const createArea = (
     damage: stats.damage,
     duration: stats.duration,
     tickRate: stats.tickRate || 200, // 기본 0.2초마다 틱
+    chillAmount: stats.chillAmount,
+    chillDuration: stats.chillDuration,
+    freezeDuration: stats.freezeDuration,
     startTime: Date.now(),
     lastTick: 0,
     isExpired: false,
@@ -264,6 +278,45 @@ export const createArea = (
               lastTick: Date.now(),
               tickInterval: 500,
             });
+          }
+
+          // 4. ICE 상태 효과 적용 (빙결/둔화)
+          if (this.type === ElementType.ICE) {
+            const chillAmount = this.chillAmount || 0.3;
+            const chillDuration = this.chillDuration || 3000;
+            const freezeDuration = this.freezeDuration || 0;
+
+            // 빙결
+            if (freezeDuration > 0) {
+              const existingFreeze = enemy.statusEffects.find(eff => eff.type === ("FREEZE" as any));
+              if (existingFreeze) {
+                existingFreeze.duration = Math.max(existingFreeze.duration, freezeDuration);
+              } else {
+                enemy.statusEffects.push({
+                  type: "FREEZE" as any,
+                  damage: 0,
+                  duration: freezeDuration,
+                  lastTick: Date.now(),
+                  tickInterval: 999999,
+                });
+              }
+            }
+
+            // 둔화
+            const existingChill = enemy.statusEffects.find(eff => eff.type === ("CHILL" as any));
+            if (existingChill) {
+              existingChill.duration = Math.max(existingChill.duration, chillDuration);
+              if (chillAmount > (existingChill.value || 0)) existingChill.value = chillAmount;
+            } else {
+              enemy.statusEffects.push({
+                type: "CHILL" as any,
+                damage: 0,
+                duration: chillDuration,
+                lastTick: Date.now(),
+                tickInterval: 999999,
+                value: chillAmount,
+              });
+            }
           }
         }
       });

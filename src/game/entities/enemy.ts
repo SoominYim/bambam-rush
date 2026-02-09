@@ -65,12 +65,24 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
       const dy = player.position.y - this.position.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
+      // Status Effects Check (Movement)
+      const isFrozen = this.statusEffects.some(e => e.type === ("FREEZE" as any));
+      const chillEffect = this.statusEffects.find(e => e.type === ("CHILL" as any));
+
+      let currentSpeed = this.speed;
+      if (isFrozen) {
+        currentSpeed *= 0.6; // 빙결 시 40% 감속 (완화됨)
+      }
+      if (chillEffect) {
+        currentSpeed *= 1 - (chillEffect.value || 0.3); // 둔화 적용
+      }
+
       if (dist > 5) {
         const moveX = dx / dist;
         const moveY = dy / dist;
 
-        this.position.x += moveX * this.speed * deltaTime;
-        this.position.y += moveY * this.speed * deltaTime;
+        this.position.x += moveX * currentSpeed * deltaTime;
+        this.position.y += moveY * currentSpeed * deltaTime;
       }
 
       // --- Status Effects Processing ---
@@ -131,7 +143,18 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
       const isBurning = this.statusEffects.some(e => e.type === ("BURN" as any));
       const isPoisoned = this.statusEffects.some(e => e.type === ("POISON" as any));
 
-      if (isPoisoned) {
+      const isFrozen = this.statusEffects.some(e => e.type === ("FREEZE" as any));
+      const isChilled = this.statusEffects.some(e => e.type === ("CHILL" as any));
+
+      if (isFrozen) {
+        ctx.fillStyle = "#00ffff"; // 빙결 시 밝은 청록
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#0088ff";
+      } else if (isChilled) {
+        ctx.fillStyle = "#0088ff"; // 둔화 시 파랑
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = "#00ffff";
+      } else if (isPoisoned) {
         ctx.fillStyle = "#aa00ff"; // 독 중독 시 보라색
         ctx.shadowBlur = 10;
         ctx.shadowColor = "#8800ff";

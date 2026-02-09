@@ -54,6 +54,9 @@ export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
       if (scale.explosionRadius) stats.explosionRadius = (stats.explosionRadius || 0) + scale.explosionRadius;
       if (scale.chainCount) stats.chainCount = (stats.chainCount || 0) + scale.chainCount;
       if (scale.chainRange) stats.chainRange = (stats.chainRange || 0) + scale.chainRange;
+      if (scale.freezeDuration) stats.freezeDuration = (stats.freezeDuration || 0) + scale.freezeDuration;
+      if (scale.chillAmount) stats.chillAmount = (stats.chillAmount || 0) + scale.chillAmount;
+      if (scale.chillDuration) stats.chillDuration = (stats.chillDuration || 0) + scale.chillDuration;
     }
   }
 
@@ -67,8 +70,12 @@ export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
       case "P01": // Might (Damage)
         stats.damage *= 1 + pVal;
         break;
-      case "P02": // Attack Speed Increase
-        stats.attackSpeed *= 1 + pVal;
+      case "P02": // Attack Speed Increase (Cooldown Reduction)
+        // pVal is negative (e.g. -0.1 for 10% cooldown reduction)
+        // Cooldown * (1 + pVal) -> AttackSpeed * (1 / (1 + pVal))
+        if (1 + pVal > 0) {
+          stats.attackSpeed *= 1 / (1 + pVal);
+        }
         break;
       case "P05": // Speed
         stats.speed = (stats.speed || 0) * (1 + pVal);
@@ -86,8 +93,30 @@ export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
     }
   });
   // 3. Player Base Stats Scaling (FireRate / Speed)
-  stats.attackSpeed *= player.stats.fireRate;
-  if (stats.speed) stats.speed *= player.stats.fireRate;
+  // 3. Player Base Stats Scaling
+  stats.attackSpeed *= player.stats.fireRate || 1.0;
+  // Cooldown Reduction (Increase Attack Speed)
+  if (player.stats.cooldown) {
+    stats.attackSpeed *= 1 + player.stats.cooldown;
+  }
+
+  // Projectile Speed
+  if (stats.speed) stats.speed *= player.stats.projectileSpeed || 1.0;
+
+  // Area / Size / Range
+  const areaMult = player.stats.area || 1.0;
+  stats.size *= areaMult;
+  if (stats.range) stats.range *= areaMult;
+  if (stats.explosionRadius) stats.explosionRadius *= areaMult; // 폭발 범위도 적용
+
+  // Duration
+  if (stats.duration) stats.duration *= player.stats.duration || 1.0;
+  if (stats.burnDuration) stats.burnDuration *= player.stats.duration || 1.0;
+  if (stats.freezeDuration) stats.freezeDuration *= player.stats.duration || 1.0;
+  if (stats.chillDuration) stats.chillDuration *= player.stats.duration || 1.0;
+
+  // Amount (Additional Projectiles)
+  if (stats.count) stats.count += player.stats.amount || 0;
 
   stats.attackSpeed = Math.max(0, stats.attackSpeed);
   return stats;
@@ -267,6 +296,9 @@ const fireProjectile = (
     (proj as any).burnDuration = stats.burnDuration;
     (proj as any).range = stats.range || 800; // 사거리 전달 (기본 800)
     (proj as any).explosionRadius = stats.explosionRadius || 0; // 폭발 반경 전달
+    (proj as any).chillAmount = stats.chillAmount;
+    (proj as any).chillDuration = stats.chillDuration;
+    (proj as any).freezeDuration = stats.freezeDuration;
     addProjectile(proj);
   }
 };
@@ -290,6 +322,9 @@ const fireLine = (_player: Player, origin: Vector2D, stats: any, type: any) => {
     (proj as any).burnDuration = stats.burnDuration;
     (proj as any).range = stats.range || 800; // 사거리 전달 (기본 800)
     (proj as any).explosionRadius = stats.explosionRadius || 0; // 폭발 반경 전달
+    (proj as any).chillAmount = stats.chillAmount;
+    (proj as any).chillDuration = stats.chillDuration;
+    (proj as any).freezeDuration = stats.freezeDuration;
     addProjectile(proj);
   }
 };
@@ -459,6 +494,9 @@ const fireReturn = (origin: Vector2D, stats: any, type: any) => {
     (proj as any).radius = stats.size;
     proj.penetration = stats.pierce || 1; // 기본 관통 1, 부메랑은 999
     (proj as any).hitInterval = 150; // 다단 히트 간격 설정
+    (proj as any).chillAmount = stats.chillAmount;
+    (proj as any).chillDuration = stats.chillDuration;
+    (proj as any).freezeDuration = stats.freezeDuration;
     addProjectile(proj);
   }
 };
@@ -478,6 +516,9 @@ const fireSpread = (_player: Player, origin: Vector2D, stats: any, type: any) =>
     proj.damage = stats.damage;
     (proj as any).radius = stats.size;
     proj.penetration = stats.pierce || 1;
+    (proj as any).chillAmount = stats.chillAmount;
+    (proj as any).chillDuration = stats.chillDuration;
+    (proj as any).freezeDuration = stats.freezeDuration;
     addProjectile(proj);
   }
 };
@@ -493,6 +534,9 @@ const fireLinear = (_player: Player, origin: Vector2D, stats: any, type: any) =>
     proj.damage = stats.damage;
     (proj as any).radius = stats.size;
     proj.penetration = stats.pierce || 2;
+    (proj as any).chillAmount = stats.chillAmount;
+    (proj as any).chillDuration = stats.chillDuration;
+    (proj as any).freezeDuration = stats.freezeDuration;
     addProjectile(proj);
   }
 };
@@ -526,6 +570,9 @@ const spawnArea = (_player: Player, origin: Vector2D, stats: any, type: any, beh
         radius: stats.size,
         duration: stats.duration || 3000,
         tickRate: 200,
+        chillAmount: stats.chillAmount,
+        chillDuration: stats.chillDuration,
+        freezeDuration: stats.freezeDuration,
       };
       addProjectile(proj);
     }
@@ -562,6 +609,9 @@ const spawnArea = (_player: Player, origin: Vector2D, stats: any, type: any, beh
       radius: stats.size,
       duration: stats.duration || 3000,
       tickRate: 200, // 0.2s default
+      chillAmount: stats.chillAmount,
+      chillDuration: stats.chillDuration,
+      freezeDuration: stats.freezeDuration,
     });
 
     // 특수 속성 설정

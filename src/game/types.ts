@@ -53,15 +53,25 @@ export interface PlayerStats {
   maxHp: number;
   atk: number;
   def: number;
-  fireRate: number;
-  // Roguelike Stats
+  fireRate: number; // Attack Speed Multiplier
+  moveSpeed: number; // Movement Speed
+
+  // Roguelike Stats (Multipliers & Additives)
+  projectileSpeed: number; // Projectile Speed Multiplier (Default 1.0)
+  duration: number; // Duration Multiplier (Default 1.0)
+  area: number; // Area Size Multiplier (Default 1.0)
+  cooldown: number; // Cooldown Reduction (0.0 ~ 1.0, Default 0)
+  amount: number; // Additional Projectiles (Default 0)
+  luck: number; // Luck (Crit Chance etc, Default 1.0)
+  revival: number; // Revives Count
+
+  // Growth
   xp: number;
   maxXp: number;
   level: number;
   gold: number; // Gold collected this run
   pickupRange: number; // Magnet Range
   hpRegen: number; // HP per sec
-  speed?: number; // Movement Speed Multiplier (added for Debug/Upgrades)
 }
 
 export interface Player extends GameObject {
@@ -147,6 +157,7 @@ export enum StatusEffectType {
   CHILL = "CHILL",
   SHOCK = "SHOCK",
   POISON = "POISON",
+  FREEZE = "FREEZE",
 }
 
 export interface StatusEffect {
@@ -155,6 +166,7 @@ export interface StatusEffect {
   duration: number; // 남은 시간 (ms)
   lastTick: number; // 마지막 데미지 시각
   tickInterval: number; // 데미지 주기 (ms)
+  value?: number; // 둔화율 등 (0.0 ~ 1.0)
 }
 
 export interface Enemy extends GameObject {
@@ -177,6 +189,11 @@ export interface Projectile extends GameObject {
   angle?: number; // 오비탈 현재 각도
   owner?: GameObject; // 소유자 (플레이어 또는 꼬리)
   weaponId?: string; // 무기 ID
+
+  // 상태 이상 속성
+  chillAmount?: number;
+  chillDuration?: number;
+  freezeDuration?: number;
 
   // Hit Logic (Default: 200ms)
   hitTracker?: Record<string, number>;

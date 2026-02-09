@@ -25,23 +25,35 @@ export const resetPositionHistory = () => {
 };
 
 import { ELEMENT_STYLES } from "@/game/config/elementStyles";
+import { CHARACTER_REGISTRY } from "@/game/config/characterRegistry";
 
 export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string = "BASIC"): Player => {
   positionHistory = [{ x: startX, y: startY }];
 
+  const charDef = CHARACTER_REGISTRY[characterId] || CHARACTER_REGISTRY.BASIC;
+
   const stats: PlayerStats = {
-    hp: CONFIG.PLAYER_BASE_HP,
-    maxHp: CONFIG.PLAYER_BASE_HP,
-    atk: CONFIG.PLAYER_BASE_ATK,
-    def: CONFIG.PLAYER_BASE_DEF,
-    fireRate: CONFIG.PLAYER_BASE_FIRE_RATE,
-    // Roguelike Stats
+    ...charDef.baseStats!,
+    // Ensure all required fields exist (fallback)
+    hp: charDef.baseStats?.hp || CONFIG.PLAYER_BASE_HP,
+    maxHp: charDef.baseStats?.maxHp || CONFIG.PLAYER_BASE_HP,
+    atk: charDef.baseStats?.atk || CONFIG.PLAYER_BASE_ATK,
+    def: charDef.baseStats?.def || CONFIG.PLAYER_BASE_DEF,
+    fireRate: charDef.baseStats?.fireRate || CONFIG.PLAYER_BASE_FIRE_RATE,
+    moveSpeed: charDef.baseStats?.moveSpeed || 1.0,
+    projectileSpeed: charDef.baseStats?.projectileSpeed || 1.0,
+    duration: charDef.baseStats?.duration || 1.0,
+    area: charDef.baseStats?.area || 1.0,
+    cooldown: charDef.baseStats?.cooldown || 0,
+    amount: charDef.baseStats?.amount || 0,
+    luck: charDef.baseStats?.luck || 1.0,
+    revival: charDef.baseStats?.revival || 0,
     xp: 0,
-    maxXp: 100, // Initial XP required for level 2
+    maxXp: 100,
     level: 1,
     gold: 0,
-    pickupRange: 60, // Magnet range (base)
-    hpRegen: 0.5, // 0.5 HP per second base
+    pickupRange: charDef.baseStats?.pickupRange || 60,
+    hpRegen: 0.5,
   };
 
   const player: Player = {
@@ -56,7 +68,7 @@ export const createPlayer = (startX: Scalar, startY: Scalar, characterId: string
 
     update: function (deltaTime: Scalar) {
       const inputDir = getMovementDirection();
-      const speedMult = this.stats.speed || 1.0;
+      const speedMult = this.stats.moveSpeed || 1.0;
 
       // 1. Direction Interpolation (Snake.io Core)
       // If there's input, gradually turn towards it.

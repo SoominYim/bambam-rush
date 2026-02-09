@@ -21,6 +21,9 @@ export interface WeaponLevelScale {
   explosionRadius?: number; // 폭발 반경
   chainCount?: number; // 전이 횟수
   chainRange?: number; // 전이 범위
+  freezeDuration?: number; // 빙결 지속 시간
+  chillAmount?: number; // 둔화율 (0.0 ~ 1.0)
+  chillDuration?: number; // 둔화 지속 시간
   description?: string;
 }
 
@@ -71,6 +74,9 @@ export interface WeaponDefinition {
     explosionRadius?: number;
     chainCount?: number;
     chainRange?: number;
+    freezeDuration?: number;
+    chillAmount?: number;
+    chillDuration?: number;
   };
   levels: Record<number, WeaponLevelScale>;
   evolution?: {
@@ -269,18 +275,33 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     id: "W07",
     name: "서리 폭발",
     icon: WEAPON_ICONS.FROST_NOVA,
-    description: "플레이어 주변 폭발, 적 빙결",
-    pattern: "nova",
+    description: "적중 시 폭발하여 주변을 얼리는 얼음 보주 발사",
+    pattern: "projectile", // 투사체로 변경
     tags: [ElementType.ICE],
-    baseStats: { damage: 40, attackSpeed: 0.2, count: 1, size: 120, duration: 1000 },
+    baseStats: {
+      damage: 30,
+      attackSpeed: 0.8,
+      count: 1,
+      size: 20, // 투사체 크기
+      speed: 400,
+      explosionRadius: 80, // 폭발 반경
+      chillAmount: 0.1, // 초반엔 10% 둔화 (약함)
+      chillDuration: 3000,
+    },
     levels: {
       2: { damage: 10, description: "데미지 +10" },
-      3: { size: 20, description: "범위 +20" },
-      4: { attackSpeed: 0.02, description: "공격 속도 증가" },
-      5: { damage: 15, description: "데미지 +15" },
-      6: { size: 40, description: "범위 +40" },
-      7: { attackSpeed: 0.03, description: "공격 속도 증가" },
-      8: { damage: 30, size: 60, description: "MAX: 데미지 +30, 범위 +60" },
+      3: { explosionRadius: 40, chillAmount: 0.1, description: "폭발 범위 +40, 둔화 +10%" },
+      4: { attackSpeed: 0.2, description: "공격 속도 증가" },
+      5: { freezeDuration: 1000, description: "빙결 효과 추가 (1초)" }, // 5렙부터 얼음!
+      6: { explosionRadius: 50, description: "폭발 범위 +50" },
+      7: { count: 1, description: "투사체 +1" },
+      8: {
+        damage: 30,
+        explosionRadius: 60,
+        chillAmount: 0.2, // 총 40% (0.1+0.1+0.2)
+        freezeDuration: 500, // 총 1.5초
+        description: "MAX: 절대 영도 (강력한 빙결)",
+      },
     },
     evolution: {
       requiredPassive: "P03",
