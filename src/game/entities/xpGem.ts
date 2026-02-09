@@ -54,7 +54,7 @@ export class XPGemInstance implements XPGem {
 
       // Minimum speed floor: Ensure it's always at least as fast as the player + a margin
       // This prevents the "falling behind" feeling when the player moves away.
-      const playerSpeed = 180 * (player.stats.speed || 1);
+      const playerSpeed = 180 * (player.stats.moveSpeed || 1);
       const minSpeed = playerSpeed * 1.2;
 
       if (this.speed < minSpeed) {

@@ -93,7 +93,7 @@ export const DebugUI: React.FC<DebugUIProps> = memo(({ stats: initialStats }) =>
           HP: {Math.floor(displayStats.hp)}/{displayStats.maxHp}
         </div>
         <div>ATK: {displayStats.atk.toFixed(2)}</div>
-        <div>SPD: {(displayStats.speed || 1).toFixed(2)}</div>
+        <div>SPD: {(displayStats.moveSpeed || 1).toFixed(2)}</div>
         <div>REG: {displayStats.hpRegen.toFixed(1)}/s</div>
         <div>MAG: {displayStats.pickupRange.toFixed(0)}</div>
         <div>DEF: {displayStats.def.toFixed(1)}</div>
@@ -139,15 +139,15 @@ export const DebugUI: React.FC<DebugUIProps> = memo(({ stats: initialStats }) =>
 
           {/* SPD Row */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>SPD ({(displayStats.speed || 1).toFixed(2)})</span>
+            <span>SPD ({(displayStats.moveSpeed || 1).toFixed(2)})</span>
             <div style={{ display: "flex", gap: "2px" }}>
               <button
                 style={btnStyle}
-                onClick={() => (player.stats.speed = Math.max(0.1, (player.stats.speed || 1) - 0.1))}
+                onClick={() => (player.stats.moveSpeed = Math.max(0.1, (player.stats.moveSpeed || 1) - 0.1))}
               >
                 -0.1
               </button>
-              <button style={btnStyle} onClick={() => (player.stats.speed = (player.stats.speed || 1) + 0.1)}>
+              <button style={btnStyle} onClick={() => (player.stats.moveSpeed = (player.stats.moveSpeed || 1) + 0.1)}>
                 +0.1
               </button>
             </div>
