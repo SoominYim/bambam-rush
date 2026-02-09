@@ -12,6 +12,8 @@ export const createBoss = (x: Scalar, y: Scalar): Enemy => {
     maxHp: CONFIG.ENEMY_BASE_HP * 50,
     speed,
     damage: CONFIG.ENEMY_DAMAGE * 3, // 3x Damage
+    defense: 10, // 보스는 높은 방어력을 가짐
+    statusEffects: [], // 상태 효과 배열 초기화
     isExpired: false,
     type: EnemyType.BOSS,
 
