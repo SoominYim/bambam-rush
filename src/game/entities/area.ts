@@ -2,6 +2,7 @@ import { GameObject, ElementType, Player, Enemy } from "@/game/types";
 import { getPlayer } from "@/game/managers/state";
 import { spatialGrid } from "@/game/managers/grid";
 import { damageTextManager } from "@/game/managers/damageTextManager";
+import { VFXFactory } from "@/engine/vfx/VFXFactory";
 
 export type AreaBehavior = "STATIC" | "FOLLOW" | "VORTEX" | "DRIFT" | "TRAP";
 
@@ -88,13 +89,41 @@ export const createArea = (
         }
         this.position.x += Math.cos(this.driftAngle!) * this.driftSpeed * dt;
         this.position.y += Math.sin(this.driftAngle!) * this.driftSpeed * dt;
+      } else if (this.behavior === "TRAP") {
+        // TRAP 로직: 적이 밟으면 폭발
+        const nearby = spatialGrid.getNearbyEnemies(this.position.x, this.position.y, this.radius + 100) as Enemy[];
+        let triggered = false;
+
+        // Trigger check: 지뢰 반경 전체를 감지 범위로 사용
+        const triggerRadius = this.radius;
+
+        for (const enemy of nearby) {
+          if (enemy.isExpired) continue;
+          const dx = this.position.x - enemy.position.x;
+          const dy = this.position.y - enemy.position.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < triggerRadius + 20) {
+            // +20 for enemy size
+            triggered = true;
+            break;
+          }
+        }
+
+        if (triggered) {
+          this.applyEffect(); // Explode
+          this.isExpired = true; // Remove mine
+          return;
+        }
       }
 
-      // 틱 데미지 처리
-      const now = Date.now();
-      if (now - this.lastTick >= this.tickRate) {
-        this.lastTick = now;
-        this.applyEffect();
+      // 틱 데미지 처리 (TRAP은 위에서 처리하므로 제외)
+      if (this.behavior !== "TRAP") {
+        const now = Date.now();
+        if (now - this.lastTick >= this.tickRate) {
+          this.lastTick = now;
+          this.applyEffect();
+        }
       }
     },
 
@@ -119,12 +148,57 @@ export const createArea = (
         case ElementType.GRAVITY:
           color = "#220022";
           break;
+        case ElementType.PHYSICAL:
+          color = "#aaaaaa"; // Grey for physical
+          break;
       }
 
       // ==========================================
-      // [2] 독 웅덩이 특수 연출 (POISON)
+      // [TRAP] 지뢰 연출
       // ==========================================
-      if (this.type === ElementType.POISON) {
+      if (this.behavior === "TRAP") {
+        // Blinking effect
+        const blink = Math.sin(now / 100); // Fast blink
+        const alpha = 0.5 + blink * 0.3;
+
+        // Outer Ring
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, this.radius * 0.4, 0, Math.PI * 2); // Visual size smaller than blast area
+        ctx.fillStyle = "#333333";
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Inner Light
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, this.radius * 0.15, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 50, 50, ${alpha})`; // Red blink
+        ctx.fill();
+
+        // Spikes
+        const spikes = 8;
+        for (let i = 0; i < spikes; i++) {
+          const angle = (i / spikes) * Math.PI * 2 + now / 2000;
+          const rInner = this.radius * 0.4;
+          const rOuter = this.radius * 0.55;
+          ctx.beginPath();
+          ctx.moveTo(this.position.x + Math.cos(angle) * rInner, this.position.y + Math.sin(angle) * rInner);
+          ctx.lineTo(this.position.x + Math.cos(angle) * rOuter, this.position.y + Math.sin(angle) * rOuter);
+          ctx.strokeStyle = "#555";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        // Trigger Range Indicator (faint)
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, this.radius * 0.7, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 0, 0, 0.2)";
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else if (this.type === ElementType.POISON) {
+        // ... (Existing POISON logic)
         // --- 웅덩이 베이스 (강렬한 원형 + 리플 애니메이션) ---
         const startTime = (this as any).startTime || now;
         const elapsed = now - startTime;
@@ -225,6 +299,16 @@ export const createArea = (
 
     // 효과 적용 메서드 (메서드 분리)
     applyEffect: function () {
+      // For TRAP, this is an explosion (Instant massive damage)
+      // For others, it's a tick.
+
+      // TRAP 폭발 시각 효과
+      if (this.behavior === "TRAP") {
+        const explosionRadius = Math.min(this.radius * 5, 150); // 최대 150으로 제한
+        const explosionScale = explosionRadius / 50; // VFX 크기 조정
+        VFXFactory.createExplosion(this.position.x, this.position.y, this.type, 30, explosionScale);
+      }
+
       const nearby = spatialGrid.getNearbyEnemies(this.position.x, this.position.y, this.radius + 100) as Enemy[];
 
       if (this.behavior === "VORTEX") {
@@ -243,6 +327,9 @@ export const createArea = (
         });
       }
 
+      // TRAP 폭발 범위 (레벨업으로 과도하게 커지지 않도록 제한)
+      const damageRadius = this.behavior === "TRAP" ? Math.min(this.radius * 5, 150) : this.radius;
+
       // 데미지 입히기
       nearby.forEach(enemy => {
         if (enemy.isExpired) return;
@@ -251,7 +338,7 @@ export const createArea = (
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         // 적의 히트박스(대략 20)를 고려하여 판정
-        if (dist <= this.radius + 20) {
+        if (dist <= damageRadius + 20) {
           // 1. 데미지 적용 (방어력 계산)
           const def = (enemy as any).defense || 0;
           const finalDamage = Math.max(1, this.damage - def);
@@ -259,25 +346,28 @@ export const createArea = (
           enemy.hp -= finalDamage;
 
           // 2. 데미지 텍스트 표시
-          damageTextManager.show(enemy.position.x, enemy.position.y, finalDamage, false);
+          damageTextManager.show(enemy.position.x, enemy.position.y, finalDamage, finalDamage > 100);
 
           // 3. 중독 상태 효과 적용 (보라색 틴트용)
           // 기존 중독 효과 확인
-          const existingPoison = enemy.statusEffects.find(e => e.type === ("POISON" as any));
-          const poisonDamage = Math.max(1, Math.floor(this.damage * 0.3)); // 장판 데미지의 30%를 지속 피해로
+          if (this.type === ElementType.POISON) {
+            // ... Poison Logic ...
+            const existingPoison = enemy.statusEffects.find(e => e.type === ("POISON" as any));
+            const poisonDamage = Math.max(1, Math.floor(this.damage * 0.3));
 
-          if (existingPoison) {
-            existingPoison.duration = 2000; // 2초 유지
-            existingPoison.damage = poisonDamage;
-            existingPoison.lastTick = Date.now();
-          } else {
-            enemy.statusEffects.push({
-              type: "POISON" as any,
-              damage: poisonDamage,
-              duration: 2000,
-              lastTick: Date.now(),
-              tickInterval: 500,
-            });
+            if (existingPoison) {
+              existingPoison.duration = 2000;
+              existingPoison.damage = poisonDamage;
+              existingPoison.lastTick = Date.now();
+            } else {
+              enemy.statusEffects.push({
+                type: "POISON" as any,
+                damage: poisonDamage,
+                duration: 2000,
+                lastTick: Date.now(),
+                tickInterval: 500,
+              });
+            }
           }
 
           // 4. ICE 상태 효과 적용 (빙결/둔화)
