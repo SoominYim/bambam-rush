@@ -122,12 +122,31 @@ const updateOrbit: BehaviorFunction = (proj, dt) => {
     p.currentOrbitSpeed += (targetSpeed - p.currentOrbitSpeed) * 2.0 * dt;
   } else {
     // Standard Orbit Fallback
-    p.currentOrbitRadius = p.orbitRadius || 60;
-    p.currentOrbitSpeed = p.orbitSpeed || 3;
+    let baseRadius = p.orbitRadiusBase !== undefined ? p.orbitRadiusBase : 60;
+
+    // MAX 레벨(8) 특수 효과: 반경 진동 (바깥쪽으로만 확장)
+    if (p.currentLevel >= 8) {
+      const pulseSpeed = 4.0; // 진동 속도
+      const pulseAmount = 60; // 0 ~ 60 추가 (40 ~ 100 범위)
+      const timeSec = Date.now() / 1000;
+      // -1~1 -> 0~1 변환하여 기본 반경에 더함 (안쪽으로 침범 X)
+      const pulse01 = (Math.sin(timeSec * pulseSpeed) + 1) * 0.5;
+      baseRadius += pulse01 * pulseAmount;
+    }
+
+    p.currentOrbitRadius = baseRadius;
+    p.currentOrbitSpeed = p.orbitSpeed !== undefined ? p.orbitSpeed : 3;
   }
 
   // 3. Movement Update
-  p.orbitAngle = (p.orbitAngle || 0) + p.currentOrbitSpeed * dt;
+  // 시간 기반 절대 회전각 계산 (모든 구슬 동기화)
+  // W08 등 ORBIT 패턴의 무기는 속도가 일정하다고 가정하고 시간 기반으로 동기화
+  const timeSec = Date.now() / 1000;
+  const baseAngle = timeSec * (p.currentOrbitSpeed || 1);
+
+  // 슬롯별 오프셋 적용 (균등 배치를 위해)
+  const slotOffset = ((p.slotIndex || 0) / (p.slotTotal || 1)) * Math.PI * 2;
+  p.orbitAngle = baseAngle + slotOffset;
 
   proj.position.x = center.x + Math.cos(p.orbitAngle) * p.currentOrbitRadius;
   proj.position.y = center.y + Math.sin(p.orbitAngle) * p.currentOrbitRadius;

@@ -32,7 +32,7 @@ export const updateWeapons = (player: Player, deltaTime: Scalar) => {
 
 export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
   const def = WEAPON_REGISTRY[aw.id];
-  let stats = { ...def.baseStats };
+  let stats = { ...def.baseStats, currentLevel: aw.level };
 
   // 1. Level Scaling
   for (let lv = 2; lv <= aw.level; lv++) {
@@ -391,10 +391,11 @@ const fireOrbit = (player: Player, origin: Vector2D, stats: any, type: any, owne
           p.radius = stats.size;
           (p as any).orbitSpeedBase = stats.speed || 0.7;
           (p as any).stabRange = stats.range || 40;
-          (p as any).orbitRadiusBase = stats.orbitRadiusBase || 36;
-          (p as any).triggerRange = stats.triggerRange || 110;
+          (p as any).orbitRadiusBase = stats.orbitRadiusBase !== undefined ? stats.orbitRadiusBase : 36;
+          (p as any).triggerRange = stats.triggerRange; // 기본값 제거
           (p as any).slotIndex = idx;
           (p as any).slotTotal = stats.count;
+          (p as any).currentLevel = stats.currentLevel;
 
           // Update Speed Multiplier
           const speedFactor = (stats.speed || 0.7) / 0.7;
@@ -423,16 +424,23 @@ const fireOrbit = (player: Player, origin: Vector2D, stats: any, type: any, owne
     const angle = (Math.PI * 2 * i) / stats.count;
 
     const proj = createProjectile(origin.x, origin.y, angle, type, 1, "PROJECTILE" as any);
-    (proj as any).behavior = "ORBIT_STAB"; // Using ORBIT_STAB behavior
+    // behavior 결정
+    const isStab = stats.range && stats.range > 0; // 사거리가 있으면 찌르기 (W01)
+    const behavior = isStab ? "ORBIT_STAB" : "ORBIT";
+    (proj as any).behavior = behavior;
 
     (proj as any).orbitAngle = angle;
-    (proj as any).orbitRadiusBase = stats.orbitRadiusBase || 36;
+    (proj as any).orbitRadiusBase = stats.orbitRadiusBase !== undefined ? stats.orbitRadiusBase : 36;
     (proj as any).orbitRadiusCurrent = (proj as any).orbitRadiusBase;
     (proj as any).orbitSpeed = stats.speed || 0.7;
+    // W08용 추가 속성
+    (proj as any).orbitSpeedBase = stats.speed || 0.7;
+    (proj as any).orbitSpeedAggro = stats.orbitSpeedAggro || 3.0;
 
     (proj as any).stabRange = stats.range || 40; // Use Stat Range
     (proj as any).slotIndex = i;
     (proj as any).slotTotal = stats.count;
+    (proj as any).currentLevel = stats.currentLevel;
 
     // Attack Speed 비례
     const speedFactor = (stats.speed || 0.7) / 0.7;
@@ -441,13 +449,15 @@ const fireOrbit = (player: Player, origin: Vector2D, stats: any, type: any, owne
     (proj as any).speedMult = speedMult;
     (proj as any).stabSpeed = 200 * speedMult;
 
-    (proj as any).triggerRange = stats.triggerRange || 110;
+    (proj as any).triggerRange = stats.triggerRange; // 기본값 제거
 
-    (proj as any).state = "ORBIT";
+    (proj as any).state = "ORBIT"; // 초기 상태
 
-    // Persistent Setup
+    (proj as any).hitInterval = stats.hitInterval || 200; // 타격 간격
+
+    // Owner ID Link
     if (ownerId && weaponId) {
-      proj.parentID = ownerId; // Owner ID for linking
+      proj.parentID = ownerId;
       proj.weaponId = weaponId;
       proj.duration = 9999999; // Persistent
       (proj as any).owner = { id: ownerId, position: origin }; // 초기 위치

@@ -258,7 +258,8 @@ export const createProjectile = (
         ctx.shadowBlur = 15;
         ctx.shadowColor = "#aa00ff";
       } else {
-        ctx.arc(this.position.x, this.position.y, radius, 0, Math.PI * 2);
+        const currentRadius = (this as any).radius || radius;
+        ctx.arc(this.position.x, this.position.y, currentRadius, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
       }

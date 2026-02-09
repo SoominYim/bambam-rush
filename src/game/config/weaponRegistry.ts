@@ -24,6 +24,7 @@ export interface WeaponLevelScale {
   freezeDuration?: number; // 빙결 지속 시간
   chillAmount?: number; // 둔화율 (0.0 ~ 1.0)
   chillDuration?: number; // 둔화 지속 시간
+  orbitSpeedAggro?: number; // 적 감지 시 회전 속도
   description?: string;
 }
 
@@ -77,6 +78,7 @@ export interface WeaponDefinition {
     freezeDuration?: number;
     chillAmount?: number;
     chillDuration?: number;
+    orbitSpeedAggro?: number;
   };
   levels: Record<number, WeaponLevelScale>;
   evolution?: {
@@ -314,18 +316,26 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     id: "W08",
     name: "수호의 구슬",
     icon: WEAPON_ICONS.GUARDIAN_ORB,
-    description: "투사체를 막고 적에게 피해를 줌",
+    description: "주변을 회전하며 적을 막아내는 수호 구슬",
     pattern: "orbit",
     tags: [ElementType.LIGHT],
-    baseStats: { damage: 18, attackSpeed: 10, count: 2, size: 25, speed: 2.5 },
+    baseStats: {
+      damage: 30, // 기본 데미지 대폭 상향 (15 -> 30)
+      attackSpeed: 10,
+      count: 2,
+      size: 10,
+      speed: 1.8,
+      orbitRadiusBase: 40, // 플레이어 중심 (완전 밀착)
+      hitInterval: 100, // 초당 10회 타격 (유지)
+    },
     levels: {
-      2: { damage: 4, description: "데미지 +4" },
+      2: { damage: 10, description: "데미지 +10" },
       3: { count: 1, description: "구슬 +1" },
-      4: { damage: 6, description: "데미지 +6" },
-      5: { size: 8, description: "크기 +8" },
+      4: { damage: 15, description: "데미지 +15" },
+      5: { size: 5, description: "크기 +5" },
       6: { count: 1, description: "구슬 +1" },
-      7: { damage: 10, description: "데미지 +10" },
-      8: { count: 2, damage: 15, description: "MAX: 구슬 +2, 데미지 +15" },
+      7: { damage: 25, description: "데미지 +25" },
+      8: { count: 2, damage: 50, description: "MAX: 구슬 +2, 데미지 +50" }, // 폭딜
     },
   },
 
