@@ -893,32 +893,29 @@ const updateChakram: BehaviorFunction = (proj, dt) => {
       // 튕김 횟수 감소
       proj.penetration--;
 
-      // 튕김 횟수가 남았을 때만 다음 적 탐색
+      // 튕김 횟수가 남았을 때만 반사(Bounce) 처리
       if (proj.penetration > 0) {
-        // 다음 적 찾기 (바운스 타겟)
-        const bounceRange = p.bounceRange || 300;
-        let nextTarget = null;
-        let minDSq = bounceRange * bounceRange;
+        // [반사 로직] 유도 대신 물리적 반사각 적용
 
-        for (const candidate of enemies) {
-          if (candidate.isExpired || candidate.hp <= 0) continue;
-          if (hitEnemyIds.includes(candidate.id)) continue;
-          if (candidate.id === enemy.id) continue;
+        // 법선 벡터 (Normal): 적 중심 → 투사체 위치
+        const nx = proj.position.x - enemy.position.x;
+        const ny = proj.position.y - enemy.position.y;
+        const dist = Math.sqrt(nx * nx + ny * ny);
 
-          const cdx = candidate.position.x - proj.position.x;
-          const cdy = candidate.position.y - proj.position.y;
-          const cdSq = cdx * cdx + cdy * cdy;
-          if (cdSq < minDSq) {
-            minDSq = cdSq;
-            nextTarget = candidate;
-          }
-        }
+        // 정규화 (거리가 0이면 임의 방향)
+        const ux = dist > 0 ? nx / dist : 1;
+        const uy = dist > 0 ? ny / dist : 0;
 
-        if (nextTarget) {
-          // 다음 적 방향으로 방향 변경
-          proj.angle = Math.atan2(nextTarget.position.y - proj.position.y, nextTarget.position.x - proj.position.x);
-        }
-        // 다음 적이 없으면? -> 그냥 원래 방향으로 계속 날아감 (관통)
+        // 현재 속도 벡터
+        const vx = Math.cos(proj.angle!);
+        const vy = Math.sin(proj.angle!);
+
+        // 반사 벡터 계산: R = V - 2(V·N)N
+        const dot = vx * ux + vy * uy;
+        const rx = vx - 2 * dot * ux;
+        const ry = vy - 2 * dot * uy;
+
+        proj.angle = Math.atan2(ry, rx);
       }
       // 튕김 횟수 다 쓰면? -> 그냥 원래 방향으로 계속 날아감 (관통)
 
