@@ -40,6 +40,7 @@ export { getPlayer };
 export const getLevelUpState = () => ({
   isLevelUpPending: state.isLevelUpPending,
   levelUpChoices: state.levelUpChoices,
+  levelUpCounter: state.levelUpCounter,
 });
 
 export const selectLevelUpCard = (cardIndex: number) => {
@@ -50,12 +51,18 @@ export const selectLevelUpCard = (cardIndex: number) => {
     applyCardEffect(card);
   }
 
-  // Reset State
+  // pending과 choices 모두 초기화 (checkLevelUp이 다시 레벨업을 감지할 수 있도록)
   state.isLevelUpPending = false;
   state.levelUpChoices = [];
 
-  // Resume Game
-  setPaused(false);
+  // 남은 XP로 추가 레벨업이 있는지 체크
+  checkLevelUp();
+
+  // 추가 레벨업이 없으면 게임 재개
+  if (!state.isLevelUpPending) {
+    setPaused(false);
+  }
+  // 추가 레벨업이 있으면 checkLevelUp 안에서 isLevelUpPending=true, 새 choices 설정, counter++ 처리됨
 };
 
 // Score management
@@ -167,6 +174,9 @@ export const drawGameState = (ctx: CanvasRenderingContext2D) => {
 const checkLevelUp = () => {
   if (!state.player) return;
 
+  // 이미 레벨업 대기 중이면 추가 레벨업 처리 안 함 (카드 선택 후 다시 체크됨)
+  if (state.isLevelUpPending) return;
+
   const stats = state.player.stats;
   if (stats.xp >= stats.maxXp) {
     stats.xp -= stats.maxXp;
@@ -175,6 +185,7 @@ const checkLevelUp = () => {
 
     state.isLevelUpPending = true;
     state.levelUpChoices = draftCards(3);
+    state.levelUpCounter++;
     setPaused(true);
 
     stats.hp = Math.min(stats.maxHp, stats.hp + stats.maxHp * 0.1);

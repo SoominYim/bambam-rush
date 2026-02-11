@@ -36,7 +36,13 @@ export const WeaponIcon = memo(({ weapon, size = "100%" }: WeaponIconProps) => {
       <img
         src={weapon.icon}
         alt={weapon.name}
-        style={{ width: size, height: size, objectFit: "contain", display: "block" }}
+        style={{
+          width: size,
+          height: size,
+          objectFit: "contain",
+          display: "block",
+          padding: weapon.id === "W12" ? "15%" : undefined, // 도끼 아이콘 크기 조절
+        }}
       />
     );
   }

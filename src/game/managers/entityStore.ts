@@ -13,6 +13,7 @@ export const state = {
   score: 0,
   isLevelUpPending: false,
   levelUpChoices: [] as any[],
+  levelUpCounter: 0,
 };
 
 export const getPlayer = () => state.player;
@@ -31,4 +32,5 @@ export const resetEntityStore = (p: Player) => {
   state.score = 0;
   state.isLevelUpPending = false;
   state.levelUpChoices = [];
+  state.levelUpCounter = 0;
 };

@@ -185,6 +185,9 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
     case "bat":
       fireBat(player, origin, stats, def.tags[0], ownerId);
       break;
+    case "arc":
+      fireArc(player, origin, stats, def.tags[0], ownerId, aw.id);
+      break;
   }
 };
 
@@ -211,6 +214,52 @@ const fireBat = (_player: Player, origin: Vector2D, stats: any, type: any, owner
 
     // 웨이브 모션을 위한 초기 오프셋
     (proj as any).waveOffset = Math.random() * Math.PI * 2;
+
+    addProjectile(proj);
+  }
+};
+
+const fireArc = (_player: Player, origin: Vector2D, stats: any, type: any, ownerId?: string, weaponId?: string) => {
+  // 타겟팅: 가장 가까운 적 방향 (X축)
+  const enemies = getEnemies() as Enemy[];
+  let nearestX = 0;
+  let minDistSq = Infinity;
+
+  enemies.forEach(e => {
+    if (e.isExpired) return;
+    const dSq = Math.pow(e.position.x - origin.x, 2) + Math.pow(e.position.y - origin.y, 2);
+    if (dSq < minDistSq) {
+      minDistSq = dSq;
+      nearestX = e.position.x;
+    }
+  });
+
+  // 적이 없으면 랜덤 방향, 있으면 적 방향
+  const dirX = minDistSq !== Infinity ? (nearestX > origin.x ? 1 : -1) : Math.random() > 0.5 ? 1 : -1;
+  const baseAngle = dirX > 0 ? -Math.PI / 4 : (-3 * Math.PI) / 4; // -45도 or -135도
+
+  for (let i = 0; i < stats.count; i++) {
+    const spread = stats.count > 1 ? (i - (stats.count - 1) / 2) * 0.2 : 0;
+    const angle = baseAngle + spread + (Math.random() - 0.5) * 0.1;
+
+    const proj = createProjectile(origin.x, origin.y, angle, type, 1, "PROJECTILE" as any);
+    (proj as any).behavior = "ARC";
+    (proj as any).ownerId = ownerId;
+    (proj as any).weaponId = weaponId;
+
+    // Physics
+    const speed = (stats.speed || 180) * 2.5; // 속도 증가
+    (proj as any).vx = Math.cos(angle) * speed;
+    (proj as any).vy = Math.sin(angle) * speed;
+    (proj as any).gravity = 400; // 중력 감소
+
+    (proj as any).visualAngle = 0;
+    (proj as any).rotationSpeed = 10 * dirX; // 회전 속도
+
+    proj.damage = stats.damage;
+    proj.penetration = stats.pierce || 1;
+    (proj as any).radius = stats.size;
+    (proj as any).duration = 5000;
 
     addProjectile(proj);
   }
@@ -333,6 +382,15 @@ const fireProjectile = (
     (proj as any).chillAmount = stats.chillAmount;
     (proj as any).chillDuration = stats.chillDuration;
     (proj as any).freezeDuration = stats.freezeDuration;
+    (proj as any).weaponId = weaponId; // 무기 ID 전달
+
+    // 도끼인 경우 회전 속도 및 틱 데미지 설정
+    if (weaponId === "W12") {
+      (proj as any).rotationSpeed = 10;
+      (proj as any).visualAngle = 0;
+      (proj as any).hitInterval = 100; // 틱 데미지 간격을 짧게 (적과 붙으면 여러 번 타격)
+    }
+
     addProjectile(proj);
   }
 };

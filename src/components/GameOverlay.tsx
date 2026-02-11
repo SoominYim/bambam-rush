@@ -6,7 +6,6 @@ import { VirtualJoystick } from "@/components/controls/VirtualJoystick";
 import { getLevelUpState } from "@/game/managers/state";
 import { setJoystickDirection } from "@/engine/systems/input";
 import { Card } from "@/game/systems/cardSystem";
-import * as CONFIG from "@/game/config/constants";
 
 interface GameOverlayProps {
   isPaused: boolean;
@@ -18,12 +17,14 @@ interface GameOverlayProps {
 interface LevelUpState {
   isLevelUpPending: boolean;
   levelUpChoices: Card[];
+  levelUpCounter: number;
 }
 
 export const GameOverlay: React.FC<GameOverlayProps> = memo(({ isPaused, onPause, onResume, onExitGame }) => {
   const [levelUpState, setLevelUpState] = useState<LevelUpState>({
     isLevelUpPending: false,
     levelUpChoices: [],
+    levelUpCounter: 0,
   });
 
   useEffect(() => {
@@ -31,12 +32,12 @@ export const GameOverlay: React.FC<GameOverlayProps> = memo(({ isPaused, onPause
       const lvlState = getLevelUpState();
 
       setLevelUpState(prev => {
-        if (prev.isLevelUpPending !== lvlState.isLevelUpPending) {
+        if (prev.isLevelUpPending !== lvlState.isLevelUpPending || prev.levelUpCounter !== lvlState.levelUpCounter) {
           return { ...lvlState };
         }
         return prev;
       });
-    }, CONFIG.SCORE_UPDATE_INTERVAL);
+    }, 100); // 레벨업 상태는 빠르게 체크
 
     return () => clearInterval(updateInterval);
   }, []);

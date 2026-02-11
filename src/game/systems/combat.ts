@@ -117,6 +117,11 @@ export const updateCombat = (_deltaTime: number) => {
         e.hp -= finalDamage;
         damageTextManager.show(e.position.x, e.position.y, finalDamage, finalDamage > p.damage * 1.5);
 
+        // Life Steal Logic
+        if ((p as any).lifeSteal && (p as any).lifeSteal > 0) {
+          player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + (p as any).lifeSteal);
+        }
+
         // --- Status Effect Application ---
         if (p.type === ElementType.FIRE) {
           const burnDamage = (p as any).burnDamage || p.damage * 0.2;

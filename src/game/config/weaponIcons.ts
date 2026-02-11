@@ -37,7 +37,7 @@ export const WEAPON_ICONS = {
   SUMMON_BAT: `<svg width="100" height="60" viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg"><style>.wing-left{transform-origin:45px 30px;animation:flap-l 0.3s ease-in-out infinite alternate}.wing-right{transform-origin:55px 30px;animation:flap-r 0.3s ease-in-out infinite alternate}@keyframes flap-l{from{transform:rotate(0deg) scaleY(1)}to{transform:rotate(20deg) scaleY(0.4)}}@keyframes flap-r{from{transform:rotate(0deg) scaleY(1)}to{transform:rotate(-20deg) scaleY(0.4)}}</style><g fill="#1a1a1a"><path class="wing-left" d="M45 30C35 15 15 10 0 25C10 30 20 30 25 35C30 45 40 40 45 30Z"/><path class="wing-right" d="M55 30C65 15 85 10 100 25C90 30 80 30 75 35C70 45 60 40 55 30Z"/><path d="M50 20L44 10L46 22L54 22L56 10L50 20Z"/><circle cx="50" cy="30" r="8"/><circle cx="47" cy="28" r="2" fill="#FFFFFF"/><circle cx="53" cy="28" r="2" fill="#FFFFFF"/></g></svg>`,
 
   // W12: 도끼 투척
-  AXE_THROW: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M24 44L12 56L8 52L20 40Z" fill="#8B4513"/><path d="M26 34C18 34 14 26 20 18C28 10 44 14 50 20C56 26 52 38 44 44C36 48 26 44 26 34Z" fill="#A9A9A9" stroke="#696969" stroke-width="2"/></svg>`,
+  AXE_THROW: "/axe.svg",
 
   // W13: 블랙홀
   BLACK_HOLE: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="20" fill="#000"/><circle cx="32" cy="32" r="22" stroke="#483D8B" stroke-width="2" fill="none"/><circle cx="32" cy="32" r="26" stroke="#8A2BE2" stroke-width="1" fill="none"/></svg>`,

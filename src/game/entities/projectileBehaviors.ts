@@ -255,24 +255,22 @@ const updateBounce: BehaviorFunction = (proj, dt) => {
  * ARC - 포물선 궤적
  */
 const updateArc: BehaviorFunction = (proj, dt) => {
-  const speed = (proj as any).speed || 180;
-  const gravity = 400; // 중력 가속도
+  const p = proj as any;
+  const gravity = p.gravity || 800; // 중력 가속도
 
-  // 초기 속도 저장
-  if ((proj as any).velocityY === undefined) {
-    (proj as any).velocityY = -300; // 위로 던지기
-  }
+  // Physics Update
+  if (p.vx === undefined) p.vx = Math.cos(proj.angle || 0) * (p.speed || 180);
+  if (p.vy === undefined) p.vy = -400; // Default upward impulse
 
-  // 수평 이동
-  const angle = proj.angle ?? 0;
-  proj.position.x += Math.cos(angle) * speed * dt;
+  p.vy += gravity * dt;
+  p.position.x += p.vx * dt;
+  p.position.y += p.vy * dt;
 
-  // 수직 이동 (중력 적용)
-  (proj as any).velocityY += gravity * dt;
-  proj.position.y += (proj as any).velocityY * dt;
+  // Rotation
+  p.visualAngle = (p.visualAngle || 0) + (p.rotationSpeed || 10) * dt;
 
-  // 땅에 닿으면 폭발 (임시로 y > 1000)
-  if (proj.position.y > 1000) {
+  // 화면 아래로 떨어지면 만료 (World Height + Margin)
+  if (p.position.y > 2000) {
     proj.isExpired = true;
   }
 };
@@ -589,12 +587,9 @@ const updateBottle: BehaviorFunction = (proj, dt) => {
     // [중요] 여기서 즉시 장판 생성
     const areaStats = p.areaStats;
     if (areaStats) {
-      console.log("[BOTTLE] Shattering at", proj.position);
-
       // 장판 생성
       const area = createArea(proj.position.x, proj.position.y, proj.type, "STATIC", areaStats);
       addArea(area);
-      console.log("[BOTTLE] Area created:", area.id);
 
       // 병 깨지는 시각 효과 (폭발 VFX)
       VFXFactory.createExplosion(proj.position.x, proj.position.y, proj.type, 15, 0.6);

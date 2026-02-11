@@ -2,6 +2,7 @@ import { Projectile, Scalar, ElementType, SkillBehavior } from "../types";
 import { SPELL_STATS } from "@/game/config/spellStats";
 import { updateProjectileBehavior } from "./projectileBehaviors";
 import * as CONFIG from "@/game/config/constants";
+import { getWeaponIconImage } from "@/game/utils/IconCache";
 
 // SVG Path Data for Bat
 const PATH_WING_LEFT = "M45 30C35 15 15 10 0 25C10 30 20 30 25 35C30 45 40 40 45 30Z";
@@ -372,11 +373,67 @@ export const createProjectile = (
         ctx.fill();
 
         ctx.restore();
-      } else {
-        const currentRadius = (this as any).radius || radius;
-        ctx.arc(this.position.x, this.position.y, currentRadius, 0, Math.PI * 2);
-        ctx.fillStyle = color;
+      } else if ((this as any).behavior === "ARC") {
+        // 도끼 투척 (이미지 렌더링)
+        const p = this as any;
+        // weaponId가 없으면 "W12" 기본값 (안전을 위해)
+        // const weaponId = p.weaponId || "W12";
+        // const img = getWeaponIconImage(weaponId);
+
+        const size = (p.radius || 10) * 2.5; // 아이콘 크기 조정
+        const visualAngle = p.visualAngle || 0;
+
+        ctx.save();
+        ctx.translate(this.position.x, this.position.y);
+        ctx.rotate(visualAngle);
+
+        // 디버깅: 무조건 빨간 원 표시
+        ctx.beginPath();
+        ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+        ctx.fillStyle = "crimson";
         ctx.fill();
+        ctx.strokeStyle = "yellow";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        ctx.restore();
+      } else {
+        const p = this as any;
+        const currentRadius = p.radius || radius;
+
+        // 도끼 투사체인 경우 이미지와 회전 적용
+        if (p.weaponId === "W12") {
+          const weaponId = p.weaponId;
+          const img = getWeaponIconImage(weaponId);
+          const size = currentRadius * 1.5; // 시각적 크기를 히트박스에 맞춤
+
+          // 회전 업데이트 (느리게)
+          if (p.rotationSpeed) {
+            p.visualAngle = (p.visualAngle || 0) + p.rotationSpeed * 0.009;
+          }
+          const visualAngle = p.visualAngle || this.angle || 0;
+
+          ctx.save();
+          ctx.translate(this.position.x, this.position.y);
+          ctx.rotate(visualAngle);
+
+          if (img) {
+            ctx.drawImage(img, -size / 2, -size / 2, size, size);
+          } else {
+            // Fallback
+            ctx.beginPath();
+            ctx.arc(0, 0, currentRadius, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+          }
+
+          ctx.restore();
+        } else {
+          // 일반 투사체
+          ctx.arc(this.position.x, this.position.y, currentRadius, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+        }
       }
 
       ctx.restore();
