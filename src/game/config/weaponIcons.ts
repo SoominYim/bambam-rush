@@ -62,4 +62,7 @@ export const WEAPON_ICONS = {
 
   // W20: 메테오
   METEOR: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="44" r="12" fill="#8B4513"/><path d="M28 36L48 16L56 8L36 28" fill="#FF4500"/><path d="M56 8L44 8L56 20Z" fill="#FFD700"/></svg>`,
+
+  // W15: 화염 방사기
+  FLAMETHROWER: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="fireGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#FFFF00"/><stop offset="50%" stop-color="#FF4500"/><stop offset="100%" stop-color="#8B0000" stop-opacity="0"/></linearGradient></defs><rect x="4" y="24" width="16" height="16" rx="2" fill="#555"/><rect x="20" y="28" width="8" height="8" fill="#333"/><path d="M28 32C28 20 60 8 60 32C60 56 28 44 28 32Z" fill="url(#fireGrad)" fill-opacity="0.8"/><circle cx="32" cy="32" r="4" fill="#FFF" fill-opacity="0.6"/></svg>`,
 };

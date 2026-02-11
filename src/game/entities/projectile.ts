@@ -261,8 +261,65 @@ export const createProjectile = (
         ctx.fillRect(-w / 6, -h / 2 - 6, w / 3, 2);
 
         // 4. Glow
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = "#aa00ff";
+      } else if (type === ElementType.FIRE) {
+        const p = this as any;
+        if (p.behavior === "FLAME") {
+          // --- 화염 방사 입자 (개선된 2D 스타일) ---
+          const baseR = p.radius || 10;
+          const scale = p.scale || 1.0;
+          const r = baseR * (0.6 + scale * 0.4);
+          const alpha = p.alpha !== undefined ? p.alpha : 1.0;
+
+          // 지터링: 매 프레임 위치가 살짝 떨림 (일렁임)
+          const jitterX = (Math.random() - 0.5) * 4;
+          const jitterY = (Math.random() - 0.5) * 4;
+
+          ctx.translate(this.position.x + jitterX, this.position.y + jitterY);
+
+          // 회전: 입자가 회전하며 날아감
+          ctx.rotate(this.angle || 0);
+
+          // 모양 변형: 원이 아니라 타원형으로 찌그러뜨림
+          ctx.scale(1.2, 0.8);
+
+          // 색상 단계 (채도 올림)
+          let color = "";
+          if (scale < 1.3) {
+            color = `rgba(255, 255, 150, ${alpha})`; // 핵 (연한 노랑)
+          } else if (scale < 1.8) {
+            color = `rgba(255, 180, 0, ${alpha})`; // 진한 노랑/주황
+          } else if (scale < 2.5) {
+            color = `rgba(255, 80, 0, ${alpha})`; // 붉은 주황
+          } else {
+            color = `rgba(100, 20, 20, ${alpha})`; // 검붉음
+          }
+
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+
+          // 스케일 복구 (중요: 다음 드로잉에 영향 없게)
+          // ctx.restore()가 함수 끝에 있으므로 괜찮지만, 명시적 복구
+          ctx.scale(1 / 1.2, 1 / 0.8);
+        } else {
+          // 일반 화염구 (Fireball 등)
+          const r = (this as any).radius || 15;
+          ctx.translate(this.position.x, this.position.y);
+
+          const g = ctx.createRadialGradient(0, 0, r * 0.3, 0, 0, r);
+          g.addColorStop(0, "#ffff00");
+          g.addColorStop(0.6, "#ff4500");
+          g.addColorStop(1, "#8b0000");
+
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          ctx.fillStyle = g;
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = "#ff4500";
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
       } else if ((this as any).behavior === "BEAM") {
         // 레이저 빔 렌더링
         const range = (this as any).range || 1000;

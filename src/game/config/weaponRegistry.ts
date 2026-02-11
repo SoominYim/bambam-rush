@@ -57,7 +57,8 @@ export interface WeaponDefinition {
     | "swing" // 스윙
     | "stab"
     | "nuke"
-    | "bat"; // 박쥐 소환
+    | "bat"
+    | "flame"; // 화염 방사
   tags: ElementType[];
   baseStats: {
     damage: number;
@@ -479,20 +480,33 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
 
   W15: {
     id: "W15",
-    name: "화염 오라",
-    icon: WEAPON_ICONS.FIRE_AURA,
-    description: "플레이어 주변에 지속 화염 피해",
-    pattern: "aura",
+    name: "인페르노",
+    icon: WEAPON_ICONS.FLAMETHROWER,
+    description: "가까운 적을 녹여버리는 고열의 화염 방사",
+    pattern: "flame",
     tags: [ElementType.FIRE],
-    baseStats: { damage: 10, attackSpeed: 2.0, count: 1, size: 80, duration: 99999 },
+    baseStats: {
+      damage: 1, // 틱당 데미지
+      attackSpeed: 0.8, // 1~2초마다 한 번씩 방사 (공격 주기)
+      count: 1,
+      size: 160, // 1레벨 사이즈 축소 (250 -> 160)
+      speed: 0, // 투사체 아님
+      duration: 600, // 지속 시간 단축
+      pierce: 999,
+    },
     levels: {
-      2: { damage: 3, description: "데미지 +3" },
-      3: { size: 15, description: "범위 +15" },
-      4: { damage: 5, description: "데미지 +5" },
-      5: { size: 20, description: "범위 +20" },
-      6: { damage: 8, description: "데미지 +8" },
-      7: { size: 30, description: "범위 +30" },
-      8: { damage: 15, size: 40, description: "MAX: 데미지 +15, 범위 +40" },
+      2: { damage: 4, description: "데미지 +4" },
+      3: { size: 50, duration: 100, description: "사거리 증가" },
+      4: { attackSpeed: 3.0, description: "연사 속도 증가" },
+      5: { damage: 5, description: "데미지 +5" },
+      6: { size: 50, duration: 100, description: "사거리 증가" },
+      7: { damage: 8, attackSpeed: 3.0, description: "공격력 대폭 강화" },
+      8: { damage: 10, count: 1, description: "MAX: 쌍발 엔진 (화염 줄기 +1)" },
+    },
+    evolution: {
+      requiredPassive: "P01", // Might (Damage)
+      evolvedId: "W15_EVO",
+      evolvedName: "🔥 헬파이어",
     },
   },
 

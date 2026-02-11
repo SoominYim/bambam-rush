@@ -4,7 +4,7 @@ import { spatialGrid } from "@/game/managers/grid";
 import { damageTextManager } from "@/game/managers/damageTextManager";
 import { VFXFactory } from "@/engine/vfx/VFXFactory";
 
-export type AreaBehavior = "STATIC" | "FOLLOW" | "VORTEX" | "DRIFT" | "TRAP";
+export type AreaBehavior = "STATIC" | "FOLLOW" | "VORTEX" | "DRIFT" | "TRAP" | "FLAME_CONE";
 
 export interface Area extends GameObject {
   type: ElementType;
@@ -21,6 +21,10 @@ export interface Area extends GameObject {
   driftSpeed?: number; // DRIFT용
   driftAngle?: number; // DRIFT용
   isTrapArmed?: boolean; // TRAP용
+  coneAngle?: number; // FLAME_CONE용 방향
+  coneSpread?: number; // FLAME_CONE용 확산각
+  maxRadius?: number; // FLAME_CONE용 최대 반경 (애니메이션용)
+  animT?: number; // 애니메이션 진행률 (0~1)
 
   // 상태 이상 속성
   startTime: number;
@@ -44,6 +48,7 @@ export const createArea = (
     chillAmount?: number;
     chillDuration?: number;
     freezeDuration?: number;
+    coneSpread?: number; // Added
   },
 ): Area => {
   return {
@@ -51,13 +56,15 @@ export const createArea = (
     position: { x, y },
     type,
     behavior,
-    radius: stats.radius,
+    radius: behavior === "FLAME_CONE" ? 0 : stats.radius,
+    maxRadius: stats.radius, // 원래 크기 저장
     damage: stats.damage,
     duration: stats.duration,
     tickRate: stats.tickRate || 200, // 기본 0.2초마다 틱
     chillAmount: stats.chillAmount,
     chillDuration: stats.chillDuration,
     freezeDuration: stats.freezeDuration,
+    coneSpread: stats.coneSpread,
     startTime: Date.now(),
     lastTick: 0,
     isExpired: false,
@@ -81,6 +88,48 @@ export const createArea = (
         if (this.followTarget) {
           this.position.x = this.followTarget.position.x;
           this.position.y = this.followTarget.position.y;
+        }
+      } else if (this.behavior === "FLAME_CONE") {
+        // [FLAME_CONE] 타겟(플레이어 or 꼬리)을 따라다님
+        // weaponSystem에서 생성 시 이미 area.followTarget을 설정했을 것임.
+        // 만약 없다면 getPlayer()로 fallback
+
+        let target = this.followTarget;
+        if (!target) {
+          target = getPlayer() || undefined;
+        }
+
+        if (target) {
+          this.position.x = target.position.x;
+          this.position.y = target.position.y;
+
+          // 애니메이션: 작았다 커졌다 작아짐 (판정과 이펙트 동기화)
+          // maxDuration 초기화 (첫 프레임에 설정)
+          if ((this as any).maxDuration === undefined) {
+            (this as any).maxDuration = this.duration;
+          }
+
+          const maxDur = (this as any).maxDuration || this.duration; // Fallback
+          // duration은 dt만큼 줄어들고 있으므로, t는 0(시작) -> 1(끝)
+          const t = 1 - this.duration / maxDur;
+
+          const maxR = this.maxRadius || this.radius;
+
+          // 애니메이션 커브: 팽창 -> 유지 -> 수축
+          // 이 곡선에 따라 radius가 변하고, draw와 applyEffect 모두 이 radius를 사용함.
+          if (t < 0.2) {
+            // 0~20%: 0 -> 100% (팽창)
+            this.radius = maxR * (t / 0.2);
+          } else if (t < 0.7) {
+            // 20~70%: 100% (유지)
+            this.radius = maxR;
+          } else {
+            // 70~100%: 100% -> 0% (수축)
+            this.radius = maxR * (1 - (t - 0.7) / 0.3);
+          }
+
+          // 최소 반지름 보정
+          if (this.radius < 1) this.radius = 0;
         }
       } else if (this.behavior === "DRIFT") {
         if (this.driftSpeed === undefined) {
@@ -230,6 +279,73 @@ export const createArea = (
         ctx.setLineDash([5, 5]);
         ctx.stroke();
         ctx.setLineDash([]);
+        ctx.setLineDash([]);
+      } else if (this.behavior === "FLAME_CONE") {
+        // [FLAME_CONE] 화염 방사 비주얼 (Streaming Fire)
+        // 불꽃이 계속 뿜어져 나가는 운동감을 위해 오프셋 이동
+        const count = 40; // 입자 수 적절히 조절 (50 -> 40)
+        const spread = this.coneSpread || Math.PI / 6;
+        const facing = this.coneAngle || 0;
+        const now = Date.now();
+        const flowSpeed = 2.0; // 흐름 속도
+        const streamOffset = ((now / 1000) * flowSpeed) % 1; // 0 ~ 1
+
+        ctx.save();
+
+        // 블렌딩 모드: 불꽃이 겹칠수록 밝아지게 (Lighter) -> 3D 느낌 나서 싫어하면 끄라고 했지만,
+        // 밀도 높은 2D 불꽃을 위해선 source-over에 알파값을 잘 쓰는게 좋음.
+        // 여기선 source-over 유지하되 색상을 진하게.
+
+        for (let i = 0; i < count; i++) {
+          // 정규화 거리 (0~1)
+          // i/count로 균등 분포하되, streamOffset을 더해 앞으로 전진하는 느낌
+          let t = i / count + streamOffset;
+          if (t > 1) t -= 1; // 순환
+
+          // 거리: 현재 radius(애니메이션 적용됨)를 기준으로 배치
+          const dist = t * this.radius;
+
+          // 최소 거리 보정
+          if (dist < 5) continue;
+
+          // 각도: 거리가 멀수록 확산 (콘 형태)
+          // 약간의 노이즈 추가
+          const noise = (Math.random() - 0.5) * 0.5; // ±0.25 rad
+          const currentSpread = spread * (0.2 + 0.8 * t); // 시작점은 좁고 끝은 넓음
+          const angle = facing + (Math.random() - 0.5 + noise * 0.5) * currentSpread;
+
+          const px = this.position.x + Math.cos(angle) * dist;
+          const py = this.position.y + Math.sin(angle) * dist;
+
+          // 입자 크기: 시작은 작고(5), 중간에 커지고(25), 끝에 작아짐(10)
+          // Sin 곡선 활용: sin(0) -> 0, sin(PI/2) -> 1, sin(PI) -> 0
+          // t(0~1) -> Math.sin(t * Math.PI)
+          const sizeBase = 20;
+          const size = 5 + sizeBase * Math.sin(t * Math.PI * 0.8); // 0.8까지 써서 끝이 완전히 0이 되진 않게
+
+          ctx.beginPath();
+          ctx.arc(px, py, size, 0, Math.PI * 2);
+
+          // 색상: 거리에 따라 변화
+          // T < 0.3: Yellow (Hot)
+          // T < 0.7: Orange
+          // T > 0.7: Red / Dark Red
+
+          if (t < 0.3) {
+            ctx.fillStyle = `rgba(255, 255, 100, ${0.8})`;
+          } else if (t < 0.6) {
+            ctx.fillStyle = `rgba(255, 140, 0, ${0.7})`;
+          } else {
+            ctx.fillStyle = `rgba(200, 50, 50, ${0.6 * (1 - t)})`; // 끝부분 페이드 아웃
+          }
+
+          // 지터링: 매 프레임 위치 미세 조정으로 일렁임 표현
+          const jitter = 2; // 2px
+          ctx.arc(px + (Math.random() - 0.5) * jitter, py + (Math.random() - 0.5) * jitter, size, 0, Math.PI * 2);
+
+          ctx.fill();
+        }
+        ctx.restore();
       } else if (this.type === ElementType.POISON) {
         // ... (Existing POISON logic)
         // --- 웅덩이 베이스 (강렬한 원형 + 리플 애니메이션) ---
@@ -457,12 +573,28 @@ export const createArea = (
       // 데미지 입히기
       nearby.forEach(enemy => {
         if (enemy.isExpired) return;
-        const dx = this.position.x - enemy.position.x;
-        const dy = this.position.y - enemy.position.y;
+        const dx = enemy.position.x - this.position.x;
+        const dy = enemy.position.y - this.position.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         // 적의 히트박스(대략 20)를 고려하여 판정
-        if (dist <= damageRadius + 20) {
+        const hitRadius = damageRadius + 10; // 여유분을 줄여 이펙트와 일치시킴
+
+        if (dist <= hitRadius) {
+          // [FLAME_CONE] 부채꼴 각도 체크
+          if (this.behavior === "FLAME_CONE") {
+            const angle = Math.atan2(dy, dx);
+            const facing = this.coneAngle || 0;
+            const spread = this.coneSpread || Math.PI / 4;
+
+            // 각도 차이 계산 (최단 경로)
+            let diff = Math.abs(angle - facing);
+            if (diff > Math.PI) diff = 2 * Math.PI - diff;
+
+            // 정확한 판정: 이펙트와 일치하도록 spread / 2 사용
+            if (dist > 30 && diff > spread / 2) return;
+          }
+
           // 1. 데미지 적용 (방어력 계산)
           const def = (enemy as any).defense || 0;
           const finalDamage = Math.max(1, this.damage - def);

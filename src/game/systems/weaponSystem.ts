@@ -1,7 +1,7 @@
 import { Player, ActiveWeapon, Scalar, Vector2D, Enemy, PassiveInstance, ElementType } from "@/game/types";
 import { WEAPON_REGISTRY } from "@/game/config/weaponRegistry";
 import { PASSIVE_REGISTRY } from "@/game/config/passiveRegistry";
-import { addProjectile, getEnemies, getTail, getProjectiles } from "@/game/managers/state";
+import { addProjectile, addArea, getEnemies, getTail, getProjectiles } from "@/game/managers/state";
 import { createProjectile } from "@/game/entities/projectile";
 import { spatialGrid } from "@/game/managers/grid";
 import { createArea, AreaBehavior } from "@/game/entities/area";
@@ -190,6 +190,9 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
       break;
     case "bounce":
       fireChakram(player, origin, stats, def.tags[0]);
+      break;
+    case "flame":
+      fireFlame(player, origin, stats, def.tags[0], ownerId);
       break;
   }
 };
@@ -794,6 +797,52 @@ const fireChakram = (_player: Player, origin: Vector2D, stats: any, type: any) =
 
     addProjectile(proj);
   }
+};
+
+// ==========================================
+// [FLAME] - 화염 방사 (Area 방식)
+// ==========================================
+const fireFlame = (player: Player, origin: Vector2D, stats: any, type: any, ownerId?: string) => {
+  // 1. 발사 위치 보정 (꼬리에서 발사)
+  let sourceEntity: any = player;
+  let firePos = { ...origin };
+
+  if (ownerId) {
+    const tail = getTail().find(t => t.id === ownerId);
+    if (tail) {
+      sourceEntity = tail;
+      firePos = { x: tail.position.x, y: tail.position.y };
+    }
+  }
+
+  // 2. 타겟팅: 가장 가까운 적을 찾음
+  const target = getNearestEnemy(firePos, 400);
+
+  // 적이 없으면 발사하지 않음
+  if (!target) return;
+
+  const aimAngle = Math.atan2(target.position.y - firePos.y, target.position.x - firePos.x);
+
+  // 3. 공격 속도에 따른 틱 설정 & 확산 각도
+  const tickRate = 100;
+  const spread = Math.PI / 6;
+
+  const area = createArea(firePos.x, firePos.y, type, "FLAME_CONE", {
+    damage: stats.damage,
+    radius: stats.size || 250,
+    duration: stats.duration || 800,
+    tickRate: tickRate,
+    coneSpread: spread,
+    chillAmount: 0,
+  });
+
+  // 방향 적용
+  area.coneAngle = aimAngle;
+
+  // 따라다닐 대상 설정 (꼬리 또는 플레이어)
+  area.followTarget = sourceEntity;
+
+  addArea(area);
 };
 
 // ==========================================

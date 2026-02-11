@@ -23,7 +23,8 @@ export type ProjectileBehavior =
   | "BEAM"
   | "BAT"
   | "GRAVITY_ORB"
-  | "CHAKRAM";
+  | "CHAKRAM"
+  | "FLAME";
 
 /**
  * 행동 함수 타입
@@ -925,6 +926,61 @@ const updateChakram: BehaviorFunction = (proj, dt) => {
 };
 
 /**
+ * FLAME - 화염 방사 입자
+ * 앞으로 나아가며 점점 커지고 느려짐.
+ */
+const updateFlame: BehaviorFunction = (proj, dt) => {
+  const p = proj as any;
+
+  // 초기화 (한 번만 실행)
+  if (p.initialDir === undefined) {
+    p.initialDir = { x: Math.cos(proj.angle!), y: Math.sin(proj.angle!) };
+    p.turbulenceSeed = Math.random() * 100; // 난기류 시드
+    p.riseSpeed = 0; // 상승 속도
+  }
+
+  const initialSpeed = p.speed || 550;
+  const maxDuration = p.maxDuration || 350;
+  const currentDuration = p.duration || 0;
+  // 1.0 (시작) -> 0.0 (끝)
+  const timeProgress = 1 - currentDuration / maxDuration; // 0 -> 1
+
+  // 1. 전진 이동 (강한 감속: Drag)
+  // 시간이 지날수록 전진 속도가 급격히 줄어듬 (0.5승으로 초반에 빠르고 나중에 느림)
+  const dragFactor = Math.max(0, 1 - Math.pow(timeProgress, 0.5));
+  const currentForwardSpeed = initialSpeed * dragFactor;
+
+  // 2. 상승 기류 (Thermal Rise)
+  // 시간이 지날수록 위로 떠오름
+  p.riseSpeed += 100 * dt; // 초당 100픽셀 가속
+
+  // 3. 난기류 (Turbulence/Wiggle)
+  // 진행 방향의 수직 벡터 구하기
+  const perpX = -p.initialDir.y;
+  const perpY = p.initialDir.x;
+  // 사인파로 흔들림 + 랜덤 노이즈
+  const wiggle = Math.sin(timeProgress * 10 + p.turbulenceSeed) * 50 * timeProgress;
+
+  // 최종 위치 업데이트
+  proj.position.x += (p.initialDir.x * currentForwardSpeed + perpX * wiggle) * dt;
+  proj.position.y += (p.initialDir.y * currentForwardSpeed + perpY * wiggle - p.riseSpeed) * dt;
+
+  // 4. 상태 업데이트
+  // 크기: 1.0 -> 2.5 (확 퍼짐)
+  p.scale = 1.0 + timeProgress * 1.5;
+
+  // 투명도: 0.8까지 유지되다가 급격히 사라짐
+  if (timeProgress < 0.7) {
+    p.alpha = 1.0;
+  } else {
+    p.alpha = 1.0 - (timeProgress - 0.7) * 3.3; // 0.7~1.0 구간에서 소멸
+  }
+
+  // 회전: 불꽃이 뱅글뱅글 도는 느낌 (시각적)
+  proj.angle = (proj.angle || 0) + 2 * dt;
+};
+
+/**
  * 행동 맵
  */
 const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
@@ -943,6 +999,7 @@ const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
   BAT: updateBat,
   GRAVITY_ORB: updateGravityOrb,
   CHAKRAM: updateChakram,
+  FLAME: updateFlame,
 };
 
 /**
