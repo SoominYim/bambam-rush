@@ -373,6 +373,59 @@ export const createProjectile = (
         ctx.fill();
 
         ctx.restore();
+      } else if ((this as any).behavior === "GRAVITY_ORB") {
+        // --- 중력 구체 렌더링 ---
+        const orbRadius = (this as any).radius || 12;
+        const now = Date.now();
+        const pulse = 1.0 + Math.sin(now / 200) * 0.15; // 맥동
+
+        ctx.translate(this.position.x, this.position.y);
+
+        // 1) 외부 왜곡 효과 (보라색 후광)
+        ctx.beginPath();
+        ctx.arc(0, 0, orbRadius * 2.5 * pulse, 0, Math.PI * 2);
+        const outerGrad = ctx.createRadialGradient(0, 0, orbRadius * 0.5, 0, 0, orbRadius * 2.5 * pulse);
+        outerGrad.addColorStop(0, "rgba(138, 43, 226, 0.2)");
+        outerGrad.addColorStop(0.6, "rgba(75, 0, 130, 0.1)");
+        outerGrad.addColorStop(1, "rgba(30, 0, 50, 0)");
+        ctx.fillStyle = outerGrad;
+        ctx.fill();
+
+        // 2) 코어 (어두운 구체)
+        ctx.beginPath();
+        ctx.arc(0, 0, orbRadius * pulse, 0, Math.PI * 2);
+        const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, orbRadius * pulse);
+        coreGrad.addColorStop(0, "rgba(0, 0, 0, 0.9)");
+        coreGrad.addColorStop(0.6, "rgba(30, 0, 60, 0.8)");
+        coreGrad.addColorStop(1, "rgba(90, 0, 150, 0.4)");
+        ctx.fillStyle = coreGrad;
+        ctx.fill();
+
+        // 3) 네온 링
+        ctx.beginPath();
+        ctx.arc(0, 0, orbRadius * pulse, 0, Math.PI * 2);
+        ctx.strokeStyle = "#8A2BE2";
+        ctx.lineWidth = 1.5;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#8A2BE2";
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // 4) 흡수 파티클 (2~3개)
+        for (let i = 0; i < 3; i++) {
+          const seed = i * 137;
+          const pTime = ((now + seed * 80) % 1000) / 1000;
+          const pAngle = now / 500 + seed;
+          const pDist = orbRadius * (2.0 - pTime * 1.5);
+          const px = Math.cos(pAngle) * pDist;
+          const py = Math.sin(pAngle) * pDist;
+          const pSize = 2 * (1 - pTime);
+
+          ctx.beginPath();
+          ctx.arc(px, py, pSize, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(180, 120, 255, ${0.6 * (1 - pTime)})`;
+          ctx.fill();
+        }
       } else if ((this as any).behavior === "ARC") {
         // 도끼 투척 (이미지 렌더링)
         const p = this as any;

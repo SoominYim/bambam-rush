@@ -181,7 +181,7 @@ const checkLevelUp = () => {
   if (stats.xp >= stats.maxXp) {
     stats.xp -= stats.maxXp;
     stats.level++;
-    stats.maxXp = Math.floor(stats.maxXp * 1.5);
+    stats.maxXp = Math.floor(stats.maxXp * 1.35);
 
     state.isLevelUpPending = true;
     state.levelUpChoices = draftCards(3);

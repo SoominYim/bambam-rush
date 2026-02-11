@@ -165,7 +165,7 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
       createAuraWeapon(player, stats, def.tags[0]);
       break;
     case "vortex":
-      spawnArea(player, origin, stats, def.tags[0], "VORTEX");
+      fireGravityOrb(player, origin, stats, def.tags[0]);
       break;
     case "gas":
       spawnArea(player, origin, stats, def.tags[0], "DRIFT");
@@ -742,7 +742,7 @@ const spawnArea = (_player: Player, origin: Vector2D, stats: any, type: any, beh
 
     // 특수 속성 설정
     if (behavior === "VORTEX") {
-      area.vortexStrength = 300; // 끌어당기는 힘
+      area.vortexStrength = 200 + stats.damage * 5; // 데미지에 비례하여 끌어당기는 힘 증가
     }
     if (behavior === "DRIFT") {
       area.driftSpeed = stats.speed || 50;
@@ -762,6 +762,45 @@ const createAuraWeapon = (player: Player, stats: any, type: any) => {
   });
   area.followTarget = player;
   addProjectile(area as any);
+};
+
+// ==========================================
+// [GRAVITY ORB] - 느린 투사체 발사 → 적중 시 블랙홀 생성
+// ==========================================
+const fireGravityOrb = (_player: Player, origin: Vector2D, stats: any, type: any) => {
+  const target = getNearestEnemy(origin, 500);
+  const baseAngle = target
+    ? Math.atan2(target.position.y - origin.y, target.position.x - origin.x)
+    : Math.random() * Math.PI * 2;
+
+  // 부채꼴 발사 (Spread)
+  const arc = Math.PI / 6; // 30도 범위 내에서 발사
+  const startAngle = stats.count > 1 ? baseAngle - arc / 2 : baseAngle;
+  const stepAngle = stats.count > 1 ? arc / (stats.count - 1) : 0;
+
+  for (let i = 0; i < stats.count; i++) {
+    const angle = startAngle + stepAngle * i;
+
+    const proj = createProjectile(origin.x, origin.y, angle, type, 1, "PROJECTILE" as any);
+    (proj as any).behavior = "GRAVITY_ORB";
+    (proj as any).speed = stats.speed || 120;
+    proj.damage = stats.damage;
+    (proj as any).radius = 12; // 투사체 자체 크기
+    proj.penetration = 1; // 첫 번째 적과 충돌 시 블랙홀 생성
+    (proj as any).maxRange = 400; // 최대 사거리
+    (proj as any).distanceTraveled = 0;
+
+    // 블랙홀 장판 생성용 스탯
+    (proj as any).areaStats = {
+      damage: stats.damage,
+      radius: stats.size,
+      duration: stats.duration || 3000,
+      tickRate: 500,
+    };
+    (proj as any).vortexStrength = 150 + stats.damage * 3; // 끌어당기는 힘 하향 조정
+
+    addProjectile(proj);
+  }
 };
 
 const getNearestEnemy = (origin: Vector2D, maxRange: number = Infinity): Enemy | null => {

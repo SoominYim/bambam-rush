@@ -21,7 +21,8 @@ export type ProjectileBehavior =
   | "HOMING"
   | "BOTTLE"
   | "BEAM"
-  | "BAT";
+  | "BAT"
+  | "GRAVITY_ORB";
 
 /**
  * 행동 함수 타입
@@ -785,6 +786,61 @@ const updateBat: BehaviorFunction = (proj, dt) => {
 };
 
 /**
+ * GRAVITY_ORB - 느린 중력 구체 (적과 충돌 시 블랙홀 생성)
+ */
+const updateGravityOrb: BehaviorFunction = (proj, dt) => {
+  const p = proj as any;
+  const speed = p.speed || 120;
+  const angle = proj.angle ?? 0;
+
+  // 1. 이동
+  const dx = Math.cos(angle) * speed * dt;
+  const dy = Math.sin(angle) * speed * dt;
+  proj.position.x += dx;
+  proj.position.y += dy;
+
+  // 이동 거리 추적
+  p.distanceTraveled = (p.distanceTraveled || 0) + Math.sqrt(dx * dx + dy * dy);
+
+  // 2. 적과 충돌 체크
+  const enemies = getEnemies() as any[];
+  const orbRadius = p.radius || 12;
+  let hitEnemy = false;
+
+  for (const enemy of enemies) {
+    if (enemy.isExpired || enemy.hp <= 0) continue;
+    const ex = enemy.position.x - proj.position.x;
+    const ey = enemy.position.y - proj.position.y;
+    const distSq = ex * ex + ey * ey;
+    const hitDist = orbRadius + 20; // 적 히트박스 고려
+
+    if (distSq < hitDist * hitDist) {
+      hitEnemy = true;
+      break;
+    }
+  }
+
+  // 3. 최대 사거리 도달 체크
+  const maxRange = p.maxRange || 400;
+  const reachedMaxRange = p.distanceTraveled >= maxRange;
+
+  // 4. 충돌 또는 최대 사거리 도달 시 블랙홀 생성
+  if (hitEnemy || reachedMaxRange) {
+    proj.isExpired = true;
+
+    // 블랙홀 (VORTEX) 장판 생성
+    const areaStats = p.areaStats;
+    if (areaStats) {
+      const area = createArea(proj.position.x, proj.position.y, proj.type, "VORTEX", areaStats);
+      area.vortexStrength = p.vortexStrength || 300;
+      addArea(area);
+
+      // 폭발 이펙트 제거 (블랙홀 생성으로 충분함)
+    }
+  }
+};
+
+/**
  * 행동 맵
  */
 const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
@@ -801,6 +857,7 @@ const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
   BOTTLE: updateBottle,
   BEAM: updateBeam,
   BAT: updateBat,
+  GRAVITY_ORB: updateGravityOrb,
 };
 
 /**

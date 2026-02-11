@@ -87,8 +87,8 @@ export const updateCombat = (_deltaTime: number) => {
         return;
       }
 
-      // 던지는 병(BOTTLE)은 날아가는 도중 적과 충돌하지 않음
-      if ((p as any).behavior === "BOTTLE") {
+      // 던지는 병(BOTTLE)과 중력 구체(GRAVITY_ORB)는 자체 충돌 처리
+      if ((p as any).behavior === "BOTTLE" || (p as any).behavior === "GRAVITY_ORB") {
         return;
       }
 

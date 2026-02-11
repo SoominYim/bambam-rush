@@ -115,6 +115,39 @@ export const createArea = (
           this.isExpired = true; // Remove mine
           return;
         }
+      } else if (this.behavior === "VORTEX") {
+        // VORTEX: 매 프레임 끌어당기기 + 회전 + 흔들림
+        const nearby = spatialGrid.getNearbyEnemies(this.position.x, this.position.y, this.radius * 2 + 100) as Enemy[];
+        const baseStrength = this.vortexStrength || 200;
+
+        nearby.forEach(enemy => {
+          if (enemy.isExpired) return;
+          const dx = this.position.x - enemy.position.x;
+          const dy = this.position.y - enemy.position.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < this.radius * 2 && dist > 5) {
+            const normalizedDist = dist / this.radius;
+            // 거리에 따른 힘 조절 (중심일수록 강함)
+            const strengthFactor = 1 / (normalizedDist * normalizedDist + 0.8); // 0.5 -> 0.8 더 완만하게
+            const pullForce = baseStrength * 0.6 * strengthFactor * dt; // 기본 힘 60%로 하향
+
+            // 1. 끌어당기기 (Centripetal)
+            enemy.position.x += (dx / dist) * pullForce;
+            enemy.position.y += (dy / dist) * pullForce;
+
+            // 2. 회전 (Tangential) - 소용돌이 느낌 강화
+            // 시계 방향 회전: (-dy, dx)
+            const rotForce = pullForce * 0.8; // 회전력을 끌어당기는 힘의 80%로 상향
+            enemy.position.x += (-dy / dist) * rotForce;
+            enemy.position.y += (dx / dist) * rotForce;
+
+            // 3. 흔들림 (Jitter) - 최소화
+            const jitter = 0.5; // 2.0 -> 0.5 대폭 감소
+            enemy.position.x += (Math.random() - 0.5) * jitter;
+            enemy.position.y += (Math.random() - 0.5) * jitter;
+          }
+        });
       }
 
       // 틱 데미지 처리 (TRAP은 위에서 처리하므로 제외)
@@ -279,6 +312,109 @@ export const createArea = (
         ctx.globalAlpha = 0.8;
         ctx.lineWidth = 3;
         ctx.stroke();
+      } else if (this.type === ElementType.GRAVITY) {
+        // ==========================================
+        // [GRAVITY / BLACK HOLE] 블랙홀 비주얼
+        // ==========================================
+        const elapsed = now - this.startTime;
+        const birthProgress = Math.min(1, elapsed / 600);
+        const currentR = this.radius * (0.2 + birthProgress * 0.8);
+
+        // 1) 외부 왜곡 광환 (Accretion Disk)
+        const rotAngle = now / 800; // 회전 속도
+        const diskR = currentR * 1.3;
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, diskR, 0, Math.PI * 2);
+        const diskGrad = ctx.createRadialGradient(
+          this.position.x,
+          this.position.y,
+          currentR * 0.6,
+          this.position.x,
+          this.position.y,
+          diskR,
+        );
+        diskGrad.addColorStop(0, "rgba(138, 43, 226, 0)");
+        diskGrad.addColorStop(0.5, "rgba(138, 43, 226, 0.15)");
+        diskGrad.addColorStop(0.8, "rgba(75, 0, 130, 0.1)");
+        diskGrad.addColorStop(1, "rgba(30, 0, 50, 0)");
+        ctx.fillStyle = diskGrad;
+        ctx.globalAlpha = 0.8;
+        ctx.fill();
+
+        // 2) 회전하는 나선 팔 (Spiral Arms)
+        const spiralArms = 3;
+        for (let arm = 0; arm < spiralArms; arm++) {
+          const armAngle = rotAngle + (arm * Math.PI * 2) / spiralArms;
+          ctx.beginPath();
+          for (let t = 0; t < 1; t += 0.02) {
+            const spiralR = currentR * 0.3 + currentR * t;
+            const spiralA = armAngle + t * Math.PI * 2;
+            const sx = this.position.x + Math.cos(spiralA) * spiralR;
+            const sy = this.position.y + Math.sin(spiralA) * spiralR;
+            if (t === 0) ctx.moveTo(sx, sy);
+            else ctx.lineTo(sx, sy);
+          }
+          ctx.strokeStyle = `rgba(180, 100, 255, ${0.4 - birthProgress * 0.1})`;
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = 0.6;
+          ctx.stroke();
+        }
+
+        // 3) 중심 코어 (Event Horizon)
+        const coreR = currentR * 0.4;
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, coreR, 0, Math.PI * 2);
+        const coreGrad = ctx.createRadialGradient(
+          this.position.x,
+          this.position.y,
+          0,
+          this.position.x,
+          this.position.y,
+          coreR,
+        );
+        coreGrad.addColorStop(0, "rgba(0, 0, 0, 0.95)");
+        coreGrad.addColorStop(0.7, "rgba(10, 0, 20, 0.9)");
+        coreGrad.addColorStop(1, "rgba(60, 0, 100, 0.5)");
+        ctx.fillStyle = coreGrad;
+        ctx.globalAlpha = 1.0;
+        ctx.fill();
+
+        // 4) 사건의 지평선 링 (보라색 네온)
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, coreR, 0, Math.PI * 2);
+        ctx.strokeStyle = "#8A2BE2";
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#8A2BE2";
+        ctx.globalAlpha = 0.9;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // 5) 끌려들어가는 파티클
+        const particleCount = 6;
+        for (let i = 0; i < particleCount; i++) {
+          const seed = i * 213.7;
+          const pTime = ((now + seed * 100) % 2000) / 2000; // 0~1
+          const pAngle = rotAngle * 1.5 + seed + pTime * Math.PI * 3;
+          const pDist = currentR * (1.2 - pTime); // 바깥에서 중심으로
+          const px = this.position.x + Math.cos(pAngle) * pDist;
+          const py = this.position.y + Math.sin(pAngle) * pDist;
+          const pSize = 3 * (1 - pTime);
+
+          ctx.beginPath();
+          ctx.arc(px, py, pSize, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(200, 150, 255, ${0.7 * (1 - pTime)})`;
+          ctx.globalAlpha = 0.8;
+          ctx.fill();
+        }
+
+        // 6) 외부 영역 범위 표시 (희미한 원)
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, currentR, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(138, 43, 226, 0.3)";
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.5;
+        ctx.stroke();
       } else {
         // ==========================================
         // [3] 일반 장판 연출 (FIRE, ICE 등)
@@ -312,19 +448,7 @@ export const createArea = (
       const nearby = spatialGrid.getNearbyEnemies(this.position.x, this.position.y, this.radius + 100) as Enemy[];
 
       if (this.behavior === "VORTEX") {
-        // 적 당기기
-        nearby.forEach(enemy => {
-          if (enemy.isExpired) return;
-          const dx = this.position.x - enemy.position.x;
-          const dy = this.position.y - enemy.position.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist < this.radius * 2 && dist > 10) {
-            const pullStrength = (this.vortexStrength || 200) / dist;
-            enemy.position.x += (dx / dist) * pullStrength;
-            enemy.position.y += (dy / dist) * pullStrength;
-          }
-        });
+        // VORTEX에서는 끌어당기기가 update()에서 처리됨, 여기서는 틱 데미지만
       }
 
       // TRAP 폭발 범위 (레벨업으로 과도하게 커지지 않도록 제한)
