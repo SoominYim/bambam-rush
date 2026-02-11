@@ -142,8 +142,8 @@ export const createProjectile = (
         // Pommel (End cap)
         ctx.fillStyle = "#daa520";
         ctx.fillRect(-r * 1.2, -r * 0.3, r * 0.3, r * 0.6);
-      } else if (type === ElementType.WIND) {
-        // --- Boomerang (Wind) Drawing ---
+      } else if (type === ElementType.WIND && (this as any).behavior !== "CHAKRAM") {
+        // --- Boomerang (Wind) Drawing --- (차크람은 별도 렌더링)
         const rotation = (this as any).visualAngle || this.angle || 0;
         ctx.translate(this.position.x, this.position.y);
         ctx.rotate(rotation);
@@ -426,6 +426,73 @@ export const createProjectile = (
           ctx.fillStyle = `rgba(180, 120, 255, ${0.6 * (1 - pTime)})`;
           ctx.fill();
         }
+      } else if ((this as any).behavior === "CHAKRAM") {
+        // --- 차크람 렌더링 (아이콘과 동일) ---
+        const p = this as any;
+        const r = p.radius || 16;
+        const rot = p.visualAngle || 0;
+
+        ctx.translate(this.position.x, this.position.y);
+        ctx.rotate(rot);
+
+        // 1) 외부 금속 링 (전체 원)
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        const ringGrad = ctx.createRadialGradient(0, 0, r * 0.6, 0, 0, r);
+        ringGrad.addColorStop(0, "#C0C0C0");
+        ringGrad.addColorStop(0.5, "#E8E8E8");
+        ringGrad.addColorStop(1, "#909090");
+        ctx.fillStyle = ringGrad;
+        ctx.fill();
+
+        // 2) 내부 어두운 원 (링 형태를 만듦)
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.64, 0, Math.PI * 2);
+        ctx.fillStyle = "#1a1a2e";
+        ctx.fill();
+
+        // 3) 골드 장식 밴드
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.78, 0, Math.PI * 2);
+        ctx.strokeStyle = "#B8860B";
+        ctx.lineWidth = r * 0.07;
+        ctx.stroke();
+
+        // 4) S자 곡선 칼날 2개
+        ctx.strokeStyle = "#C0C0C0";
+        ctx.lineWidth = r * 0.13;
+        ctx.lineCap = "round";
+
+        // 칼날 1
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.5);
+        ctx.bezierCurveTo(r * 0.35, -r * 0.25, r * 0.35, r * 0.25, 0, r * 0.5);
+        ctx.stroke();
+
+        // 칼날 2 (반대편)
+        ctx.beginPath();
+        ctx.moveTo(0, r * 0.5);
+        ctx.bezierCurveTo(-r * 0.35, r * 0.25, -r * 0.35, -r * 0.25, 0, -r * 0.5);
+        ctx.stroke();
+
+        // 5) 칼날 하이라이트
+        ctx.strokeStyle = "rgba(255,255,255,0.5)";
+        ctx.lineWidth = r * 0.04;
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.46);
+        ctx.bezierCurveTo(r * 0.3, -r * 0.22, r * 0.3, r * 0.22, 0, r * 0.46);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, r * 0.46);
+        ctx.bezierCurveTo(-r * 0.3, r * 0.22, -r * 0.3, -r * 0.22, 0, -r * 0.46);
+        ctx.stroke();
+
+        // 6) 외부 엣지
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.strokeStyle = "#E0E0E0";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
       } else if ((this as any).behavior === "ARC") {
         // 도끼 투척 (이미지 렌더링)
         const p = this as any;

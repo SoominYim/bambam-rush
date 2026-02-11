@@ -87,8 +87,12 @@ export const updateCombat = (_deltaTime: number) => {
         return;
       }
 
-      // 던지는 병(BOTTLE)과 중력 구체(GRAVITY_ORB)는 자체 충돌 처리
-      if ((p as any).behavior === "BOTTLE" || (p as any).behavior === "GRAVITY_ORB") {
+      // 자체 충돌 처리하는 행동들 제외
+      if (
+        (p as any).behavior === "BOTTLE" ||
+        (p as any).behavior === "GRAVITY_ORB" ||
+        (p as any).behavior === "CHAKRAM"
+      ) {
         return;
       }
 

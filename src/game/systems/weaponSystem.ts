@@ -188,6 +188,9 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
     case "arc":
       fireArc(player, origin, stats, def.tags[0], ownerId, aw.id);
       break;
+    case "bounce":
+      fireChakram(player, origin, stats, def.tags[0]);
+      break;
   }
 };
 
@@ -762,6 +765,35 @@ const createAuraWeapon = (player: Player, stats: any, type: any) => {
   });
   area.followTarget = player;
   addProjectile(area as any);
+};
+
+// ==========================================
+// [CHAKRAM] - 적 간 튕기는 차크람 발사
+// ==========================================
+const fireChakram = (_player: Player, origin: Vector2D, stats: any, type: any) => {
+  for (let i = 0; i < stats.count; i++) {
+    const target = getNearestEnemy(origin, 600);
+    const angle = target
+      ? Math.atan2(target.position.y - origin.y, target.position.x - origin.x)
+      : Math.random() * Math.PI * 2;
+
+    // 여러 개 발사 시 각도 분산
+    const spread = stats.count > 1 ? Math.PI / 4 : 0;
+    const startAngle = stats.count > 1 ? angle - spread / 2 : angle;
+    const step = stats.count > 1 ? spread / (stats.count - 1) : 0;
+    const finalAngle = startAngle + step * i;
+
+    const proj = createProjectile(origin.x, origin.y, finalAngle, type, 1, "PROJECTILE" as any);
+    (proj as any).behavior = "CHAKRAM";
+    (proj as any).speed = stats.speed || 280;
+    proj.damage = stats.damage;
+    (proj as any).radius = stats.size || 16;
+    proj.penetration = stats.pierce || 5; // 튕김 횟수 = pierce
+    (proj as any).bounceRange = 300; // 튕길 때 다음 적 탐색 범위
+    (proj as any).hitEnemyIds = []; // 이미 맞은 적 추적 (같은 튕김 체인에서 중복 방지)
+
+    addProjectile(proj);
+  }
 };
 
 // ==========================================

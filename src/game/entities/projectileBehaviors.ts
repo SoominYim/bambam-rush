@@ -22,7 +22,8 @@ export type ProjectileBehavior =
   | "BOTTLE"
   | "BEAM"
   | "BAT"
-  | "GRAVITY_ORB";
+  | "GRAVITY_ORB"
+  | "CHAKRAM";
 
 /**
  * 행동 함수 타입
@@ -841,6 +842,92 @@ const updateGravityOrb: BehaviorFunction = (proj, dt) => {
 };
 
 /**
+ * CHAKRAM - 적 간 튕기는 차크람
+ * 적에게 맞으면 데미지 주고, 근처 다른 적을 찾아 튕김.
+ * 튕김 횟수(penetration)가 0이 되거나 다음 적이 없으면 소멸.
+ */
+const updateChakram: BehaviorFunction = (proj, dt) => {
+  const p = proj as any;
+  const speed = p.speed || 280;
+  const angle = proj.angle ?? 0;
+
+  // 회전 시각 효과
+  p.visualAngle = (p.visualAngle || 0) + 15 * dt;
+
+  // 1. 이동
+  proj.position.x += Math.cos(angle) * speed * dt;
+  proj.position.y += Math.sin(angle) * speed * dt;
+
+  // 2. 적과 충돌 체크
+  const enemies = getEnemies() as any[];
+  const chakramRadius = p.radius || 16;
+  const hitEnemyIds: string[] = p.hitEnemyIds || [];
+
+  for (const enemy of enemies) {
+    if (enemy.isExpired || enemy.hp <= 0) continue;
+    // 이미 이번 체인에서 맞은 적은 건너뛰기
+    if (hitEnemyIds.includes(enemy.id)) continue;
+
+    const ex = enemy.position.x - proj.position.x;
+    const ey = enemy.position.y - proj.position.y;
+    const distSq = ex * ex + ey * ey;
+    const hitDist = chakramRadius + 20;
+
+    if (distSq < hitDist * hitDist) {
+      // 타격!
+      enemy.hp -= proj.damage;
+      damageTextManager.show(enemy.position.x, enemy.position.y, proj.damage, false);
+
+      // 적 사망 체크
+      if (enemy.hp <= 0) {
+        enemy.isExpired = true;
+      }
+
+      // 타격 이펙트
+      VFXFactory.createImpact(proj.position.x, proj.position.y, proj.type);
+
+      // 맞은 적 기록
+      hitEnemyIds.push(enemy.id);
+      p.hitEnemyIds = hitEnemyIds;
+
+      // 튕김 횟수 감소
+      proj.penetration--;
+
+      // 튕김 횟수가 남았을 때만 다음 적 탐색
+      if (proj.penetration > 0) {
+        // 다음 적 찾기 (바운스 타겟)
+        const bounceRange = p.bounceRange || 300;
+        let nextTarget = null;
+        let minDSq = bounceRange * bounceRange;
+
+        for (const candidate of enemies) {
+          if (candidate.isExpired || candidate.hp <= 0) continue;
+          if (hitEnemyIds.includes(candidate.id)) continue;
+          if (candidate.id === enemy.id) continue;
+
+          const cdx = candidate.position.x - proj.position.x;
+          const cdy = candidate.position.y - proj.position.y;
+          const cdSq = cdx * cdx + cdy * cdy;
+          if (cdSq < minDSq) {
+            minDSq = cdSq;
+            nextTarget = candidate;
+          }
+        }
+
+        if (nextTarget) {
+          // 다음 적 방향으로 방향 변경
+          proj.angle = Math.atan2(nextTarget.position.y - proj.position.y, nextTarget.position.x - proj.position.x);
+        }
+        // 다음 적이 없으면? -> 그냥 원래 방향으로 계속 날아감 (관통)
+      }
+      // 튕김 횟수 다 쓰면? -> 그냥 원래 방향으로 계속 날아감 (관통)
+
+      return; // 한 프레임에 하나의 적만 타격
+    }
+  }
+};
+
+/**
  * 행동 맵
  */
 const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
@@ -858,6 +945,7 @@ const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
   BEAM: updateBeam,
   BAT: updateBat,
   GRAVITY_ORB: updateGravityOrb,
+  CHAKRAM: updateChakram,
 };
 
 /**
