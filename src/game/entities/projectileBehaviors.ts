@@ -680,10 +680,12 @@ const updateBeam = (proj: Projectile, dt: number) => {
 
       if (distSq <= hitRadius * hitRadius) {
         // 데미지 적용
-        enemy.hp -= proj.damage;
+        // Note: proj.damage already includes unified multiplier
+        const actualDamage = proj.damage;
+        enemy.hp -= actualDamage;
 
         // 데미지 텍스트 표시
-        damageTextManager.show(enemy.position.x, enemy.position.y, proj.damage, false);
+        damageTextManager.show(enemy.position.x, enemy.position.y, actualDamage, false);
       }
     });
   }
@@ -760,13 +762,14 @@ const updateBat: BehaviorFunction = (proj, dt) => {
 
     if (distSq < hitRadius * hitRadius) {
       // 충돌!
-      const damage = proj.damage;
-      p.homingTarget.hp -= damage;
-      damageTextManager.show(p.homingTarget.position.x, p.homingTarget.position.y, damage, false);
+      // Note: proj.damage already includes unified multiplier
+      const player = getPlayer();
+      const actualDamage = proj.damage;
+      p.homingTarget.hp -= actualDamage;
+      damageTextManager.show(p.homingTarget.position.x, p.homingTarget.position.y, actualDamage, false);
 
       // 흡혈
       if (p.lifeSteal > 0) {
-        const player = getPlayer();
         if (player) {
           const oldHp = player.stats.hp;
           player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + p.lifeSteal);
@@ -876,8 +879,10 @@ const updateChakram: BehaviorFunction = (proj, dt) => {
 
     if (distSq < hitDist * hitDist) {
       // 타격!
-      enemy.hp -= proj.damage;
-      damageTextManager.show(enemy.position.x, enemy.position.y, proj.damage, false);
+      // Note: proj.damage already includes unified multiplier
+      const actualDamage = proj.damage;
+      enemy.hp -= actualDamage;
+      damageTextManager.show(enemy.position.x, enemy.position.y, actualDamage, false);
 
       // 적 사망 체크
       if (enemy.hp <= 0) {

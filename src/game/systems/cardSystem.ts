@@ -111,7 +111,7 @@ const draftPassiveCard = (player: any, seenIds: Set<string>): Card | null => {
 
 const draftStatCard = (_draftedIds: Set<string>): Card => {
   const stats = [
-    { type: "atk", title: "공격력 증가", icon: "⚔️", val: 0.1 },
+    { type: "atk", title: "공격력 증가", icon: "⚔️", val: 0.2 },
     { type: "def", title: "방어력 증가", icon: "🛡️", val: 2 },
     { type: "maxHp", title: "최대 체력 증가", icon: "❤️", val: 20 },
     { type: "heal", title: "회복 물약", icon: "🧪", val: 0.3 },

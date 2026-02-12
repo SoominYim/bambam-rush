@@ -486,7 +486,7 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     pattern: "flame",
     tags: [ElementType.FIRE],
     baseStats: {
-      damage: 1, // 틱당 데미지
+      damage: 2, // 틱당 데미지
       attackSpeed: 0.8, // 1~2초마다 한 번씩 방사 (공격 주기)
       count: 1,
       size: 160, // 1레벨 사이즈 축소 (250 -> 160)

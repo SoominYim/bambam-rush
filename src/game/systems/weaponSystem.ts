@@ -11,6 +11,22 @@ import { addScore, addXPGem } from "@/game/managers/state";
 import { damageTextManager } from "@/game/managers/damageTextManager";
 import { waveManager } from "@/game/managers/waveManager";
 
+// Local implementation of damage bonus logic
+const getFlatDamageBonus = (player: Player): number => {
+  let atkStat = player.stats.atk || 1.0;
+
+  // 무력(Might) 패시브 체크 - 공격력 스탯에 합산
+  const mightPassive = player.passives?.find(p => p.id === "P01");
+  if (mightPassive) {
+    const pDef = PASSIVE_REGISTRY["P01"];
+    const pVal = pDef.levels[mightPassive.level]?.value || 0;
+    atkStat += pVal;
+  }
+
+  // 1.0을 기준으로 0.1당 +1 데미지 (합연산)
+  return (atkStat - 1.0) * 10;
+};
+
 export const updateWeapons = (player: Player, deltaTime: Scalar) => {
   player.activeWeapons.forEach(aw => {
     const def = WEAPON_REGISTRY[aw.id];
@@ -68,7 +84,7 @@ export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
 
     switch (p.id) {
       case "P01": // Might (Damage)
-        stats.damage *= 1 + pVal;
+        // Handled below by getGlobalDamageMultiplier for additive scaling
         break;
       case "P02": // Attack Speed Increase (Cooldown Reduction)
         // pVal is negative (e.g. -0.1 for 10% cooldown reduction)
@@ -117,6 +133,10 @@ export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
 
   // Amount (Additional Projectiles)
   if (stats.count) stats.count += player.stats.amount || 0;
+
+  // 4. Unified Damage Scaling (Player ATK Stat + Might Passive, Additive Flat Bonus)
+  const damageBonus = getFlatDamageBonus(player);
+  stats.damage += damageBonus;
 
   stats.attackSpeed = Math.max(0, stats.attackSpeed);
   return stats;
@@ -448,7 +468,7 @@ const fireChain = (player: Player, origin: Vector2D, stats: any) => {
     if (!target) break;
 
     // 1. 첫 번째 타격 (즉시 데미지)
-    const finalDamage = stats.damage * player.stats.atk;
+    const finalDamage = stats.damage;
     target.hp -= finalDamage;
     damageTextManager.show(target.position.x, target.position.y, Math.floor(finalDamage), false);
 

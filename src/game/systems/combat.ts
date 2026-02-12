@@ -15,11 +15,25 @@ import * as CONFIG from "@/game/config/constants";
 import { spatialGrid } from "@/game/managers/grid";
 import { damageTextManager } from "@/game/managers/damageTextManager";
 import { StatusEffectType } from "@/game/types";
+import { PASSIVE_REGISTRY } from "@/game/config/passiveRegistry";
 
 // Cooldown tracker
 const fireTimers: Record<string, number> = {};
 // Active orbital and recurring skill tracking
 const activeSkillIds = new Set<string>();
+
+const getDamageBonus = (player: any): number => {
+  let atkStat = player.stats.atk || 1.0;
+  // 무력(Might) 패시브 체크 - 공격력 스탯에 합산
+  const mightPassive = player.passives?.find((p: any) => p.id === "P01");
+  if (mightPassive) {
+    const pDef = PASSIVE_REGISTRY["P01"];
+    const pVal = pDef.levels[mightPassive.level]?.value || 0;
+    atkStat += pVal;
+  }
+  // 1.0을 기준으로 0.1당 +1 데미지 (합연산)
+  return (atkStat - 1.0) * 10;
+};
 
 export const updateCombat = (_deltaTime: number) => {
   const player = getPlayer();
@@ -50,18 +64,18 @@ export const updateCombat = (_deltaTime: number) => {
     // Different behavior handling
     switch (stats.behavior) {
       case SkillBehavior.PROJECTILE:
-        handleProjectileFiring(segment, enemies, now);
+        handleProjectileFiring(segment, enemies, now, player);
         break;
       case SkillBehavior.MELEE:
         // Skip passive melee aura for roguelike weapons (handled by stabbing projectiles)
         if (segment.weaponId) break;
-        handleMeleeAttack(segment, enemies, now, player.stats.atk);
+        handleMeleeAttack(segment, enemies, now, player);
         break;
       case SkillBehavior.ORBITAL:
-        handleOrbitalSkill(segment, now);
+        handleOrbitalSkill(segment, now, player);
         break;
       case SkillBehavior.AREA:
-        handleAreaSkill(segment, enemies, now);
+        handleAreaSkill(segment, enemies, now, player);
         break;
     }
   });
@@ -91,7 +105,9 @@ export const updateCombat = (_deltaTime: number) => {
       if (
         (p as any).behavior === "BOTTLE" ||
         (p as any).behavior === "GRAVITY_ORB" ||
-        (p as any).behavior === "CHAKRAM"
+        (p as any).behavior === "CHAKRAM" ||
+        (p as any).behavior === "BEAM" ||
+        (p as any).behavior === "BAT"
       ) {
         return;
       }
@@ -113,10 +129,8 @@ export const updateCombat = (_deltaTime: number) => {
         // Hit!
         // 방어력 적용 (최소 1 데미지)
         const def = (e as any).defense || 0;
-        let finalDamage = Math.max(
-          1,
-          p.damage * player.stats.atk * (stats.behavior === SkillBehavior.AREA ? 0.1 : 1.0) - def,
-        );
+        // p.damage now includes the unified damage multiplier from creation phase
+        let finalDamage = Math.max(1, p.damage * (stats.behavior === SkillBehavior.AREA ? 0.1 : 1.0) - def);
 
         e.hp -= finalDamage;
         damageTextManager.show(e.position.x, e.position.y, finalDamage, finalDamage > p.damage * 1.5);
@@ -306,7 +320,7 @@ export const updateCombat = (_deltaTime: number) => {
   });
 };
 
-const handleProjectileFiring = (segment: any, _enemies: any[], now: number) => {
+const handleProjectileFiring = (segment: any, _enemies: any[], now: number, player: any) => {
   const nearby = spatialGrid.getNearbyEnemies(segment.position.x, segment.position.y, CONFIG.TURRET_RANGE);
   let nearest: any = null;
   let minDistSq = CONFIG.TURRET_RANGE * CONFIG.TURRET_RANGE;
@@ -323,6 +337,7 @@ const handleProjectileFiring = (segment: any, _enemies: any[], now: number) => {
   });
 
   if (nearest) {
+    const damageBonus = getDamageBonus(player);
     const angle = Math.atan2(nearest.position.y - segment.position.y, nearest.position.x - segment.position.x);
     const proj = createProjectile(
       segment.position.x,
@@ -332,14 +347,18 @@ const handleProjectileFiring = (segment: any, _enemies: any[], now: number) => {
       segment.tier,
       SkillBehavior.PROJECTILE,
     );
+    // Apply unified multiplier to turret damage
+    proj.damage += damageBonus;
+
     addProjectile(proj);
     fireTimers[segment.id] = now;
   }
 };
 
-const handleOrbitalSkill = (segment: any, now: number) => {
+const handleOrbitalSkill = (segment: any, now: number, player: any) => {
   const skillKey = `${segment.id}_${segment.type}`;
   if (activeSkillIds.has(skillKey)) return;
+  const damageBonus = getDamageBonus(player);
   const orbital = createProjectile(
     segment.position.x,
     segment.position.y,
@@ -349,12 +368,14 @@ const handleOrbitalSkill = (segment: any, now: number) => {
     SkillBehavior.ORBITAL,
     segment.id,
   );
+  orbital.damage += damageBonus;
+
   addProjectile(orbital);
   activeSkillIds.add(skillKey);
   fireTimers[segment.id] = now;
 };
 
-const handleAreaSkill = (segment: any, _enemies: any[], now: number) => {
+const handleAreaSkill = (segment: any, _enemies: any[], now: number, player: any) => {
   const nearby = spatialGrid.getNearbyEnemies(segment.position.x, segment.position.y, CONFIG.TURRET_RANGE);
   let targetE: any = null;
   let minDistSq = CONFIG.TURRET_RANGE * CONFIG.TURRET_RANGE;
@@ -370,6 +391,7 @@ const handleAreaSkill = (segment: any, _enemies: any[], now: number) => {
   });
 
   if (targetE) {
+    const damageBonus = getDamageBonus(player);
     const area = createProjectile(
       targetE.position.x,
       targetE.position.y,
@@ -378,12 +400,14 @@ const handleAreaSkill = (segment: any, _enemies: any[], now: number) => {
       segment.tier,
       SkillBehavior.AREA,
     );
+    area.damage += damageBonus;
+
     addProjectile(area);
     fireTimers[segment.id] = now;
   }
 };
 
-const handleMeleeAttack = (segment: any, _enemies: any[], now: number, playerAtk: number) => {
+const handleMeleeAttack = (segment: any, _enemies: any[], now: number, player: any) => {
   const stats = SPELL_STATS[segment.type as ElementType];
   let hitAny = false;
   const nearby = spatialGrid.getNearbyEnemies(segment.position.x, segment.position.y, CONFIG.MELEE_RANGE);
@@ -394,7 +418,8 @@ const handleMeleeAttack = (segment: any, _enemies: any[], now: number, playerAtk
     const dy = e.position.y - segment.position.y;
     const distSq = dx * dx + dy * dy;
     if (distSq < rangeSq) {
-      const damage = stats.damage * segment.tier * playerAtk;
+      const damageBonus = getDamageBonus(player);
+      const damage = stats.damage * segment.tier + damageBonus;
       e.hp -= damage;
       damageTextManager.show(e.position.x, e.position.y, damage, false);
       VFXFactory.createImpact(e.position.x, e.position.y, segment.type);
@@ -421,15 +446,12 @@ export const applyChainLightning = (
 ) => {
   if (remainingChains <= 0) return;
 
-  const player = getPlayer();
-  const playerAtk = player?.stats.atk || 1;
-
   const nearby = spatialGrid.getNearbyEnemies(currentEnemy.position.x, currentEnemy.position.y, range);
   const nextTarget = nearby.find(n => !n.isExpired && n.hp > 0 && !hitIds.includes(n.id));
 
   if (nextTarget) {
     const nextDamage = baseDamage * 0.85; // 전이될 때마다 데미지 15% 감소
-    const actualDamage = nextDamage * playerAtk;
+    const actualDamage = nextDamage; // baseDamage already includes multiplier
 
     nextTarget.hp -= actualDamage;
     damageTextManager.show(nextTarget.position.x, nextTarget.position.y, Math.floor(actualDamage), false);

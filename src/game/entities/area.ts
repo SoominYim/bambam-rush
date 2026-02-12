@@ -597,6 +597,7 @@ export const createArea = (
 
           // 1. 데미지 적용 (방어력 계산)
           const def = (enemy as any).defense || 0;
+          // Note: this.damage now already includes the unified multiplier from weaponSystem
           const finalDamage = Math.max(1, this.damage - def);
 
           enemy.hp -= finalDamage;
@@ -609,6 +610,7 @@ export const createArea = (
           if (this.type === ElementType.POISON) {
             // ... Poison Logic ...
             const existingPoison = enemy.statusEffects.find(e => e.type === ("POISON" as any));
+            // scaled damage * 0.3
             const poisonDamage = Math.max(1, Math.floor(this.damage * 0.3));
 
             if (existingPoison) {
