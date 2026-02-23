@@ -185,6 +185,13 @@ export const VFXFactory = {
     }
   },
 
+  // Thunder strike without full-screen flash burst.
+  createThunderStrike: (x: number, y: number) => {
+    const startY = y - 700;
+    VFXFactory.createLightningChain(x + (Math.random() - 0.5) * 50, startY, x, y);
+    VFXFactory.createExplosion(x, y, ElementType.ELECTRIC, 10, 1.0);
+  },
+
   // ==========================================================================
   // [3] 잔상 효과 (TRAIL EFFECTS)
   // ==========================================================================
