@@ -7,34 +7,59 @@ let mousePosition: Vector2D = { x: 0, y: 0 };
 let mouseButtons: Set<number> = new Set();
 let mouseButtonsPressedThisFrame: Set<number> = new Set();
 let isPaused = false;
+let isInputInitialized = false;
 
 // 가상 조이스틱 지원
 let joystickDirection = { x: 0, y: 0 };
 
+const handleContextMenu = (e: Event) => e.preventDefault();
+const handleKeyDown = (e: KeyboardEvent) => {
+  if (!keyState.has(e.code)) {
+    keysPressedThisFrame.add(e.code);
+  }
+  keyState.add(e.code);
+};
+const handleKeyUp = (e: KeyboardEvent) => keyState.delete(e.code);
+const handleMouseMove = (e: MouseEvent) => {
+  mousePosition = { x: e.clientX, y: e.clientY };
+};
+const handleMouseDown = (e: MouseEvent) => {
+  if (!mouseButtons.has(e.button)) {
+    mouseButtonsPressedThisFrame.add(e.button);
+  }
+  mouseButtons.add(e.button);
+};
+const handleMouseUp = (e: MouseEvent) => mouseButtons.delete(e.button);
+
 export const initInput = () => {
-  window.addEventListener("contextmenu", e => e.preventDefault());
+  if (isInputInitialized) return;
+  isInputInitialized = true;
 
-  window.addEventListener("keydown", e => {
-    if (!keyState.has(e.code)) {
-      keysPressedThisFrame.add(e.code);
-    }
-    keyState.add(e.code);
-  });
+  window.addEventListener("contextmenu", handleContextMenu);
+  window.addEventListener("keydown", handleKeyDown);
+  window.addEventListener("keyup", handleKeyUp);
+  window.addEventListener("mousemove", handleMouseMove);
+  window.addEventListener("mousedown", handleMouseDown);
+  window.addEventListener("mouseup", handleMouseUp);
+};
 
-  window.addEventListener("keyup", e => keyState.delete(e.code));
+export const disposeInput = () => {
+  if (!isInputInitialized) return;
+  isInputInitialized = false;
 
-  window.addEventListener("mousemove", e => {
-    mousePosition = { x: e.clientX, y: e.clientY };
-  });
+  window.removeEventListener("contextmenu", handleContextMenu);
+  window.removeEventListener("keydown", handleKeyDown);
+  window.removeEventListener("keyup", handleKeyUp);
+  window.removeEventListener("mousemove", handleMouseMove);
+  window.removeEventListener("mousedown", handleMouseDown);
+  window.removeEventListener("mouseup", handleMouseUp);
 
-  window.addEventListener("mousedown", e => {
-    if (!mouseButtons.has(e.button)) {
-      mouseButtonsPressedThisFrame.add(e.button);
-    }
-    mouseButtons.add(e.button);
-  });
-
-  window.addEventListener("mouseup", e => mouseButtons.delete(e.button));
+  keyState.clear();
+  keysPressedThisFrame.clear();
+  mouseButtons.clear();
+  mouseButtonsPressedThisFrame.clear();
+  mousePosition = { x: 0, y: 0 };
+  joystickDirection = { x: 0, y: 0 };
 };
 
 export const updateInput = () => {

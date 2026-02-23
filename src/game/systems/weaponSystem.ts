@@ -214,6 +214,12 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
     case "flame":
       fireFlame(player, origin, stats, def.tags[0], ownerId);
       break;
+    case "sky":
+      fireSky(player, origin, stats);
+      break;
+    case "nuke":
+      spawnArea(player, origin, stats, def.tags[0], "STATIC");
+      break;
   }
 };
 
@@ -450,7 +456,7 @@ const fireLine = (_player: Player, origin: Vector2D, stats: any, type: any) => {
 // ==========================================
 // [Chain Lightning] - Instant Hit Logic
 // ==========================================
-const fireChain = (player: Player, origin: Vector2D, stats: any) => {
+const fireChain = (_player: Player, origin: Vector2D, stats: any) => {
   const range = stats.range || 400;
   const nearby = spatialGrid.getNearbyEnemies(origin.x, origin.y, range) as Enemy[];
   if (!nearby || nearby.length === 0) return;
@@ -487,6 +493,62 @@ const fireChain = (player: Player, origin: Vector2D, stats: any) => {
     const chainRange = stats.chainRange || 150;
     applyChainLightning(target, stats.damage, chainCount, chainRange, [target.id]);
   }
+};
+
+const fireSky = (player: Player, _origin: Vector2D, stats: any) => {
+  const range = 900;
+  const nearby = spatialGrid.getNearbyEnemies(player.position.x, player.position.y, range) as Enemy[];
+  const validEnemies = nearby.filter(e => !e.isExpired && e.hp > 0);
+
+  const count = stats.count || 1;
+  const positions: { x: number; y: number; target?: Enemy }[] = [];
+
+  if (validEnemies.length > 0) {
+    const sortedByDistance = [...validEnemies].sort((a, b) => {
+      const dA = Math.pow(a.position.x - player.position.x, 2) + Math.pow(a.position.y - player.position.y, 2);
+      const dB = Math.pow(b.position.x - player.position.x, 2) + Math.pow(b.position.y - player.position.y, 2);
+      return dA - dB;
+    });
+
+    const strikeCount = Math.min(count, sortedByDistance.length);
+    for (let i = 0; i < strikeCount; i++) {
+      const target = sortedByDistance[i];
+      positions.push({ x: target.position.x, y: target.position.y, target });
+    }
+  } else {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 100 + Math.random() * 400;
+      positions.push({
+        x: player.position.x + Math.cos(angle) * dist,
+        y: player.position.y + Math.sin(angle) * dist,
+      });
+    }
+  }
+
+  positions.forEach(pos => {
+    VFXFactory.createThunderStrike(pos.x, pos.y);
+
+    const explosionRadius = stats.explosionRadius || 40;
+    const targets = spatialGrid.getNearbyEnemies(pos.x, pos.y, explosionRadius);
+
+    targets.forEach(e => {
+      if (e.isExpired || e.hp <= 0) return;
+
+      let dmg = stats.damage;
+      const def = (e as any).defense || 0;
+      dmg = Math.max(1, dmg - def);
+
+      e.hp -= dmg;
+      damageTextManager.show(e.position.x, e.position.y, Math.floor(dmg), dmg > stats.damage * 1.5);
+
+      if (e.hp <= 0) {
+        e.isExpired = true;
+        addScore(50);
+        addXPGem(e.position.x, e.position.y, 1);
+      }
+    });
+  });
 };
 
 const fireOrbit = (player: Player, origin: Vector2D, stats: any, type: any, ownerId?: string, weaponId?: string) => {
@@ -774,7 +836,7 @@ const spawnArea = (_player: Player, origin: Vector2D, stats: any, type: any, beh
       area.driftSpeed = stats.speed || 50;
     }
 
-    addProjectile(area as any);
+    addArea(area);
   }
 };
 
@@ -787,7 +849,7 @@ const createAuraWeapon = (player: Player, stats: any, type: any) => {
     tickRate: stats.cooldown || 500, // 오라의 쿨타임 = 틱 간격
   });
   area.followTarget = player;
-  addProjectile(area as any);
+  addArea(area);
 };
 
 // ==========================================

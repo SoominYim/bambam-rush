@@ -46,7 +46,7 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "테스트",
     description: "테스트 캐릭터",
     icon: "⚔️",
-    startWeaponIds: ["W15"],
+    startWeaponIds: ["W16"],
     baseStats: {
       hp: 150,
       maxHp: 150,

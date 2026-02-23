@@ -3,7 +3,7 @@ import { GameOverlay } from "./components/GameOverlay";
 import { startGame, stopGame } from "@/engine/core/gameLoop";
 import { initGameState } from "@/game/managers/state";
 import { createPlayer } from "@/game/entities/player";
-import { initInput, setPaused } from "@/engine/systems/input";
+import { initInput, setPaused, disposeInput } from "@/engine/systems/input";
 import { MainHub } from "./components/menu/MainHub";
 import { ElementType } from "@/game/types";
 import { createTailSegment } from "@/game/entities/player";
@@ -36,6 +36,7 @@ function App() {
 
     return () => {
       stopGame();
+      disposeInput();
       window.removeEventListener("resize", handleResize);
     };
   }, []);
@@ -98,6 +99,7 @@ function App() {
 
   const handleExitGame = useCallback(() => {
     stopGame();
+    disposeInput();
     setIsGameStarted(false);
     setIsPaused(false);
     setPaused(false);
