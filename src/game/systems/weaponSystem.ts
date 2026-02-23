@@ -502,6 +502,7 @@ const fireSky = (player: Player, _origin: Vector2D, stats: any) => {
 
   const count = stats.count || 1;
   const positions: { x: number; y: number; target?: Enemy }[] = [];
+  const hitEnemyIds = new Set<string>();
 
   if (validEnemies.length > 0) {
     const sortedByDistance = [...validEnemies].sort((a, b) => {
@@ -534,12 +535,14 @@ const fireSky = (player: Player, _origin: Vector2D, stats: any) => {
 
     targets.forEach(e => {
       if (e.isExpired || e.hp <= 0) return;
+      if (hitEnemyIds.has(e.id)) return;
 
       let dmg = stats.damage;
       const def = (e as any).defense || 0;
       dmg = Math.max(1, dmg - def);
 
       e.hp -= dmg;
+      hitEnemyIds.add(e.id);
       damageTextManager.show(e.position.x, e.position.y, Math.floor(dmg), dmg > stats.damage * 1.5);
 
       if (e.hp <= 0) {
