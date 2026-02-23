@@ -1,4 +1,4 @@
-import { ElementType } from "@/game/types";
+﻿import { ElementType } from "@/game/types";
 import { WEAPON_ICONS } from "./weaponIcons";
 
 // 무기 레벨별 스케일링 정의
@@ -533,18 +533,24 @@ export const WEAPON_REGISTRY: Record<string, WeaponDefinition> = {
     id: "W17",
     name: "샷건",
     icon: WEAPON_ICONS.SHOTGUN,
-    description: "부채꼴 범위로 탄환 발사",
+    description: "짧고 굵은 원뿔형 산탄을 정면으로 발사",
     pattern: "spread",
-    tags: [ElementType.TECH],
-    baseStats: { damage: 12, attackSpeed: 0.83, count: 5, size: 12, speed: 320, pierce: 1 },
+    tags: [ElementType.PHYSICAL],
+    baseStats: { damage: 12, attackSpeed: 0.95, count: 7, size: 11, speed: 620, range: 150, pierce: 1 },
     levels: {
       2: { damage: 3, description: "데미지 +3" },
-      3: { count: 2, description: "탄환 +2" },
-      4: { damage: 5, description: "데미지 +5" },
+      3: { count: 1, description: "탄환 +1" },
+      4: { attackSpeed: 0.15, description: "공격 속도 증가" },
       5: { pierce: 1, description: "관통 +1" },
-      6: { count: 3, description: "탄환 +3" },
-      7: { damage: 8, description: "데미지 +8" },
-      8: { damage: 15, count: 5, description: "MAX: 데미지 +15, 탄환 +5" },
+      6: { count: 2, description: "탄환 +2" },
+      7: { damage: 7, speed: 60, description: "데미지 +7, 탄속 증가" },
+      8: {
+        damage: 12,
+        count: 2,
+        pierce: 1,
+        attackSpeed: 0.2,
+        description: "MAX: 데미지 +12, 탄환 +2, 관통 +1, 공속 증가",
+      },
     },
   },
 

@@ -1,4 +1,4 @@
-import { WEAPON_REGISTRY } from "./weaponRegistry";
+﻿import { WEAPON_REGISTRY } from "./weaponRegistry";
 import { PASSIVE_REGISTRY } from "./passiveRegistry";
 
 export interface CharacterVisuals {
@@ -46,7 +46,7 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "테스트",
     description: "테스트 캐릭터",
     icon: "⚔️",
-    startWeaponIds: ["W15"],
+    startWeaponIds: ["W17"],
     baseStats: {
       hp: 150,
       maxHp: 150,
@@ -64,7 +64,7 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
       xp: 0,
       maxXp: 100,
       level: 1,
-      pickupRange: 80, // 하향
+      pickupRange: 80, // NOTE: game action path comment
       gold: 0,
     },
     startPassiveIds: ["P01"],
@@ -120,7 +120,7 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
       fireRate: 1.0,
       projectileSpeed: 1.0,
       duration: 1.0,
-      area: 1.1, // 넓은 범위
+      area: 1.1, // NOTE: game action path comment
       cooldown: 0,
       amount: 0,
       luck: 1.0,
@@ -150,7 +150,7 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
       moveSpeed: 0.9,
       fireRate: 1.0,
       projectileSpeed: 1.0,
-      duration: 1.2, // 긴 지속 시간
+      duration: 1.2, // NOTE: game action path comment
       area: 1.1,
       cooldown: 0,
       amount: 0,
@@ -178,9 +178,9 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
       maxHp: 80,
       atk: 1.1,
       def: 0,
-      moveSpeed: 1.2, // 빠른 이속
-      fireRate: 1.1, // 빠른 공속
-      projectileSpeed: 1.3, // 매우 빠른 투사체
+      moveSpeed: 1.2, // 빠른 이동 속도
+      fireRate: 1.1, // 빠른 공격 속도
+      projectileSpeed: 1.3, // 빠른 투사체
       duration: 1.0,
       area: 1.0,
       cooldown: 0,
@@ -210,12 +210,12 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
       maxHp: 70,
       atk: 0.8,
       def: 0,
-      moveSpeed: 1.5, // 극단적인 이속
+      moveSpeed: 1.5, // NOTE: game action path comment
       fireRate: 1.2,
       projectileSpeed: 1.0,
       duration: 1.0,
       area: 1.0,
-      cooldown: 0.1, // 쿨감 10%
+      cooldown: 0.1, // 荑④컧 10%
       amount: 0,
       luck: 1.0,
       revival: 0,
@@ -241,12 +241,12 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
       hp: 200,
       maxHp: 200,
       atk: 0.8,
-      def: 5, // 높은 방어
-      moveSpeed: 0.8, // 느린 이속
+      def: 5, // NOTE: game action path comment
+      moveSpeed: 0.8, // NOTE: game action path comment
       fireRate: 0.8,
       projectileSpeed: 1.0,
       duration: 1.0,
-      area: 1.2, // 넓은 범위 (덩치값)
+      area: 1.2, // NOTE: game action path comment
       cooldown: 0,
       amount: 0,
       luck: 1.0,
@@ -267,7 +267,7 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     startWeaponIds: ["W02"],
     startPassiveIds: ["P13"],
     unlocked: false,
-    unlockCondition: "화염, 얼음, 전기 무기 모두 진화",
+    unlockCondition: "화염, 얼음, 번개 무기 모두 진화",
     visual: { primary: "#E056FD", secondary: "#9B2CF0", eye: "#00FFFF" },
     baseStats: {
       hp: 100,
@@ -280,7 +280,7 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
       duration: 1.1,
       area: 1.1,
       cooldown: 0.05,
-      amount: 1, // 기본 투사체 +1 !
+      amount: 1, // NOTE: game action path comment
       luck: 1.0,
       revival: 0,
       xp: 0,
@@ -342,3 +342,5 @@ export const getUnlockedCharacters = (): CharacterDefinition[] => {
 export const getCharacterById = (id: string): CharacterDefinition | null => {
   return CHARACTER_REGISTRY[id] || null;
 };
+
+
