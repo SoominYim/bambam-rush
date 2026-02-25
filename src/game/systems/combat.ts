@@ -107,7 +107,8 @@ export const updateCombat = (_deltaTime: number) => {
         (p as any).behavior === "GRAVITY_ORB" ||
         (p as any).behavior === "CHAKRAM" ||
         (p as any).behavior === "BEAM" ||
-        (p as any).behavior === "BAT"
+        (p as any).behavior === "BAT" ||
+        (p as any).behavior === "BLOSSOM"
       ) {
         return;
       }

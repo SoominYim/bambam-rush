@@ -96,6 +96,46 @@ export const createProjectile = (
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.stroke();
+      } else if ((this as any).weaponId === "W18") {
+        const p = this as any;
+        const points = (p.trailPoints || []) as Array<{ x: number; y: number; life: number }>;
+        if (points.length > 1) {
+          for (let i = 1; i < points.length; i++) {
+            const prev = points[i - 1];
+            const curr = points[i];
+            const alpha = Math.max(0.05, Math.min(prev.life, curr.life) * 0.6);
+            ctx.strokeStyle = `rgba(255, 168, 212, ${alpha})`;
+            ctx.lineWidth = 1.8 + i * 0.04;
+            ctx.beginPath();
+            ctx.moveTo(prev.x, prev.y);
+            ctx.lineTo(curr.x, curr.y);
+            ctx.stroke();
+          }
+        }
+
+        const r = (p.radius || 8) * 0.95;
+        ctx.translate(this.position.x, this.position.y);
+        ctx.rotate(this.angle || 0);
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = "#ff9ed1";
+
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.9, 0);
+        ctx.quadraticCurveTo(-r * 0.2, -r * 0.85, r * 0.95, 0);
+        ctx.quadraticCurveTo(-r * 0.2, r * 0.85, -r * 0.9, 0);
+        ctx.closePath();
+        ctx.fillStyle = "#ffd3ea";
+        ctx.fill();
+        ctx.strokeStyle = "#d46a9c";
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.7, 0);
+        ctx.lineTo(r * 0.55, 0);
+        ctx.strokeStyle = "rgba(255,255,255,0.6)";
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
       } else if (type === ElementType.SWORD) {
         
         const p = this as any;

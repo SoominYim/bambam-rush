@@ -61,6 +61,7 @@ export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
       if (scale.speed) stats.speed = (stats.speed || 0) + scale.speed;
       if (scale.pierce) stats.pierce = (stats.pierce || 0) + scale.pierce;
       if (scale.range) stats.range = (stats.range || 0) + scale.range;
+      if (scale.hitInterval) stats.hitInterval = (stats.hitInterval || 0) + scale.hitInterval;
       if (scale.orbitRadiusBase) stats.orbitRadiusBase = (stats.orbitRadiusBase || 0) + scale.orbitRadiusBase;
       if (scale.triggerRange) stats.triggerRange = (stats.triggerRange || 0) + scale.triggerRange;
       if (scale.aggroSpeedMultiplier)
@@ -139,6 +140,9 @@ export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
   stats.damage += damageBonus;
 
   stats.attackSpeed = Math.max(0, stats.attackSpeed);
+  if (stats.hitInterval) {
+    stats.hitInterval = Math.max(50, stats.hitInterval);
+  }
   return stats;
 };
 
@@ -555,7 +559,7 @@ const fireSky = (player: Player, _origin: Vector2D, stats: any) => {
 };
 
 const fireOrbit = (player: Player, origin: Vector2D, stats: any, type: any, ownerId?: string, weaponId?: string) => {
-  
+  const isSenbonzakura = weaponId === "W18";
   let existingCount = 0;
 
   if (ownerId && weaponId) {
@@ -586,6 +590,15 @@ const fireOrbit = (player: Player, origin: Vector2D, stats: any, type: any, owne
           const speedMult = speedFactor * aggroFactor * player.stats.fireRate;
           (p as any).speedMult = speedMult;
           (p as any).stabSpeed = 200 * speedMult;
+          (p as any).dashSpeed = 260 * speedMult;
+          (p as any).returnSpeed = 320 * speedMult;
+          (p as any).maxChainHits = Math.max(1, stats.pierce || 1);
+          (p as any).chainSearchRange = Math.max(120, stats.range || 220);
+          (p as any).isBlossom = isSenbonzakura;
+          if (isSenbonzakura) {
+            (p as any).trailMaxLength = 16;
+            (p as any).trailDecay = 2.2;
+          }
 
           (p as any).hitInterval = (stats.hitInterval || 200) / player.stats.fireRate; 
           
@@ -609,7 +622,7 @@ const fireOrbit = (player: Player, origin: Vector2D, stats: any, type: any, owne
     const proj = createProjectile(origin.x, origin.y, angle, type, 1, "PROJECTILE" as any);
     
     const isStab = stats.range && stats.range > 0; 
-    const behavior = isStab ? "ORBIT_STAB" : "ORBIT";
+    const behavior = isSenbonzakura ? "BLOSSOM" : isStab ? "ORBIT_STAB" : "ORBIT";
     (proj as any).behavior = behavior;
 
     (proj as any).orbitAngle = angle;
@@ -631,10 +644,21 @@ const fireOrbit = (player: Player, origin: Vector2D, stats: any, type: any, owne
     const speedMult = speedFactor * aggroFactor * (player?.stats.fireRate || 1);
     (proj as any).speedMult = speedMult;
     (proj as any).stabSpeed = 200 * speedMult;
+    (proj as any).dashSpeed = 260 * speedMult;
+    (proj as any).returnSpeed = 320 * speedMult;
+    (proj as any).maxChainHits = Math.max(1, stats.pierce || 1);
+    (proj as any).chainSearchRange = Math.max(120, stats.range || 220);
+    (proj as any).isBlossom = isSenbonzakura;
 
     (proj as any).triggerRange = stats.triggerRange; 
 
     (proj as any).state = "ORBIT"; 
+    (proj as any).attackCooldown = i * 0.08;
+    if (isSenbonzakura) {
+      (proj as any).trailPoints = [];
+      (proj as any).trailMaxLength = 16;
+      (proj as any).trailDecay = 2.2;
+    }
 
     (proj as any).hitInterval = stats.hitInterval || 200; 
 
