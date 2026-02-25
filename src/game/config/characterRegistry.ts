@@ -46,7 +46,7 @@ export const CHARACTER_REGISTRY: Record<string, CharacterDefinition> = {
     name: "테스트",
     description: "테스트 캐릭터",
     icon: "⚔️",
-    startWeaponIds: ["W17"],
+    startWeaponIds: ["W18"],
     baseStats: {
       hp: 150,
       maxHp: 150,
@@ -342,5 +342,3 @@ export const getUnlockedCharacters = (): CharacterDefinition[] => {
 export const getCharacterById = (id: string): CharacterDefinition | null => {
   return CHARACTER_REGISTRY[id] || null;
 };
-
-
