@@ -1,5 +1,5 @@
 import { Projectile } from "@/game/types";
-import { getPlayer, getEnemies, getTail } from "@/game/managers/state";
+import { getPlayer, getEnemies, getTail, addScore, addXPGem } from "@/game/managers/state";
 import { addArea } from "@/game/managers/entityStore"; // Fix circular dependency
 import { createArea } from "@/game/entities/area";
 import { VFXFactory } from "@/engine/vfx/VFXFactory";
@@ -18,6 +18,7 @@ export type ProjectileBehavior =
   | "SWING"
   | "STAB"
   | "ORBIT_STAB"
+  | "BLOSSOM"
   | "HOMING"
   | "BOTTLE"
   | "BEAM"
@@ -492,6 +493,259 @@ const updateOrbitStab: BehaviorFunction = (proj, dt) => {
   // 5. Rotation (Tangent / Outward)
   // Always point outward as requested
   proj.angle = p.orbitAngle;
+};
+
+/**
+ * BLOSSOM - Senbonzakura style orbit > dash > return.
+ */
+const updateBlossom: BehaviorFunction = (proj, dt) => {
+  const p = proj as any;
+
+  let center = { x: proj.position.x, y: proj.position.y };
+  if (p.parentID) {
+    const owner =
+      p.parentID === "snake_head"
+        ? getPlayer()
+        : (getTail() as any[]).find((t: any) => t.id === p.parentID);
+    if (owner) {
+      center = { x: owner.position.x, y: owner.position.y };
+      p.missingOwnerTime = 0;
+    } else {
+      p.missingOwnerTime = (p.missingOwnerTime || 0) + dt;
+      if (p.missingOwnerTime > 0.5) {
+        proj.isExpired = true;
+        return;
+      }
+    }
+  }
+
+  if (!p.state) p.state = "ORBIT";
+  if (p.orbitRadiusCurrent === undefined) p.orbitRadiusCurrent = p.orbitRadiusBase || 55;
+  if (!p.chainHitIds) p.chainHitIds = [] as string[];
+
+  const orbitSpeed = p.orbitSpeedBase || p.orbitSpeed || 1.2;
+  const orbitRadius = p.orbitRadiusBase || 55;
+  const triggerRange = p.triggerRange || 180;
+  const dashRange = p.stabRange || 220;
+  const dashSpeed = p.dashSpeed || p.stabSpeed || 320;
+  const returnSpeed = p.returnSpeed || dashSpeed * 1.2;
+  const speedMult = p.speedMult || 1;
+  const maxChainHits = Math.max(1, p.maxChainHits || 1);
+  const chainSearchRange = p.chainSearchRange || dashRange;
+
+  const points = (p.trailPoints || []) as Array<{ x: number; y: number; life: number }>;
+  const trailDecay = p.trailDecay || 2.2;
+  const trailMaxLength = p.trailMaxLength || 16;
+  for (let i = points.length - 1; i >= 0; i--) {
+    points[i].life -= trailDecay * dt;
+    if (points[i].life <= 0) points.splice(i, 1);
+  }
+  p.trailPoints = points;
+
+  const pushTrailPoint = () => {
+    points.push({ x: proj.position.x, y: proj.position.y, life: 1 });
+    if (points.length > trailMaxLength) points.splice(0, points.length - trailMaxLength);
+  };
+
+  const findNearestEnemy = (fromX: number, fromY: number, range: number, excluded: string[] = []) => {
+    const enemies = getEnemies() as any[];
+    let nearest: any = null;
+    let minDistSq = range * range;
+    for (const e of enemies) {
+      if (e.isExpired || e.hp <= 0) continue;
+      if (excluded.includes(e.id)) continue;
+      const dx = e.position.x - fromX;
+      const dy = e.position.y - fromY;
+      const dSq = dx * dx + dy * dy;
+      if (dSq < minDistSq) {
+        minDistSq = dSq;
+        nearest = e;
+      }
+    }
+    return nearest;
+  };
+
+  const distancePointToSegmentSq = (
+    px: number,
+    py: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+  ): number => {
+    const vx = x2 - x1;
+    const vy = y2 - y1;
+    const wx = px - x1;
+    const wy = py - y1;
+    const lenSq = vx * vx + vy * vy;
+    if (lenSq <= 0.0001) {
+      const dx = px - x1;
+      const dy = py - y1;
+      return dx * dx + dy * dy;
+    }
+    let t = (wx * vx + wy * vy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    const cx = x1 + vx * t;
+    const cy = y1 + vy * t;
+    const dx = px - cx;
+    const dy = py - cy;
+    return dx * dx + dy * dy;
+  };
+
+  const findDashCollisionEnemy = (
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    excluded: string[],
+  ) => {
+    const enemies = getEnemies() as any[];
+    const hitRadius = (p.radius || 8) + 20;
+    const hitRadiusSq = hitRadius * hitRadius;
+    let picked: any = null;
+    let minSegDistSq = Infinity;
+    for (const e of enemies) {
+      if (e.isExpired || e.hp <= 0) continue;
+      if (excluded.includes(e.id)) continue;
+      const segDistSq = distancePointToSegmentSq(e.position.x, e.position.y, x1, y1, x2, y2);
+      if (segDistSq <= hitRadiusSq && segDistSq < minSegDistSq) {
+        minSegDistSq = segDistSq;
+        picked = e;
+      }
+    }
+    return picked;
+  };
+
+  const applyHit = (enemy: any) => {
+    const defense = enemy.defense || 0;
+    const dmg = Math.max(1, proj.damage - defense);
+    enemy.hp -= dmg;
+    damageTextManager.show(enemy.position.x, enemy.position.y, Math.floor(dmg), false);
+    VFXFactory.createImpact(proj.position.x, proj.position.y, proj.type);
+
+    if (enemy.hp <= 0) {
+      enemy.isExpired = true;
+      addScore(enemy.type === "BOSS" ? 1000 : 50);
+      const xpMin = enemy.type === "BOSS" ? 500 : enemy.type === "TANK" ? 10 : enemy.type === "FAST" ? 2 : 1;
+      const xpMax = enemy.type === "BOSS" ? 1000 : enemy.type === "TANK" ? 20 : enemy.type === "FAST" ? 5 : 3;
+      const xpAmount = Math.floor(xpMin + Math.random() * (xpMax - xpMin + 1));
+      addXPGem(enemy.position.x, enemy.position.y, xpAmount);
+    }
+  };
+
+  switch (p.state) {
+    case "ORBIT": {
+      const timeSec = Date.now() / 1000;
+      const slotOffset = ((p.slotIndex || 0) / Math.max(1, p.slotTotal || 1)) * Math.PI * 2;
+      const orbitAngle = timeSec * orbitSpeed + slotOffset;
+      p.orbitAngle = orbitAngle;
+
+      proj.position.x = center.x + Math.cos(orbitAngle) * orbitRadius;
+      proj.position.y = center.y + Math.sin(orbitAngle) * orbitRadius;
+      proj.angle = orbitAngle + Math.PI / 2;
+
+      p.attackCooldown = (p.attackCooldown || 0) - dt;
+      if (p.attackCooldown > 0) break;
+
+      const nearest = findNearestEnemy(proj.position.x, proj.position.y, triggerRange);
+      if (!nearest) break;
+
+      p.targetId = nearest.id;
+      const lockDx = nearest.position.x - proj.position.x;
+      const lockDy = nearest.position.y - proj.position.y;
+      const lockDist = Math.sqrt(lockDx * lockDx + lockDy * lockDy);
+      p.currentDashLimit = Math.max(dashRange, lockDist + 28);
+      p.state = "DASH";
+      p.dashTraveled = 0;
+      p.chainHits = 0;
+      p.chainHitIds = [];
+      if (p.hitTracker) p.hitTracker = {};
+      pushTrailPoint();
+      break;
+    }
+
+    case "DASH": {
+      const enemies = getEnemies() as any[];
+      let target = enemies.find(e => e.id === p.targetId && !e.isExpired && e.hp > 0);
+      if (!target) {
+        target = findNearestEnemy(proj.position.x, proj.position.y, chainSearchRange, p.chainHitIds);
+        if (target) p.targetId = target.id;
+      }
+      if (!target) {
+        p.state = "RETURN";
+        break;
+      }
+
+      const prevX = proj.position.x;
+      const prevY = proj.position.y;
+      let dx = target.position.x - prevX;
+      let dy = target.position.y - prevY;
+      let dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 0.001) dist = 0.001;
+      dx /= dist;
+      dy /= dist;
+
+      const step = Math.min(dashSpeed * dt, dist);
+      proj.position.x = prevX + dx * step;
+      proj.position.y = prevY + dy * step;
+      proj.angle = Math.atan2(dy, dx);
+      p.dashTraveled = (p.dashTraveled || 0) + step;
+      pushTrailPoint();
+
+      const collided = findDashCollisionEnemy(prevX, prevY, proj.position.x, proj.position.y, p.chainHitIds);
+
+      if (collided) {
+        applyHit(collided);
+        p.chainHitIds.push(collided.id);
+        p.chainHits = (p.chainHits || 0) + 1;
+
+        if (p.chainHits < maxChainHits) {
+          const nextTarget = findNearestEnemy(collided.position.x, collided.position.y, chainSearchRange, p.chainHitIds);
+          if (nextTarget) {
+            p.targetId = nextTarget.id;
+            const chainDx = nextTarget.position.x - proj.position.x;
+            const chainDy = nextTarget.position.y - proj.position.y;
+            const chainDist = Math.sqrt(chainDx * chainDx + chainDy * chainDy);
+            p.currentDashLimit = Math.max(dashRange, chainDist + 22);
+          } else {
+            p.state = "RETURN";
+          }
+        } else {
+          p.state = "RETURN";
+        }
+      } else if (p.dashTraveled >= (p.currentDashLimit || dashRange)) {
+        p.state = "RETURN";
+      }
+      break;
+    }
+
+    case "RETURN": {
+      const timeSec = Date.now() / 1000;
+      const slotOffset = ((p.slotIndex || 0) / Math.max(1, p.slotTotal || 1)) * Math.PI * 2;
+      const targetAngle = timeSec * orbitSpeed + slotOffset;
+      const targetX = center.x + Math.cos(targetAngle) * orbitRadius;
+      const targetY = center.y + Math.sin(targetAngle) * orbitRadius;
+
+      let dx = targetX - proj.position.x;
+      let dy = targetY - proj.position.y;
+      let dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 0.001) dist = 0.001;
+      dx /= dist;
+      dy /= dist;
+
+      const step = Math.min(returnSpeed * dt, dist);
+      proj.position.x += dx * step;
+      proj.position.y += dy * step;
+      proj.angle = Math.atan2(dy, dx);
+      pushTrailPoint();
+
+      if (dist < 10) {
+        p.state = "ORBIT";
+        p.attackCooldown = 0.28 / speedMult;
+      }
+      break;
+    }
+  }
 };
 
 /**
@@ -998,6 +1252,7 @@ const behaviorMap: Record<ProjectileBehavior, BehaviorFunction> = {
   SWING: updateSwing,
   STAB: updateStab,
   ORBIT_STAB: updateOrbitStab,
+  BLOSSOM: updateBlossom,
   HOMING: updateHoming,
   BOTTLE: updateBottle,
   BEAM: updateBeam,

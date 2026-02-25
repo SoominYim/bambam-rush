@@ -54,8 +54,8 @@ export const WEAPON_ICONS = {
   // W17: 샷건
   SHOTGUN: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M10 28H40L54 22L54 42L40 36H10V28Z" fill="#696969"/><rect x="4" y="26" width="6" height="12" fill="#8B4513"/><circle cx="48" cy="28" r="2" fill="#000"/><circle cx="48" cy="36" r="2" fill="#000"/></svg>`,
 
-  // W18: 역병 구름
-  PLAGUE_CLOUD: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M16 24C12 24 8 28 8 34C8 42 16 46 22 46H42C48 46 56 42 56 34C56 26 48 22 42 22C40 16 32 14 26 18C22 18 16 20 16 24Z" fill="#556B2F"/><circle cx="24" cy="30" r="2" fill="#ADFF2F"/><circle cx="40" cy="36" r="3" fill="#ADFF2F"/><circle cx="30" cy="40" r="2" fill="#ADFF2F"/></svg>`,
+  // W18: 천본앵
+  CHERRY_BLOSSOM: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="bloomCore" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff7fb"/><stop offset="100%" stop-color="#f6c1de"/></radialGradient></defs><circle cx="32" cy="32" r="6" fill="#ffd8eb" stroke="#d06ea3" stroke-width="1.5"/><path d="M32 14C36 22 44 26 52 26C46 31 44 39 32 50C20 39 18 31 12 26C20 26 28 22 32 14Z" fill="url(#bloomCore)" stroke="#cc6b9b" stroke-width="1.6"/><path d="M10 22C18 18 26 20 32 26" stroke="#ffb4d7" stroke-width="2" stroke-linecap="round"/><path d="M54 22C46 18 38 20 32 26" stroke="#ffb4d7" stroke-width="2" stroke-linecap="round"/></svg>`,
 
   // W19: 얼음 파편
   ICE_SHARD: `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M32 4L38 24L56 32L38 40L32 60L26 40L8 32L26 24Z" fill="#E0FFFF"/><path d="M32 4V60M8 32H56" stroke="#B0E0E6" stroke-width="1"/></svg>`,
