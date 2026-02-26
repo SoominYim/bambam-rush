@@ -136,6 +136,42 @@ export const createProjectile = (
         ctx.strokeStyle = "rgba(255,255,255,0.6)";
         ctx.lineWidth = 0.8;
         ctx.stroke();
+      } else if ((this as any).weaponId === "W19") {
+        const p = this as any;
+        const r = Math.max(5, (p.radius || 8) * 1.05);
+        const a = this.angle || 0;
+        ctx.translate(this.position.x, this.position.y);
+        ctx.rotate(a);
+
+        // Phase trail (simple forward streak)
+        ctx.strokeStyle = "rgba(173, 116, 255, 0.45)";
+        ctx.lineWidth = Math.max(2, r * 0.3);
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-r * 2.2, 0);
+        ctx.lineTo(-r * 0.2, 0);
+        ctx.stroke();
+
+        // Spear body
+        ctx.beginPath();
+        ctx.moveTo(r * 1.35, 0);
+        ctx.lineTo(0, -r * 0.48);
+        ctx.lineTo(-r * 1.2, 0);
+        ctx.lineTo(0, r * 0.48);
+        ctx.closePath();
+        ctx.fillStyle = "#d7c6ff";
+        ctx.strokeStyle = "#7d5bff";
+        ctx.lineWidth = 1.1;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#8c6bff";
+        ctx.fill();
+        ctx.stroke();
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(r * 0.15, 0, r * 0.22, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
       } else if (type === ElementType.SWORD) {
         
         const p = this as any;

@@ -118,6 +118,30 @@ export const createBoss = (x: Scalar, y: Scalar): Enemy => {
       ctx.lineWidth = 3;
       ctx.stroke();
 
+      // W19 phase mark overlay for boss
+      const markUntil = (this as any).__phaseMarkUntil || 0;
+      const now = Date.now();
+      if (markUntil > now) {
+        const t = Math.max(0, Math.min(1, (markUntil - now) / 3000));
+        const pulse = 1 + Math.sin(now * 0.018) * 0.08;
+        const rr = size * (1.22 + (1 - t) * 0.2) * pulse;
+
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, rr, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(158, 120, 255, ${0.35 + t * 0.55})`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(this.position.x - rr * 0.42, this.position.y);
+        ctx.lineTo(this.position.x + rr * 0.42, this.position.y);
+        ctx.moveTo(this.position.x, this.position.y - rr * 0.42);
+        ctx.lineTo(this.position.x, this.position.y + rr * 0.42);
+        ctx.strokeStyle = `rgba(235, 225, 255, ${0.45 + t * 0.45})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
       // Skull or detail marking
       ctx.fillStyle = "#000";
       ctx.beginPath();

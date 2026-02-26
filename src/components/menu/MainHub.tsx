@@ -13,7 +13,9 @@ interface MainHubProps {
 
 export const MainHub: React.FC<MainHubProps> = ({ onStartGame }) => {
   const [showLibrary, setShowLibrary] = useState(false);
-  const [selectedCharacter, setSelectedCharacter] = useState<string>("BASIC");
+  const [selectedCharacter, setSelectedCharacter] = useState<string>(
+    CHARACTER_REGISTRY.TEST?.unlocked ? "TEST" : "BASIC",
+  );
   const [isGodRevealed, setIsGodRevealed] = useState(false);
 
   // States for Drag-to-Scroll (Unified Pointer Events)
@@ -38,7 +40,7 @@ export const MainHub: React.FC<MainHubProps> = ({ onStartGame }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const currentChar = CHARACTER_REGISTRY[selectedCharacter];
+  const currentChar = CHARACTER_REGISTRY[selectedCharacter] || CHARACTER_REGISTRY.BASIC;
   const isDesktop = windowWidth >= 1024;
   const isTablet = windowWidth >= 768 && windowWidth < 1024;
   const showcaseSize = isDesktop ? 240 : isTablet ? 180 : 140;
