@@ -35,6 +35,104 @@ const getDamageBonus = (player: any): number => {
   return (atkStat - 1.0) * 10;
 };
 
+const grantKillRewards = (enemy: Enemy) => {
+  if (enemy.isExpired) return;
+  enemy.isExpired = true;
+  addScore(enemy.type === "BOSS" ? 1000 : 50);
+  const xpMin = enemy.type === "BOSS" ? 500 : enemy.type === "TANK" ? 10 : enemy.type === "FAST" ? 2 : 1;
+  const xpMax = enemy.type === "BOSS" ? 1000 : enemy.type === "TANK" ? 20 : enemy.type === "FAST" ? 5 : 3;
+  const xpAmount = Math.floor(xpMin + Math.random() * (xpMax - xpMin + 1));
+  addXPGem(enemy.position.x, enemy.position.y, xpAmount);
+};
+
+const applyPhaseMarkLinks = (projectile: any, hitEnemy: Enemy, directDamage: number, now: number) => {
+  const markDuration = Math.max(700, projectile.duration || 1300);
+  const linkRange = Math.max(100, projectile.chainRange || 170);
+  const maxLinks = Math.max(1, Math.floor(projectile.chainCount || 1));
+  const detonateCooldown = Math.max(250, projectile.hitInterval || 450);
+  const sourceDetonationRatio = 1.4;
+  const linkBaseRatio = 1.9;
+  const linkDecay = 0.95;
+  const bossMultiplier = 0.8;
+
+  const markUntil = (hitEnemy as any).__phaseMarkUntil || 0;
+  const recentlyDetonatedAt = (hitEnemy as any).__phaseDetonatedAt || 0;
+  const isMarked = markUntil > now;
+
+  // First hit: mark only (no link burst) so trigger timing is predictable.
+  if (!isMarked) {
+    (hitEnemy as any).__phaseMarkUntil = now + markDuration;
+    return;
+  }
+
+  // Prevent rapid re-detonation on the same target.
+  if (now - recentlyDetonatedAt < detonateCooldown) {
+    return;
+  }
+
+  // Second hit on marked target: detonate and link.
+  const nearbyTargets = spatialGrid
+    .getNearbyEnemies(hitEnemy.position.x, hitEnemy.position.y, linkRange)
+    .filter((e: Enemy) => !e.isExpired && e.hp > 0 && e.id !== hitEnemy.id)
+    .sort((a: Enemy, b: Enemy) => {
+      const da = (a.position.x - hitEnemy.position.x) ** 2 + (a.position.y - hitEnemy.position.y) ** 2;
+      const db = (b.position.x - hitEnemy.position.x) ** 2 + (b.position.y - hitEnemy.position.y) ** 2;
+      return da - db;
+    });
+
+  // Strict rule: only currently marked enemies can be linked/detonated.
+  const linkTargets = nearbyTargets
+    .filter((e: Enemy) => ((e as any).__phaseMarkUntil || 0) > now)
+    .slice(0, maxLinks);
+
+  // No extra marked target -> do not trigger.
+  if (linkTargets.length === 0) {
+    (hitEnemy as any).__phaseMarkUntil = now + markDuration;
+    return;
+  }
+
+  // Primary detonation pulse on the re-hit target.
+  VFXFactory.createPhaseLinkBurst(hitEnemy.position.x, hitEnemy.position.y, hitEnemy.position.x, hitEnemy.position.y);
+  (hitEnemy as any).__phaseDetonatedAt = now;
+  (hitEnemy as any).__phaseMarkUntil = 0; // consume trigger source mark
+
+  // Trigger source also takes an extra detonation hit.
+  {
+    const sourceDef = (hitEnemy as any).defense || 0;
+    let sourceBonus = Math.max(1, directDamage * sourceDetonationRatio);
+    if (hitEnemy.type === "BOSS") sourceBonus *= bossMultiplier;
+    const finalSourceBonus = Math.max(1, sourceBonus - sourceDef);
+    hitEnemy.hp -= finalSourceBonus;
+    damageTextManager.show(hitEnemy.position.x, hitEnemy.position.y, Math.floor(finalSourceBonus), true);
+    if (hitEnemy.hp <= 0) {
+      grantKillRewards(hitEnemy);
+      return;
+    }
+  }
+
+  let applied = 0;
+  for (const target of linkTargets) {
+    const def = (target as any).defense || 0;
+    const ratio = linkBaseRatio * Math.pow(linkDecay, applied);
+    let linkDamage = Math.max(1, directDamage * ratio);
+    if (target.type === "BOSS") {
+      linkDamage *= bossMultiplier;
+    }
+    const finalLinkDamage = Math.max(1, linkDamage - def);
+
+    target.hp -= finalLinkDamage;
+    (target as any).__phaseDetonatedAt = now;
+    (target as any).__phaseMarkUntil = 0; // consume linked mark
+    damageTextManager.show(target.position.x, target.position.y, Math.floor(finalLinkDamage), true);
+    VFXFactory.createPhaseLinkBurst(hitEnemy.position.x, hitEnemy.position.y, target.position.x, target.position.y);
+
+    if (target.hp <= 0) {
+      grantKillRewards(target);
+    }
+    applied++;
+  }
+};
+
 export const updateCombat = (_deltaTime: number) => {
   const player = getPlayer();
   if (!player) return;
@@ -139,6 +237,10 @@ export const updateCombat = (_deltaTime: number) => {
         // Life Steal Logic
         if ((p as any).lifeSteal && (p as any).lifeSteal > 0) {
           player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + (p as any).lifeSteal);
+        }
+
+        if ((p as any).weaponId === "W19") {
+          applyPhaseMarkLinks(p as any, e, finalDamage, now);
         }
 
         // --- Status Effect Application ---
@@ -279,17 +381,12 @@ export const updateCombat = (_deltaTime: number) => {
         }
 
         if (e.hp <= 0) {
-          e.isExpired = true;
-          addScore(e.type === "BOSS" ? 1000 : 50);
-          const xpMin = e.type === "BOSS" ? 500 : e.type === "TANK" ? 10 : e.type === "FAST" ? 2 : 1;
-          const xpMax = e.type === "BOSS" ? 1000 : e.type === "TANK" ? 20 : e.type === "FAST" ? 5 : 3;
-          const xpAmount = Math.floor(xpMin + Math.random() * (xpMax - xpMin + 1));
-          addXPGem(e.position.x, e.position.y, xpAmount);
+          grantKillRewards(e);
         }
 
         if (stats.behavior === SkillBehavior.PROJECTILE) {
           // --- Chain Lightning Logic ---
-          if ((p as any).chainCount && (p as any).chainCount > 0) {
+          if ((p as any).weaponId !== "W19" && (p as any).chainCount && (p as any).chainCount > 0) {
             const chainCount = (p as any).chainCount;
             const chainRange = (p as any).chainRange || 150;
             applyChainLightning(e, finalDamage, chainCount, chainRange, [e.id]);

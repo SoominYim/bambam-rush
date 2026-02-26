@@ -171,6 +171,30 @@ export const createEnemy = (x: Scalar, y: Scalar, type: EnemyType = EnemyType.BA
       ctx.lineWidth = 1;
       ctx.stroke();
 
+      // W19 phase mark overlay (always visible while marked)
+      const markUntil = (this as any).__phaseMarkUntil || 0;
+      const now = Date.now();
+      if (markUntil > now) {
+        const t = Math.max(0, Math.min(1, (markUntil - now) / 3000));
+        const pulse = 1 + Math.sin(now * 0.02) * 0.08;
+        const rr = size * (1.2 + (1 - t) * 0.25) * pulse;
+
+        ctx.beginPath();
+        ctx.arc(this.position.x, this.position.y, rr, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(158, 120, 255, ${0.35 + t * 0.5})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(this.position.x - rr * 0.45, this.position.y);
+        ctx.lineTo(this.position.x + rr * 0.45, this.position.y);
+        ctx.moveTo(this.position.x, this.position.y - rr * 0.45);
+        ctx.lineTo(this.position.x, this.position.y + rr * 0.45);
+        ctx.strokeStyle = `rgba(230, 220, 255, ${0.45 + t * 0.45})`;
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+      }
+
       // HP Bar (Clamped to prevent negative overflow)
       const hpPct = Math.max(0, Math.min(1, this.hp / this.maxHp));
       ctx.fillStyle = "#f00";

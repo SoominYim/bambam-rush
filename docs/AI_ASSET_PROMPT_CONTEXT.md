@@ -3,6 +3,7 @@
 ## 0) 목적
 - 캔버스 게임용 고품질 에셋 생성 프롬프트 표준 문서다.
 - 모든 AI 이미지 생성은 이 템플릿을 기준으로 작성한다.
+- 현재 프로젝트 기준 최종 에셋 포맷은 `SVG 우선`이며, PNG는 보조 파생 포맷이다.
 
 ## 1) 공통 스타일 컨텍스트
 ```text
@@ -65,7 +66,7 @@ theme: [short description]
 element: [FIRE|ICE|POISON|ELECTRIC|WIND|TECH|NONE]
 silhouette: [one sentence]
 detail level: medium
-output: transparent png, centered subject, single asset
+output: clean vector-style single asset, centered subject, SVG-first
 [NEGATIVE_PROMPT]
 ```
 
@@ -75,7 +76,7 @@ output: transparent png, centered subject, single asset
 create [N] variations of [CATEGORY] in one consistent visual family,
 each variation must be distinguishable by silhouette and function,
 keep identical lighting direction and rendering style,
-transparent background for each asset
+transparent background for each asset, SVG-first output
 [NEGATIVE_PROMPT]
 ```
 
@@ -85,13 +86,14 @@ top-down 2D action game asset, clean silhouette, readable at small size,
 stylized but not noisy, high contrast shape language, consistent lighting direction,
 transparent background, centered composition, no text, no logo, no watermark,
 weapon icon, two linked spatial gates, arcane-tech fusion,
-WIND and TECH color accents, single icon, transparent png
+WIND and TECH color accents, single icon, SVG-first
 Negative prompt: photorealistic, background scene, text, watermark
 ```
 
 ## 8) 후처리 규칙
-- 배경 제거 -> 투명 PNG
-- 크기 정규화
+- SVG path 정리(중복 path, 불필요 그룹 제거)
+- viewBox/anchor 정규화
+- 필요 시 PNG 파생본 생성
 - 중심 정렬/여백 통일
 - 파일명 규칙 적용
 - 50% 축소 판독성 검사

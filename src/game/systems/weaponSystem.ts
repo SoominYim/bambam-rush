@@ -39,9 +39,14 @@ export const updateWeapons = (player: Player, deltaTime: Scalar) => {
     const interval = stats.attackSpeed > 0 ? 1000 / stats.attackSpeed : 999999;
 
     if (aw.timer >= interval) {
-      aw.timer = 0;
-      aw.lastFired = Date.now();
-      triggerWeaponEffect(player, aw, stats);
+      const fired = triggerWeaponEffect(player, aw, stats);
+      if (fired) {
+        aw.timer = 0;
+        aw.lastFired = Date.now();
+      } else {
+        // Keep the timer capped so the weapon fires immediately once a target appears.
+        aw.timer = interval;
+      }
     }
   });
 };
@@ -146,7 +151,7 @@ export const getEffectiveStats = (player: Player, aw: ActiveWeapon) => {
   return stats;
 };
 
-const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
+const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any): boolean => {
   const def = WEAPON_REGISTRY[aw.id];
   const segments = getTail().filter(s => s.weaponId === aw.id);
   const origin = segments.length > 0 ? segments[0].position : player.position;
@@ -156,74 +161,86 @@ const triggerWeaponEffect = (player: Player, aw: ActiveWeapon, stats: any) => {
 
   switch (def.pattern) {
     case "projectile":
+      if (!getNearestEnemy(origin, stats.range || 700)) return false;
       fireProjectile(player, origin, stats, def.tags[0], segments, aw.id);
-      break;
+      return true;
     case "line":
+      if (!getNearestEnemy(origin, stats.range || 800)) return false;
       fireLine(player, origin, stats, def.tags[0]);
-      break;
+      return true;
     case "chain":
+      if (!getNearestEnemy(origin, stats.range || 400)) return false;
       fireChain(player, origin, stats);
-      break;
+      return true;
     case "area":
-      
-      if (waveManager.getPlayTime() > 0.1) {
-        spawnArea(player, origin, stats, def.tags[0], "STATIC");
-      }
-      break;
+      if (waveManager.getPlayTime() <= 0.1) return false;
+      if (!getNearestEnemy(origin, stats.range || 350)) return false;
+      spawnArea(player, origin, stats, def.tags[0], "STATIC");
+      return true;
     case "orbit":
       fireOrbit(player, origin, stats, def.tags[0], ownerId, aw.id);
-      break;
+      return true;
     case "return":
+      if (!getNearestEnemy(origin, 800)) return false;
       fireReturn(origin, stats, def.tags[0]);
-      break;
+      return true;
     case "spread":
+      if (!getNearestEnemy(origin, stats.range || 800)) return false;
       fireSpread(player, origin, stats, def.tags[0], aw.id);
-      break;
+      return true;
     case "linear":
-      fireLinear(player, origin, stats, def.tags[0]);
-      break;
+      return fireLinear(player, origin, stats, def.tags[0]);
     case "nova":
       spawnArea(player, player.position, stats, def.tags[0], "STATIC"); 
-      break;
+      return true;
     case "aura":
       createAuraWeapon(player, stats, def.tags[0]);
-      break;
+      return true;
     case "vortex":
+      if (!getNearestEnemy(origin, 600)) return false;
       fireGravityOrb(player, origin, stats, def.tags[0]);
-      break;
+      return true;
     case "gas":
       spawnArea(player, origin, stats, def.tags[0], "DRIFT");
-      break;
+      return true;
     case "trap":
       spawnArea(player, origin, stats, def.tags[0], "TRAP");
-      break;
+      return true;
     case "swing":
+      if (!getNearestEnemy(origin, stats.range || 500)) return false;
       fireSwing(player, origin, stats, def.tags[0]);
-      break;
+      return true;
     case "stab":
       fireStab(player, origin, stats, def.tags[0], ownerId, aw.id);
-      break;
+      return true;
     case "beam":
+      if (!getNearestEnemy(origin, stats.range || 1000)) return false;
       fireBeam(player, origin, stats, def.tags[0], ownerId);
-      break;
+      return true;
     case "bat":
+      if (!getNearestEnemy(origin, 800)) return false;
       fireBat(player, origin, stats, def.tags[0], ownerId);
-      break;
+      return true;
     case "arc":
+      if (!getNearestEnemy(origin, 800)) return false;
       fireArc(player, origin, stats, def.tags[0], ownerId, aw.id);
-      break;
+      return true;
     case "bounce":
+      if (!getNearestEnemy(origin, 800)) return false;
       fireChakram(player, origin, stats, def.tags[0]);
-      break;
+      return true;
     case "flame":
-      fireFlame(player, origin, stats, def.tags[0], ownerId);
-      break;
+      return fireFlame(player, origin, stats, def.tags[0], ownerId);
     case "sky":
+      if (!getNearestEnemy(player.position, 900)) return false;
       fireSky(player, origin, stats);
-      break;
+      return true;
     case "nuke":
+      if (!getNearestEnemy(origin, 1200)) return false;
       spawnArea(player, origin, stats, def.tags[0], "STATIC");
-      break;
+      return true;
+    default:
+      return false;
   }
 };
 
@@ -695,9 +712,8 @@ const fireReturn = (origin: Vector2D, stats: any, type: any) => {
   }
 
   const target = getNearestEnemy(origin);
-  const angle = target
-    ? Math.atan2(target.position.y - origin.y, target.position.x - origin.x)
-    : Math.random() * Math.PI * 2;
+  if (!target) return;
+  const angle = Math.atan2(target.position.y - origin.y, target.position.x - origin.x);
 
   for (let i = 0; i < stats.count; i++) {
     const offsetAngle = angle + (i - (stats.count - 1) / 2) * 0.3;
@@ -720,9 +736,8 @@ const fireReturn = (origin: Vector2D, stats: any, type: any) => {
 
 const fireSpread = (_player: Player, origin: Vector2D, stats: any, type: any, weaponId?: string) => {
   const target = getNearestEnemy(origin);
-  const baseAngle = target
-    ? Math.atan2(target.position.y - origin.y, target.position.x - origin.x)
-    : Math.random() * Math.PI * 2;
+  if (!target) return;
+  const baseAngle = Math.atan2(target.position.y - origin.y, target.position.x - origin.x);
 
   const isShotgun = weaponId === "W17";
   const spreadAngle = isShotgun ? Math.PI / 5 : Math.PI / 4;
@@ -767,30 +782,41 @@ const fireSpread = (_player: Player, origin: Vector2D, stats: any, type: any, we
   }
 };
 
-const fireLinear = (_player: Player, origin: Vector2D, stats: any, type: any) => {
-  const angles = [0, Math.PI / 2, Math.PI, Math.PI * 1.5]; 
+const fireLinear = (_player: Player, origin: Vector2D, stats: any, type: any): boolean => {
+  const target = getNearestEnemy(origin, stats.range || 800);
+  if (!target) return false; // W19: 적이 없으면 발사하지 않음
+  const baseAngle = Math.atan2(target.position.y - origin.y, target.position.x - origin.x);
+  const spread = stats.count > 1 ? Math.PI / 18 : 0;
+  const start = stats.count > 1 ? baseAngle - spread / 2 : baseAngle;
+  const step = stats.count > 1 ? spread / (stats.count - 1) : 0;
 
   for (let i = 0; i < stats.count; i++) {
-    const angle = angles[i % 4] + (Math.random() - 0.5) * 0.2;
+    const angle = start + step * i + (Math.random() - 0.5) * 0.06;
     const proj = createProjectile(origin.x, origin.y, angle, type, 1, "PROJECTILE" as any);
     (proj as any).behavior = "LINEAR";
     (proj as any).speed = stats.speed || 400;
     proj.damage = stats.damage;
     (proj as any).radius = stats.size;
+    (proj as any).range = stats.range || 700;
+    (proj as any).duration = stats.duration || 1300; // 표식 유지 시간으로도 사용
+    (proj as any).chainCount = stats.chainCount || 1;
+    (proj as any).chainRange = stats.chainRange || 170;
+    (proj as any).weaponId = "W19";
     proj.penetration = stats.pierce || 2;
+    (proj as any).hitInterval = stats.hitInterval || 450; // 위상 재피격 쿨다운
     (proj as any).chillAmount = stats.chillAmount;
     (proj as any).chillDuration = stats.chillDuration;
     (proj as any).freezeDuration = stats.freezeDuration;
     addProjectile(proj);
   }
+  return true;
 };
 
 const fireBeam = (_player: Player, origin: Vector2D, stats: any, type: any, ownerId?: string) => {
   
   const target = getNearestEnemy(origin);
-  const baseAngle = target
-    ? Math.atan2(target.position.y - origin.y, target.position.x - origin.x)
-    : Math.random() * Math.PI * 2; 
+  if (!target) return;
+  const baseAngle = Math.atan2(target.position.y - origin.y, target.position.x - origin.x);
 
   const spread = 0.3; 
   for (let i = 0; i < stats.count; i++) {
@@ -910,13 +936,11 @@ const createAuraWeapon = (player: Player, stats: any, type: any) => {
 
 
 const fireChakram = (_player: Player, origin: Vector2D, stats: any, type: any) => {
-  for (let i = 0; i < stats.count; i++) {
-    const target = getNearestEnemy(origin, 600);
-    const angle = target
-      ? Math.atan2(target.position.y - origin.y, target.position.x - origin.x)
-      : Math.random() * Math.PI * 2;
+  const target = getNearestEnemy(origin, 600);
+  if (!target) return;
+  const angle = Math.atan2(target.position.y - origin.y, target.position.x - origin.x);
 
-    
+  for (let i = 0; i < stats.count; i++) {
     const spread = stats.count > 1 ? Math.PI / 4 : 0;
     const startAngle = stats.count > 1 ? angle - spread / 2 : angle;
     const step = stats.count > 1 ? spread / (stats.count - 1) : 0;
@@ -938,7 +962,7 @@ const fireChakram = (_player: Player, origin: Vector2D, stats: any, type: any) =
 
 
 
-const fireFlame = (player: Player, origin: Vector2D, stats: any, type: any, ownerId?: string) => {
+const fireFlame = (player: Player, origin: Vector2D, stats: any, type: any, ownerId?: string): boolean => {
   
   let sourceEntity: any = player;
   let firePos = { ...origin };
@@ -955,7 +979,7 @@ const fireFlame = (player: Player, origin: Vector2D, stats: any, type: any, owne
   const target = getNearestEnemy(firePos, 400);
 
   
-  if (!target) return;
+  if (!target) return false;
 
   const aimAngle = Math.atan2(target.position.y - firePos.y, target.position.x - firePos.x);
 
@@ -979,6 +1003,7 @@ const fireFlame = (player: Player, origin: Vector2D, stats: any, type: any, owne
   area.followTarget = sourceEntity;
 
   addArea(area);
+  return true;
 };
 
 
@@ -986,9 +1011,8 @@ const fireFlame = (player: Player, origin: Vector2D, stats: any, type: any, owne
 
 const fireGravityOrb = (_player: Player, origin: Vector2D, stats: any, type: any) => {
   const target = getNearestEnemy(origin, 500);
-  const baseAngle = target
-    ? Math.atan2(target.position.y - origin.y, target.position.x - origin.x)
-    : Math.random() * Math.PI * 2;
+  if (!target) return;
+  const baseAngle = Math.atan2(target.position.y - origin.y, target.position.x - origin.x);
 
   
   const arc = Math.PI / 6; 

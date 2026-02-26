@@ -28,6 +28,9 @@ export const VFXFactory = {
       case ElementType.ELECTRIC:
         color = "#ffff00";
         break;
+      case ElementType.ARCANE:
+        color = "#9c78ff";
+        break;
       case ElementType.STEAM:
         color = "#ffffff";
         actualCount *= 1.5;
@@ -180,6 +183,69 @@ export const VFXFactory = {
         size: 1.5,
         color: "#ffff00",
         decay: 0.8,
+        glow: true,
+      });
+    }
+  },
+
+  // Arcane phase link effect for W19 trigger (non-lightning visual).
+  createPhaseLinkBurst: (startX: number, startY: number, endX: number, endY: number) => {
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const segments = Math.max(4, Math.floor(dist / 34));
+
+    const points: Array<{ x: number; y: number }> = [{ x: startX, y: startY }];
+    for (let i = 1; i < segments; i++) {
+      const t = i / segments;
+      const wobble = 14;
+      const ox = (Math.random() - 0.5) * wobble;
+      const oy = (Math.random() - 0.5) * wobble;
+      points.push({ x: startX + dx * t + ox, y: startY + dy * t + oy });
+    }
+    points.push({ x: endX, y: endY });
+
+    // Outer phase strand
+    vfx.emit({
+      x: startX,
+      y: startY,
+      vx: 0,
+      vy: 0,
+      life: 0.16,
+      color: "#9b6dff",
+      glow: true,
+      alpha: 0.9,
+      points,
+      width: 3.2,
+    });
+
+    // Inner bright core
+    vfx.emit({
+      x: startX,
+      y: startY,
+      vx: 0,
+      vy: 0,
+      life: 0.12,
+      color: "#f3eaff",
+      glow: true,
+      alpha: 1,
+      points,
+      width: 1.4,
+    });
+
+    // Soft destination flare (non-explosive)
+    for (let i = 0; i < 10; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 45 + Math.random() * 55;
+      vfx.emit({
+        x: endX,
+        y: endY,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        life: 0.15 + Math.random() * 0.08,
+        size: 1.5 + Math.random() * 1.2,
+        color: Math.random() > 0.4 ? "#c6a2ff" : "#f3eaff",
+        decay: 0.88,
         glow: true,
       });
     }
